@@ -1,0 +1,55 @@
+workflows:
+  ios-release:
+    name: iOS Release
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.getafric.eurohabesha
+
+    integrations:
+      app_store_connect: codemagic
+
+    scripts:
+      - name: Set up keychain
+        script: |
+          keychain initialize
+
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "com.getafric.eurohabesha" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Apply signing profiles to Xcode project
+        script: |
+          xcode-project use-profiles
+
+      - name: Flutter dependencies
+        script: |
+          flutter pub get
+
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa --release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+      email:
+        recipients:
+          - getafricshow1@gmail.com
+        notify:
+          success: true
+          failure: true

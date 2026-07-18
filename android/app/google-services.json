@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "218564066910",
+    "project_id": "eurohabesha-f3929",
+    "storage_bucket": "eurohabesha-f3929.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:218564066910:android:e7900e60c10457a50f7ecf",
+        "android_client_info": {
+          "package_name": "com.euro.habesha"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVMaMtACft2n11LDFJuy6vtiaNh6lM4eM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

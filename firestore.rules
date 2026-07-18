@@ -1,0 +1,510 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function authEmail() {
+      return isSignedIn() && request.auth.token.email != null
+          ? request.auth.token.email.lower().trim()
+          : '';
+    }
+
+    function rawAuthEmail() {
+      return isSignedIn() && request.auth.token.email != null
+          ? request.auth.token.email.trim()
+          : '';
+    }
+
+    function adminRoleDocByNormalizedEmail() {
+      return get(/databases/$(database)/documents/admin_roles/$(authEmail()));
+    }
+
+    function adminRoleDocByRawEmail() {
+      return get(/databases/$(database)/documents/admin_roles/$(rawAuthEmail()));
+    }
+
+    function adminRoleDocByUid() {
+      return get(/databases/$(database)/documents/admin_roles/$(request.auth.uid));
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function normalizeRole(roleValue) {
+      return roleValue is string ? roleValue.lower().trim() : '';
+    }
+
+    function userDocEmailNormalized() {
+      return userDoc().data != null && userDoc().data.email is string
+          ? userDoc().data.email.lower().trim()
+          : '';
+    }
+
+    function userDocEmailRaw() {
+      return userDoc().data != null && userDoc().data.email is string
+          ? userDoc().data.email.trim()
+          : '';
+    }
+
+    function adminRoleDocByUserDocEmailNormalized() {
+      return get(/databases/$(database)/documents/admin_roles/$(userDocEmailNormalized()));
+    }
+
+    function adminRoleDocByUserDocEmailRaw() {
+      return get(/databases/$(database)/documents/admin_roles/$(userDocEmailRaw()));
+    }
+
+    function isElevatedRole(roleValue) {
+      let role = normalizeRole(roleValue);
+      return role == 'owner'
+          || role == 'admin'
+          || role == 'administrator'
+          || role == 'superadmin'
+          || role == 'super_admin'
+          || role == 'super-admin'
+          || role == 'subadmin'
+          || role == 'sub_admin'
+          || role == 'sub-admin';
+    }
+
+    function claimRoleNormalized() {
+      return isSignedIn() && request.auth.token.role != null
+          ? normalizeRole(request.auth.token.role)
+          : '';
+    }
+
+    function isAdminByClaim() {
+      let role = claimRoleNormalized();
+      let userRole = isSignedIn() && request.auth.token.userRole != null
+          ? normalizeRole(request.auth.token.userRole)
+          : '';
+      return isSignedIn()
+          && (
+            request.auth.token.admin == true
+            || request.auth.token.isAdmin == true
+            || request.auth.token.owner == true
+            || request.auth.token.superadmin == true
+            || request.auth.token.superAdmin == true
+            || isElevatedRole(userRole)
+            || role == 'owner'
+            || role == 'admin'
+            || role == 'administrator'
+            || role == 'superadmin'
+            || role == 'super_admin'
+            || role == 'super-admin'
+            || role == 'subadmin'
+            || role == 'sub_admin'
+            || role == 'sub-admin'
+          );
+    }
+
+    function userRoleValue() {
+      return userDoc().data != null
+          ? (
+              userDoc().data.role != null
+                ? userDoc().data.role
+                : (
+                    userDoc().data.userRole != null
+                      ? userDoc().data.userRole
+                      : (
+                          userDoc().data.user_type != null
+                            ? userDoc().data.user_type
+                            : (
+                                userDoc().data.type != null
+                                  ? userDoc().data.type
+                                  : ''
+                              )
+                        )
+                  )
+            )
+          : '';
+    }
+
+    function hasActiveAdminRoleDoc(roleDoc) {
+      return roleDoc.data != null
+          && roleDoc.data.active != false
+          && isElevatedRole(roleDoc.data.role);
+    }
+
+    function isAdminByRoleDoc() {
+      return isSignedIn()
+          && (
+            (authEmail() != '' && hasActiveAdminRoleDoc(adminRoleDocByNormalizedEmail()))
+            || (rawAuthEmail() != '' && hasActiveAdminRoleDoc(adminRoleDocByRawEmail()))
+            || (userDocEmailNormalized() != '' && hasActiveAdminRoleDoc(adminRoleDocByUserDocEmailNormalized()))
+            || (userDocEmailRaw() != '' && hasActiveAdminRoleDoc(adminRoleDocByUserDocEmailRaw()))
+            || hasActiveAdminRoleDoc(adminRoleDocByUid())
+          );
+    }
+
+    function isAdminByUserRole() {
+      return isSignedIn()
+          && userDoc().data != null
+          && (
+            isElevatedRole(userRoleValue())
+            || userDoc().data.admin == true
+            || userDoc().data.isAdmin == true
+            || userDoc().data.owner == true
+            || userDoc().data.isOwner == true
+          );
+    }
+
+    // Emergency owner fallback to unblock verified production admin account.
+    function isKnownOwnerEmail() {
+      return isSignedIn() && authEmail() == 'getafricshow1@gmail.com';
+    }
+
+    function isAdmin() {
+      return isKnownOwnerEmail() || isAdminByClaim() || isAdminByRoleDoc() || isAdminByUserRole();
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function hasMessageBypassFlag() {
+      return isSignedIn()
+          && userDoc().data != null
+          && (
+            userDoc().data.messageCreditBypass == true
+            || userDoc().data.billingBypass == true
+            || userDoc().data.iapBypass == true
+            || userDoc().data.isBillingTester == true
+          );
+    }
+
+    function canBypassMessageCredits() {
+      return isAdmin() || hasMessageBypassFlag();
+    }
+
+    function chatParticipantIdsBefore(chatId) {
+      let chat = get(/databases/$(database)/documents/chats/$(chatId));
+      return chat.data != null && chat.data.participantIds is list
+          ? chat.data.participantIds
+          : [];
+    }
+
+    function chatParticipantIdsAfter() {
+      return request.resource.data.participantIds is list
+          ? request.resource.data.participantIds
+          : [];
+    }
+
+    function canRepairLegacyChatParticipants(chatId) {
+      let before = chatParticipantIdsBefore(chatId);
+      let after = chatParticipantIdsAfter();
+
+      return before.size() == 0
+          && after.size() >= 2
+          && request.auth.uid in after;
+    }
+
+    function quotaDoc(uid) {
+      return get(/databases/$(database)/documents/message_quota/$(uid));
+    }
+
+    function quotaAfterDoc(uid) {
+      return getAfter(/databases/$(database)/documents/message_quota/$(uid));
+    }
+
+    function quotaFreeUsedBefore(uid) {
+      return quotaDoc(uid).data != null && quotaDoc(uid).data.freeUsed is number
+          ? quotaDoc(uid).data.freeUsed
+          : 0;
+    }
+
+    function quotaPurchasedBefore(uid) {
+      return quotaDoc(uid).data != null && quotaDoc(uid).data.purchasedCredits is number
+          ? quotaDoc(uid).data.purchasedCredits
+          : 0;
+    }
+
+    function quotaFreeUsedAfter(uid) {
+      return quotaAfterDoc(uid).data != null && quotaAfterDoc(uid).data.freeUsed is number
+          ? quotaAfterDoc(uid).data.freeUsed
+          : 0;
+    }
+
+    function quotaPurchasedAfter(uid) {
+      return quotaAfterDoc(uid).data != null && quotaAfterDoc(uid).data.purchasedCredits is number
+          ? quotaAfterDoc(uid).data.purchasedCredits
+          : 0;
+    }
+
+    function validMessageQuotaConsumption(uid) {
+      let freeBefore = quotaFreeUsedBefore(uid);
+      let paidBefore = quotaPurchasedBefore(uid);
+      let freeAfter = quotaFreeUsedAfter(uid);
+      let paidAfter = quotaPurchasedAfter(uid);
+
+      return (paidBefore > 0
+              && paidAfter == paidBefore - 1
+              && freeAfter == freeBefore)
+          || (paidBefore <= 0
+              && freeBefore < 10
+              && freeAfter == freeBefore + 1
+              && paidAfter == paidBefore);
+    }
+
+    function validQuotaPurchaseGrant(uid) {
+      let freeBefore = quotaFreeUsedBefore(uid);
+      let paidBefore = quotaPurchasedBefore(uid);
+      let freeAfter = quotaFreeUsedAfter(uid);
+      let paidAfter = quotaPurchasedAfter(uid);
+      let lastPurchaseId = request.resource.data.lastPurchaseId;
+
+      return request.resource.data.lastPurchaseId is string
+          && lastPurchaseId.size() > 0
+          && !exists(/databases/$(database)/documents/message_credit_purchases/$(lastPurchaseId))
+          && getAfter(/databases/$(database)/documents/message_credit_purchases/$(lastPurchaseId)).data != null
+          && getAfter(/databases/$(database)/documents/message_credit_purchases/$(lastPurchaseId)).data.uid == uid
+          && getAfter(/databases/$(database)/documents/message_credit_purchases/$(lastPurchaseId)).data.productId == 'direct_message_pack_10_eur'
+          && freeAfter == freeBefore
+          && paidAfter == paidBefore + 10;
+    }
+
+    match /users/{uid} {
+      allow read, update, delete: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) || isAdmin();
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create: if isAdmin()
+          || (
+            isSignedIn()
+            && request.resource.data.toUid == uid
+            && request.resource.data.fromUid == request.auth.uid
+          );
+        allow update, delete: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    match /catering_profiles/{profileId} {
+      allow read: if resource.data.status == 'approved'
+          || (isSignedIn() && resource.data.ownerUid == request.auth.uid)
+          || isAdmin();
+
+      allow create: if isSignedIn()
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.category == 'Catering';
+
+      allow update, delete: if isAdmin()
+          || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+
+      match /menu_items/{itemId} {
+        allow read: if get(/databases/$(database)/documents/catering_profiles/$(profileId)).data.status == 'approved'
+            || (isSignedIn() && get(/databases/$(database)/documents/catering_profiles/$(profileId)).data.ownerUid == request.auth.uid)
+            || isAdmin();
+
+        allow create, update, delete: if isAdmin()
+            || (
+              isSignedIn()
+              && get(/databases/$(database)/documents/catering_profiles/$(profileId)).data.ownerUid == request.auth.uid
+            );
+      }
+
+      match /orders/{orderId} {
+        allow read: if isAdmin()
+            || (
+              isSignedIn()
+              && (
+                resource.data.customerUid == request.auth.uid
+                || get(/databases/$(database)/documents/catering_profiles/$(profileId)).data.ownerUid == request.auth.uid
+              )
+            );
+
+        allow create: if isSignedIn()
+            && request.resource.data.customerUid == request.auth.uid
+            && request.resource.data.status == 'pending';
+
+        allow update, delete: if isAdmin()
+            || (
+              isSignedIn()
+              && get(/databases/$(database)/documents/catering_profiles/$(profileId)).data.ownerUid == request.auth.uid
+            );
+      }
+    }
+
+    match /profiles/{uid} {
+      allow read: if resource.data.status == 'approved' || isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) || isAdmin();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    match /chats/{chatId} {
+      allow read, update, delete: if isSignedIn()
+          && (
+            request.auth.uid in chatParticipantIdsBefore(chatId)
+            || canRepairLegacyChatParticipants(chatId)
+          );
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+        allow create: if isSignedIn()
+            && request.resource.data.senderId == request.auth.uid
+            && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds
+            && (
+              canBypassMessageCredits()
+              || validMessageQuotaConsumption(request.auth.uid)
+            );
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /message_quota/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid)
+          && (
+            validMessageQuotaConsumption(uid)
+            || validQuotaPurchaseGrant(uid)
+          );
+      allow delete: if isAdmin();
+    }
+
+    match /message_credit_purchases/{purchaseId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.productId == 'direct_message_pack_10_eur';
+      allow update, delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /jobs/{jobId} {
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /business_profiles/{profileId} {
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /verified_professionals/{professionalId} {
+      allow read: if resource.data.status == 'approved' || resource.data.isVerified == true || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /associations/{associationId} {
+      allow read: if resource.data.verificationStatus == 'verified'
+          || resource.data.verifiedTick == true
+          || (isSignedIn() && resource.data.ownerUid == request.auth.uid)
+          || isAdmin();
+
+      allow create: if isSignedIn()
+          && request.resource.data.ownerUid == request.auth.uid;
+
+      allow update, delete: if isAdmin()
+          || (
+            isSignedIn()
+            && resource.data.ownerUid == request.auth.uid
+            && request.resource.data.ownerUid == resource.data.ownerUid
+          );
+    }
+
+    match /job_submissions/{submissionId} {
+      // Split list/get so admin collection queries are evaluated without owner-only doc constraints.
+      allow list: if isAdmin();
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      allow update, delete: if isAdmin();
+    }
+
+    match /market_submissions/{submissionId} {
+      allow list: if isAdmin();
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      allow update, delete: if isAdmin();
+    }
+
+    match /market_items/{itemId} {
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /provider_follows/{followId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    match /job_likes/{likeId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    match /Reviews/{reviewId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.reviewerUid == request.auth.uid
+        && request.resource.data.targetType in ['provider', 'job']
+        && request.resource.data.targetId is string
+        && request.resource.data.targetKey is string
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() > 0;
+
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.reviewerUid == request.auth.uid);
+    }
+
+    match /ReviewSummaries/{targetKey} {
+      allow read: if true;
+
+      // Written by app transaction after each review submission.
+      allow create, update: if isSignedIn()
+        && request.resource.data.targetKey == targetKey
+        && request.resource.data.targetType in ['provider', 'job']
+        && request.resource.data.targetId is string
+        && request.resource.data.reviewCount is number
+        && request.resource.data.reviewCount >= 1
+        && request.resource.data.ratingTotal is number
+        && request.resource.data.ratingTotal >= request.resource.data.reviewCount
+        && request.resource.data.averageRating is number
+        && request.resource.data.averageRating >= 1
+        && request.resource.data.averageRating <= 5;
+
+      allow delete: if isAdmin();
+    }
+
+    match /admin_roles/{contact} {
+      allow read: if isAdmin()
+        || (isSignedIn() && (
+          authEmail() == contact
+          || rawAuthEmail() == contact
+          || request.auth.uid == contact
+        ));
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /approvals/{approvalId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+  }
+}

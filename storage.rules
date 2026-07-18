@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Public assets (optional): allow read-only for everyone.
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Association legal documents: owner + admin service path only.
+    // Suggested path: associationDocs/{uid}/{associationId}/{fileName}
+    match /associationDocs/{uid}/{allPaths=**} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Profile media owned by the signed-in user.
+    // Suggested path: profileMedia/{uid}/associations/{associationId}/{fileName}
+    match /profileMedia/{uid}/{allPaths=**} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Fallback: deny everything else by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

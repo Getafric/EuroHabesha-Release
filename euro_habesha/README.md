@@ -2,26 +2,6 @@
 
 A new Flutter project.
 
-## Launch Preparation
-
-Use the prelaunch checklist here:
-
-- PRELAUNCH_10_STEP_CHECKLIST.md
-- APP_OPERATIONS_CHECKLIST.md
-- ADMIN_QA_CHECKLIST.md
-
-## Daily Operations
-
-For easier run/build/deploy workflow:
-
-- Use the VS Code tasks in `.vscode/tasks.json`
-- Open command palette and run `Tasks: Run Task`
-- Recommended quick tasks:
-	- `Flutter: Run`
-	- `Flutter: Build Debug APK`
-	- `Firebase: Deploy Firestore Rules`
-	- `Firebase: Deploy Functions`
-
 ## Getting Started
 
 This project is a starting point for a Flutter application.

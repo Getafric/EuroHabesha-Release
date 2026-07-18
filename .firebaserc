@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "eurohabesha-f3929",
+    "prod": "eurohabesha-f3929"
+  },
+  "targets": {},
+  "etags": {}
+}

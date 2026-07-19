@@ -28,34 +28,15 @@ workflows:
         script: |
           flutter pub get
 
+      - name: Build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign
+
       - name: Build iOS IPA
         script: |
-          flutter build ipa --release --export-options-plist="$HOME/export_options.plist"
-
-      - name: Normalize IPA artifact
-        script: |
-          set -e
-          mkdir -p build/ios/ipa
-          BUILD_ROOT="${CM_BUILD_DIR:-$PWD}"
-          IPA_PATH=""
-          if ls build/ios/ipa/*.ipa >/dev/null 2>&1; then
-            IPA_PATH="$(ls build/ios/ipa/*.ipa | head -n 1)"
-          else
-            find "$BUILD_ROOT/build" -type f -name "*.ipa" -print 2>/dev/null || true
-            IPA_PATH="$(find "$BUILD_ROOT/build" -type f -name "*.ipa" 2>/dev/null | head -n 1)"
-          fi
-          if [ -z "$IPA_PATH" ]; then
-            echo "No IPA file was produced by the build."
-            pwd
-            ls -lah build || true
-            ls -lah build/ios || true
-            ls -lah build/ios/ipa || true
-            exit 1
-          fi
-          if [ "$IPA_PATH" != "build/ios/ipa/Runner.ipa" ]; then
-            cp "$IPA_PATH" "build/ios/ipa/Runner.ipa"
-          fi
-          ls -lah build/ios/ipa
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
 
     artifacts:
       - build/ios/ipa/*.ipa

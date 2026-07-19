@@ -13,7 +13,7 @@ workflows:
         bundle_identifier: com.getafric.eurohabesha
 
     integrations:
-      app_store_connect: codemagic
+      app_store_connect: codemagic-eurohabesha-new
 
     scripts:
       - name: Set up keychain

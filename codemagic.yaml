@@ -44,13 +44,30 @@ workflows:
           set -eo pipefail
           ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/archive/Runner.xcarchive"
           EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
+          CUSTOM_EXPORT_OPTIONS="/tmp/export_options_custom.plist"
           mkdir -p "$CM_BUILD_DIR/build/ios/archive" "$EXPORT_PATH" /tmp/xcodebuild_logs
-          # Normalize generated export options for modern Xcode certificate naming.
-          plutil -replace method -string app-store-connect "$HOME/export_options.plist" || true
-          plutil -replace signingCertificate -string "Apple Distribution" "$HOME/export_options.plist" || true
-          plutil -replace teamID -string "ZX6L64MH6M" "$HOME/export_options.plist" || true
-          echo "Export options plist:"
-          cat "$HOME/export_options.plist"
+          cat > "$CUSTOM_EXPORT_OPTIONS" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>ZX6L64MH6M</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>compileBitcode</key>
+            <false/>
+            <key>stripSwiftSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+          echo "Custom export options plist:"
+          cat "$CUSTOM_EXPORT_OPTIONS"
           if ! xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
@@ -66,7 +83,7 @@ workflows:
             -exportArchive \
             -archivePath "$ARCHIVE_PATH" \
             -exportPath "$EXPORT_PATH" \
-            -exportOptionsPlist "$HOME/export_options.plist" \
+            -exportOptionsPlist "$CUSTOM_EXPORT_OPTIONS" \
             | tee /tmp/xcodebuild_logs/export.log; then
             echo "Export failed. Last xcodebuild lines:"
             tail -n 200 /tmp/xcodebuild_logs/export.log || true

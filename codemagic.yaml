@@ -32,6 +32,19 @@ workflows:
         script: |
           flutter build ipa --release --export-options-plist="$HOME/export_options.plist"
 
+      - name: Normalize IPA artifact
+        script: |
+          set -e
+          mkdir -p build/ios/ipa
+          find "$CM_BUILD_DIR" -type f -name "*.ipa" -print
+          IPA_PATH="$(find "$CM_BUILD_DIR" -type f -name "*.ipa" | head -n 1)"
+          if [ -z "$IPA_PATH" ]; then
+            echo "No IPA file was produced by the build."
+            exit 1
+          fi
+          cp "$IPA_PATH" "build/ios/ipa/Runner.ipa"
+          ls -lah build/ios/ipa
+
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log

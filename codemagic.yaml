@@ -11,6 +11,10 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.getafric.eurohabesha
+        certificates:
+          - eurohabesha123
+        provisioning_profiles:
+          - eurohabesha_appstore_only
 
     integrations:
       app_store_connect: codemagic-eurohabesha-new
@@ -41,80 +45,9 @@ workflows:
 
       - name: Build iOS IPA
         script: |
-          set -eo pipefail
-          ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/archive/Runner.xcarchive"
-          EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
-          CUSTOM_EXPORT_OPTIONS="/tmp/export_options_custom.plist"
-          mkdir -p "$CM_BUILD_DIR/build/ios/archive" "$EXPORT_PATH" /tmp/xcodebuild_logs
-          PROFILE_NAME=""
-          PROFILE_UUID=""
-          for profile in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
-            [ -f "$profile" ] || continue
-            decoded="/tmp/decoded_profile.plist"
-            security cms -D -i "$profile" > "$decoded" 2>/dev/null || continue
-            app_id=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$decoded" 2>/dev/null || true)
-            if [[ "$app_id" == *".com.getafric.eurohabesha" ]]; then
-              PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" "$decoded" 2>/dev/null || true)
-              PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" "$decoded" 2>/dev/null || true)
-              break
-            fi
-          done
-          if [ -z "$PROFILE_NAME" ]; then
-            echo "No provisioning profile found for com.getafric.eurohabesha"
-            ls -lah ~/Library/MobileDevice/Provisioning\ Profiles || true
-            exit 1
-          fi
-          echo "Using provisioning profile: $PROFILE_NAME ($PROFILE_UUID)"
-          cat > "$CUSTOM_EXPORT_OPTIONS" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store-connect</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>Apple Distribution</string>
-            <key>teamID</key>
-            <string>ZX6L64MH6M</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>com.getafric.eurohabesha</key>
-              <string>${PROFILE_NAME}</string>
-            </dict>
-            <key>destination</key>
-            <string>export</string>
-            <key>compileBitcode</key>
-            <false/>
-            <key>stripSwiftSymbols</key>
-            <true/>
-          </dict>
-          </plist>
-          PLIST
-          echo "Custom export options plist:"
-          cat "$CUSTOM_EXPORT_OPTIONS"
-          if ! xcodebuild \
-            -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -archivePath "$ARCHIVE_PATH" \
-            archive \
-            | tee /tmp/xcodebuild_logs/archive.log; then
-            echo "Archive failed. Last xcodebuild lines:"
-            tail -n 200 /tmp/xcodebuild_logs/archive.log || true
-            exit 1
-          fi
-          if ! xcodebuild \
-            -exportArchive \
-            -archivePath "$ARCHIVE_PATH" \
-            -exportPath "$EXPORT_PATH" \
-            -exportOptionsPlist "$CUSTOM_EXPORT_OPTIONS" \
-            | tee /tmp/xcodebuild_logs/export.log; then
-            echo "Export failed. Last xcodebuild lines:"
-            tail -n 200 /tmp/xcodebuild_logs/export.log || true
-            exit 1
-          fi
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
 
     artifacts:
       - build/ios/ipa/*.ipa

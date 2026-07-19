@@ -38,19 +38,29 @@ workflows:
           ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/archive/Runner.xcarchive"
           EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
           mkdir -p "$CM_BUILD_DIR/build/ios/archive" "$EXPORT_PATH" /tmp/xcodebuild_logs
-          xcodebuild \
+          echo "Export options plist:"
+          cat "$HOME/export_options.plist"
+          if ! xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -archivePath "$ARCHIVE_PATH" \
             archive \
-            | tee /tmp/xcodebuild_logs/archive.log
-          xcodebuild \
+            | tee /tmp/xcodebuild_logs/archive.log; then
+            echo "Archive failed. Last xcodebuild lines:"
+            tail -n 200 /tmp/xcodebuild_logs/archive.log || true
+            exit 1
+          fi
+          if ! xcodebuild \
             -exportArchive \
             -archivePath "$ARCHIVE_PATH" \
             -exportPath "$EXPORT_PATH" \
             -exportOptionsPlist "$HOME/export_options.plist" \
-            | tee /tmp/xcodebuild_logs/export.log
+            | tee /tmp/xcodebuild_logs/export.log; then
+            echo "Export failed. Last xcodebuild lines:"
+            tail -n 200 /tmp/xcodebuild_logs/export.log || true
+            exit 1
+          fi
 
     artifacts:
       - build/ios/ipa/*.ipa

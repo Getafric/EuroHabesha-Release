@@ -9,8 +9,6 @@ workflows:
       xcode: latest
       cocoapods: default
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.getafric.eurohabesha
         certificates:
           - eurohabesha123
         provisioning_profiles:

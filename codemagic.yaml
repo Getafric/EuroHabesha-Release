@@ -34,14 +34,23 @@ workflows:
 
       - name: Build iOS IPA
         script: |
-          set -e
-          if ! xcode-project build-ipa \
-            --workspace ios/Runner.xcworkspace \
-            --scheme Runner; then
-            echo "xcode-project build-ipa failed. Dumping xcodebuild logs..."
-            find /tmp/xcodebuild_logs -maxdepth 1 -type f -name "*.log" -print -exec tail -n 200 {} \;
-            exit 1
-          fi
+          set -eo pipefail
+          ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/archive/Runner.xcarchive"
+          EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
+          mkdir -p "$CM_BUILD_DIR/build/ios/archive" "$EXPORT_PATH" /tmp/xcodebuild_logs
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath "$ARCHIVE_PATH" \
+            archive \
+            | tee /tmp/xcodebuild_logs/archive.log
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist "$HOME/export_options.plist" \
+            | tee /tmp/xcodebuild_logs/export.log
 
     artifacts:
       - build/ios/ipa/*.ipa

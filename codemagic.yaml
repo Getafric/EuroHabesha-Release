@@ -45,6 +45,10 @@ workflows:
           ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/archive/Runner.xcarchive"
           EXPORT_PATH="$CM_BUILD_DIR/build/ios/ipa"
           mkdir -p "$CM_BUILD_DIR/build/ios/archive" "$EXPORT_PATH" /tmp/xcodebuild_logs
+          # Normalize generated export options for modern Xcode certificate naming.
+          plutil -replace method -string app-store-connect "$HOME/export_options.plist" || true
+          plutil -replace signingCertificate -string "Apple Distribution" "$HOME/export_options.plist" || true
+          plutil -replace teamID -string "ZX6L64MH6M" "$HOME/export_options.plist" || true
           echo "Export options plist:"
           cat "$HOME/export_options.plist"
           if ! xcodebuild \

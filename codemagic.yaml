@@ -28,15 +28,9 @@ workflows:
         script: |
           flutter pub get
 
-      - name: Build iOS (no codesign)
+      - name: Build iOS IPA
         script: |
-          flutter build ios --release --no-codesign
-
-      - name: Archive signed IPA
-        script: |
-          xcode-project build-ipa \
-            --workspace ios/Runner.xcworkspace \
-            --scheme Runner
+          flutter build ipa --release --export-options-plist="$HOME/export_options.plist"
 
     artifacts:
       - build/ios/ipa/*.ipa

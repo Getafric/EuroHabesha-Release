@@ -28,6 +28,13 @@ workflows:
         script: |
           flutter pub get
 
+      - name: Inspect signing assets
+        script: |
+          echo "Codesigning identities:"
+          security find-identity -v -p codesigning
+          echo "Provisioning profiles:"
+          ls -lah ~/Library/MobileDevice/Provisioning\ Profiles || true
+
       - name: Build iOS (no codesign)
         script: |
           flutter build ios --release --no-codesign

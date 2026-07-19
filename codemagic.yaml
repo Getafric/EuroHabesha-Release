@@ -34,9 +34,14 @@ workflows:
 
       - name: Build iOS IPA
         script: |
-          xcode-project build-ipa \
+          set -e
+          if ! xcode-project build-ipa \
             --workspace ios/Runner.xcworkspace \
-            --scheme Runner
+            --scheme Runner; then
+            echo "xcode-project build-ipa failed. Dumping xcodebuild logs..."
+            find /tmp/xcodebuild_logs -maxdepth 1 -type f -name "*.log" -print -exec tail -n 200 {} \;
+            exit 1
+          fi
 
     artifacts:
       - build/ios/ipa/*.ipa

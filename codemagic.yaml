@@ -12,7 +12,7 @@ workflows:
         certificates:
           - eurohabesha123
         provisioning_profiles:
-          - eurohabesha_appstore_only
+          - eurohabesha123
 
     integrations:
       app_store_connect: codemagic-eurohabesha-new

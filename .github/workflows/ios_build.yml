@@ -1,34 +1,46 @@
 name: Build and Deploy to TestFlight
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build iOS App and Upload to TestFlight
+  build_and_upload:
     runs-on: macos-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.5'
           channel: 'stable'
-
-      - name: Debug commit and pubspec
-        run: |
-          echo "Commit:"
-          git rev-parse --short HEAD
-          echo "pubspec SDK + flutter_lints:"
-          grep -nE "^environment:|^  sdk:|flutter_lints" pubspec.yaml
+          cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS Release (No codesign for initial check)
-        run: flutter build ios --release --no-codesign
+      - name: Set up Ruby and Bundler
+        uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_GEMFILE: ios/Gemfile
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Build iOS App and Upload to TestFlight
+        working-directory: ios
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          bundle exec fastlane release

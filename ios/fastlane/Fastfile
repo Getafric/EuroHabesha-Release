@@ -13,6 +13,9 @@ platform :ios do
       in_house: false
     )
 
+    sh("which pod")
+    sh("pod --version")
+
     sh("cd \"#{repo_root}\" && flutter build ipa --release --build-number=$GITHUB_RUN_NUMBER --export-options-plist=\"#{export_options_path}\"")
 
     ipa_path = Dir[File.join(repo_root, "build", "ios", "ipa", "*.ipa")].max_by { |path| File.mtime(path) }

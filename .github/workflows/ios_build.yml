@@ -38,6 +38,10 @@ jobs:
       - name: Install and verify CocoaPods
         run: |
           gem install cocoapods -N
+          POD_BIN="$(ruby -e 'print Gem.bindir')"
+          echo "$POD_BIN" >> "$GITHUB_PATH"
+          echo "POD_BIN=$POD_BIN" >> "$GITHUB_ENV"
+          export PATH="$POD_BIN:$PATH"
           which pod
           pod --version
 

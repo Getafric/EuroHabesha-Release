@@ -35,6 +35,12 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
+      - name: Install and verify CocoaPods
+        run: |
+          gem install cocoapods -N
+          which pod
+          pod --version
+
       - name: Build iOS App and Upload to TestFlight
         working-directory: ios
         env:

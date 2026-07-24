@@ -3,6 +3,9 @@ default_platform(:ios)
 platform :ios do
   desc "Build the iOS IPA and upload it to TestFlight"
   lane :release do
+    repo_root = File.expand_path("../..", __dir__)
+    export_options_path = File.expand_path("../ExportOptions.plist", __dir__)
+
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("APP_STORE_CONNECT_KEY_IDENTIFIER"),
       issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
@@ -10,9 +13,9 @@ platform :ios do
       in_house: false
     )
 
-    sh("cd .. && flutter build ipa --release --build-number=$GITHUB_RUN_NUMBER --export-options-plist=ios/ExportOptions.plist")
+    sh("cd \"#{repo_root}\" && flutter build ipa --release --build-number=$GITHUB_RUN_NUMBER --export-options-plist=\"#{export_options_path}\"")
 
-    ipa_path = Dir[File.expand_path("../build/ios/ipa/*.ipa", __dir__)].max_by { |path| File.mtime(path) }
+    ipa_path = Dir[File.join(repo_root, "build", "ios", "ipa", "*.ipa")].max_by { |path| File.mtime(path) }
     UI.user_error!("No IPA was generated in build/ios/ipa") unless ipa_path
 
     upload_to_testflight(

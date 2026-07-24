@@ -47,12 +47,22 @@ jobs:
           BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
+          if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$P12_PASSWORD" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ] || [ -z "$KEYCHAIN_PASSWORD" ]; then
+            echo "Missing required signing secrets. Please set BUILD_CERTIFICATE_BASE64, P12_PASSWORD, BUILD_PROVISION_PROFILE_BASE64, and KEYCHAIN_PASSWORD in GitHub repository secrets."
+            exit 1
+          fi
+
           CERT_PATH="$RUNNER_TEMP/build_certificate.p12"
           PP_PATH="$RUNNER_TEMP/build_pp.mobileprovision"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
 
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+          printf '%s' "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+          printf '%s' "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > "$PP_PATH"
+
+          if [ ! -s "$CERT_PATH" ] || [ ! -s "$PP_PATH" ]; then
+            echo "Decoded signing files are empty. Recreate BUILD_CERTIFICATE_BASE64 / BUILD_PROVISION_PROFILE_BASE64 from valid .p12 and .mobileprovision files."
+            exit 1
+          fi
 
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"

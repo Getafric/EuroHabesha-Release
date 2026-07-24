@@ -53,7 +53,7 @@ dependencies:
   url_launcher: ^6.3.1
   shared_preferences: ^2.5.3
   file_selector: ^1.0.3
-  google_fonts: ^8.2.0
+  google_fonts: ^6.3.3
 
 dev_dependencies:
   flutter_test:

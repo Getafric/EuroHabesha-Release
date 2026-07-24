@@ -760,7 +760,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           Image.network(
                             item.imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                           ),
                         Container(
                           decoration: const BoxDecoration(

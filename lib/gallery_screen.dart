@@ -271,7 +271,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
       body: ListView.separated(
         padding: const EdgeInsets.all(12),
         itemCount: _galleryItems.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final item = _galleryItems[index];
           return Card(

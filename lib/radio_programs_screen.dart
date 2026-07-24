@@ -131,7 +131,7 @@ class _RadioProgramsScreenState extends State<RadioProgramsScreen> {
       body: ListView.separated(
         padding: const EdgeInsets.all(12),
         itemCount: _programs.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           final p = _programs[index];
           return Card(

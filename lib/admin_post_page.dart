@@ -969,7 +969,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     child: Image.network(
                       documentDownloadUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Text(
+                      errorBuilder: (context, error, stackTrace) => const Text(
                         'Unable to load document from URL.',
                         style: TextStyle(color: Colors.white70),
                       ),

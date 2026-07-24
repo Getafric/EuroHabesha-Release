@@ -335,12 +335,12 @@ class _AssociationsScreenState extends State<AssociationsScreen> {
               } catch (_) {}
             }
 
-            final ImageProvider? logoImage = logoUrl.isNotEmpty
-                ? NetworkImage(logoUrl)
-                : (logoBytes == null ? null : MemoryImage(logoBytes));
-            final ImageProvider? coverImage = coverUrl.isNotEmpty
-                ? NetworkImage(coverUrl)
-                : (coverBytes == null ? null : MemoryImage(coverBytes));
+            final ImageProvider<Object>? logoImage = logoUrl.isNotEmpty
+              ? NetworkImage(logoUrl) as ImageProvider<Object>
+              : (logoBytes == null ? null : MemoryImage(logoBytes) as ImageProvider<Object>);
+            final ImageProvider<Object>? coverImage = coverUrl.isNotEmpty
+              ? NetworkImage(coverUrl) as ImageProvider<Object>
+              : (coverBytes == null ? null : MemoryImage(coverBytes) as ImageProvider<Object>);
 
             return InkWell(
               borderRadius: BorderRadius.circular(14),

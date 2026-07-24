@@ -240,12 +240,12 @@ class _AssociationProfilePageState extends State<AssociationProfilePage> {
           } catch (_) {}
         }
 
-        final ImageProvider? logoImage = logoUrl.isNotEmpty
-            ? NetworkImage(logoUrl)
-            : (logoBytes == null ? null : MemoryImage(logoBytes));
-        final ImageProvider? coverImage = coverUrl.isNotEmpty
-            ? NetworkImage(coverUrl)
-            : (coverBytes == null ? null : MemoryImage(coverBytes));
+        final ImageProvider<Object>? logoImage = logoUrl.isNotEmpty
+          ? NetworkImage(logoUrl) as ImageProvider<Object>
+          : (logoBytes == null ? null : MemoryImage(logoBytes) as ImageProvider<Object>);
+        final ImageProvider<Object>? coverImage = coverUrl.isNotEmpty
+          ? NetworkImage(coverUrl) as ImageProvider<Object>
+          : (coverBytes == null ? null : MemoryImage(coverBytes) as ImageProvider<Object>);
 
         final followerStream = (user == null)
             ? const Stream<DocumentSnapshot<Map<String, dynamic>>>.empty()
@@ -273,7 +273,7 @@ class _AssociationProfilePageState extends State<AssociationProfilePage> {
                         Image(
                           image: coverImage,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                         ),
                       Container(
                         decoration: const BoxDecoration(
@@ -578,7 +578,7 @@ class _AssociationProfilePageState extends State<AssociationProfilePage> {
                             itemCount: comments.length,
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            separatorBuilder: (_, _) => const SizedBox(height: 8),
+                            separatorBuilder: (context, index) => const SizedBox(height: 8),
                             itemBuilder: (context, index) {
                               final data = comments[index].data();
                               final author = (data['displayName'] ?? 'User').toString();

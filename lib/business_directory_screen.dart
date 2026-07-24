@@ -403,7 +403,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                       child: Image.network(
                         photos[index],
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
+                        errorBuilder: (context, error, stackTrace) => Container(
                           color: const Color(0xFF0E2E1E),
                           child: const Center(
                             child: Icon(Icons.broken_image_outlined, color: Colors.white38),

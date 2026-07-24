@@ -20,7 +20,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.5'
+          flutter-version: '3.19.0'
           channel: 'stable'
           cache: true
 
@@ -35,15 +35,10 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Install and verify CocoaPods
+      - name: Install CocoaPods
         run: |
-          gem install cocoapods -N
-          POD_BIN="$(ruby -e 'print Gem.bindir')"
-          echo "$POD_BIN" >> "$GITHUB_PATH"
-          echo "POD_BIN=$POD_BIN" >> "$GITHUB_ENV"
-          export PATH="$POD_BIN:$PATH"
-          which pod
-          pod --version
+          cd ios
+          bundle exec pod install --repo-update
 
       - name: Build iOS App and Upload to TestFlight
         working-directory: ios
@@ -51,6 +46,5 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
           bundle exec fastlane release

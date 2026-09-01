@@ -40,8 +40,7 @@ workflows:
       - name: Build iOS (no codesign)
         script: |
           flutter build ios --release --no-codesign
-
-      - name: Build iOS IPA
+    - name: Build iOS IPA
       script: |
         flutter build ipa --release \
           --build-number=$CM_BUILD_ID \

@@ -8,12 +8,9 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      ios_signing:
-        certificates:
-          - eurohabesha123
-        provisioning_profiles:
-          - eurohabesha123
-
+    ios_signing:
+      distribution_type: app_store
+      bundle_identifier: com.getafric.eurohabesha
     integrations:
       app_store_connect: codemagic-eurohabesha-new
 

@@ -15,7 +15,7 @@ workflows:
           - eurohabesha123
 
     integrations:
-      app_store_connect: codemagic-eurohabesha-new      
+      app_store_connect: codemagic-eurohabesha-new
 
     scripts:
       - name: Set up keychain
@@ -40,11 +40,12 @@ workflows:
       - name: Build iOS (no codesign)
         script: |
           flutter build ios --release --no-codesign
-    - name: Build iOS IPA
-      script: |
-        flutter build ipa --release \
-          --build-number=$CM_BUILD_ID \
-          --export-options-plist=/Users/builder/export_options.plist
+
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa --release \
+            --build-number=$CM_BUILD_ID \
+            --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -54,6 +55,7 @@ workflows:
         auth: integration
         submit_to_testflight: true
         submit_to_app_store: false
+
       email:
         recipients:
           - getafricshow1@gmail.com

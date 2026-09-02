@@ -10,10 +10,8 @@ workflows:
       cocoapods: default
 
       ios_signing:
-        certificates:
-          - eurohabesha-distribution-2026
-        provisioning_profiles:
-          - eurohabesha123
+        distribution_type: app_store
+        bundle_identifier: com.getafric.eurohabesha
 
     integrations:
       app_store_connect: codemagic-eurohabesha-new-2
@@ -23,17 +21,18 @@ workflows:
         script: |
           keychain initialize
 
-      - name: Apply signing profiles to Xcode project
-        script: |
-          xcode-project use-profiles
-
       - name: Flutter dependencies
         script: |
           flutter pub get
 
       - name: Install CocoaPods dependencies
         script: |
-          find . -name "Podfile" -execdir pod install \;
+          cd ios
+          pod install
+
+      - name: Apply signing profiles
+        script: |
+          xcode-project use-profiles
 
       - name: Build iOS IPA
         script: |

@@ -19,10 +19,6 @@ workflows:
       app_store_connect: codemagic-eurohabesha-new-2
 
     scripts:
-      - name: Set up keychain
-        script: |
-          keychain initialize
-
       - name: Flutter dependencies
         script: |
           flutter pub get
@@ -44,6 +40,7 @@ workflows:
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       app_store_connect:

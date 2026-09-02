@@ -8,6 +8,7 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+
       ios_signing:
         certificates:
           - eurohabesha-distribution-2026
@@ -22,31 +23,24 @@ workflows:
         script: |
           keychain initialize
 
-      - name: Check signing configuration
+      - name: Apply signing profiles to Xcode project
         script: |
-          echo "=== EXPORT OPTIONS ==="
-          cat /Users/builder/export_options.plist || true
-          echo "=== SIGNING IDENTITIES ==="
-          security find-identity -v -p codesigning
+          xcode-project use-profiles
+
+      - name: Flutter dependencies
         script: |
           flutter pub get
 
-      - name: Inspect signing assets
+      - name: Install CocoaPods dependencies
         script: |
-          echo "Codesigning identities:"
-          security find-identity -v -p codesigning
-          echo "Provisioning profiles:"
-          ls -lah ~/Library/MobileDevice/Provisioning\ Profiles || true
-
-      - name: Build iOS (no codesign)
-        script: |
-          flutter build ios --release --no-codesign
+          find . -name "Podfile" -execdir pod install \;
 
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
             --workspace "$CM_BUILD_DIR/ios/Runner.xcworkspace" \
             --scheme Runner
+
     artifacts:
       - build/ios/ipa/*.ipa
 

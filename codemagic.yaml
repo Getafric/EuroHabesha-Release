@@ -15,18 +15,19 @@ workflows:
           - eurohabesha123
 
     integrations:
-      app_store_connect: codemagic-eurohabesha-new
+      app_store_connect: codemagic-eurohabesha-new-2
 
     scripts:
       - name: Set up keychain
         script: |
           keychain initialize
 
-      - name: Apply signing profiles to Xcode project
+      - name: Check signing configuration
         script: |
-          xcode-project use-profiles
-
-      - name: Flutter dependencies
+          echo "=== EXPORT OPTIONS ==="
+          cat /Users/builder/export_options.plist || true
+          echo "=== SIGNING IDENTITIES ==="
+          security find-identity -v -p codesigning
         script: |
           flutter pub get
 

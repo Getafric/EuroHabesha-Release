@@ -44,10 +44,9 @@ workflows:
 
       - name: Build iOS IPA
         script: |
-          flutter build ipa --release \
-            --build-number=$CM_BUILD_ID \
-            --export-options-plist=/Users/builder/export_options.plist
-
+          xcode-project build-ipa \
+            --workspace "$CM_BUILD_DIR/ios/Runner.xcworkspace" \
+            --scheme Runner
     artifacts:
       - build/ios/ipa/*.ipa
 

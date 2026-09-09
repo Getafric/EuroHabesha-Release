@@ -1,14 +1,8 @@
 import 'dart:io';
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
-import 'login_screen.dart';
-import 'moderation_state.dart';
-import 'registration_screen.dart';
-import 'session_state.dart';
+import 'app_session.dart';
+import 'profile_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,353 +12,454 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _picker = ImagePicker();
+  final Color primaryDarkGreen = const Color(0xFF061E12);
+  final Color primaryGold = const Color(0xFFFFD700);
+  final Color cardGreen = const Color(0xFF004D40);
 
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _professionalDetailsController = TextEditingController();
-  final TextEditingController _documentsController = TextEditingController();
+  bool _pushNotificationsEnabled = true;
+  bool _phonePublic = false;
+  bool _isGuest = AppSession.isGuest;
+  String _selectedLanguage = 'Auto';
 
-  XFile? _profileImage;
-  bool _showPhonePublicly = false;
+  // የተጠቃሚው ፕሮፋይል መረጃዎች (በቀላሉ በስክሪኑ ላይ እንዲዘመኑ)
+  String userName = AppSession.displayName;
+  String userEmail = AppSession.email;
+  String userCity = AppSession.city;
+  String userPhone = AppSession.phone;
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentProfile();
+    final languageCode = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+    _selectedLanguage = switch (languageCode) {
+      'fr' => 'French',
+      'nl' => 'Dutch',
+      'am' => 'Amharic',
+      _ => 'English',
+    };
+    _isGuest = AppSession.isGuest;
+    userName = AppSession.displayName;
+    userEmail = AppSession.email;
+    userCity = AppSession.city;
+    userPhone = AppSession.phone;
   }
 
-  Future<void> _loadCurrentProfile() async {
-    if (SessionState.isGuest) {
-      _fullNameController.text = 'Guest User';
-      return;
-    }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _fullNameController.text = SessionState.displayName ?? 'User';
-      _emailController.text = SessionState.verifiedContact ?? '';
-      return;
-    }
-
-    final fallbackName = SessionState.displayName ?? user.displayName ?? user.email?.split('@').first ?? 'User';
-    _fullNameController.text = fallbackName;
-    _emailController.text = (user.email ?? SessionState.verifiedContact ?? '').trim();
-
-    try {
-      final snap = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      final data = snap.data();
-      if (data == null || !mounted) return;
-
-      final fullName = (data['fullName'] ?? '').toString().trim();
-      final phone = (data['phone'] ?? '').toString();
-      final email = (data['email'] ?? '').toString().trim();
-      final professionalDetails = (data['professionalDetails'] ?? '').toString();
-      final documents = (data['documents'] ?? '').toString();
-      final showPhone = data['showPhonePublicly'] == true;
-
-      setState(() {
-        _fullNameController.text = fullName.isEmpty ? fallbackName : fullName;
-        _phoneController.text = phone;
-        _emailController.text = email.isEmpty ? _emailController.text : email;
-        _professionalDetailsController.text = professionalDetails;
-        _documentsController.text = documents;
-        _showPhonePublicly = showPhone;
-      });
-
-      SessionState.displayName = _fullNameController.text.trim();
-    } catch (_) {
-      // Keep fallback values if profile fetch fails.
-    }
-  }
-
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _professionalDetailsController.dispose();
-    _documentsController.dispose();
-    super.dispose();
-  }
-
+  // የፕሮፋይል ፎቶ ከጋለሪ የመምረጫ ፊቸር
   Future<void> _pickProfileImage() async {
-    final image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-      maxWidth: 1200,
-    );
-    if (!mounted || image == null) return;
-
-    setState(() {
-      _profileImage = image;
-    });
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+    }
   }
 
-  void _saveProfile() {
-    if (SessionState.isGuest) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Create an account or log in to save your profile.'),
+  // 1. የተሟላ የፕሮፋይል ማስተካከያ ፖፕ-አፕ (ስም፣ ኢሜል፣ ከተማ፣ ስልክ እና ፎቶ)
+  void _showEditProfileDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController(text: userName);
+    final TextEditingController emailController = TextEditingController(text: userEmail);
+    final TextEditingController cityController = TextEditingController(text: userCity);
+    final TextEditingController phoneController = TextEditingController(text: userPhone);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: cardGreen,
+        title: Text('Edit Profile & Credentials', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ፎቶ መቀየሪያ አዝራር በዲያሎጉ ውስጥ
+              GestureDetector(
+                onTap: () async {
+                  await _pickProfileImage();
+                  Navigator.pop(context);
+                  _showEditProfileDialog(context); // ፎቶው ወዲያውኑ እንዲታደስ ዲያሎጉን እንደገና መክፈት
+                },
+                child: CircleAvatar(
+                  radius: 35,
+                  backgroundColor: primaryDarkGreen,
+                  backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                  child: _profileImage == null ? Icon(Icons.camera_alt, color: primaryGold, size: 25) : null,
+                ),
+              ),
+              const SizedBox(height: 15),
+              _buildDialogField('Full Name', nameController),
+              const SizedBox(height: 10),
+              _buildDialogField('Email Address', emailController),
+              const SizedBox(height: 10),
+              _buildDialogField('City & Country', cityController),
+              const SizedBox(height: 10),
+              _buildDialogField('Phone Number', phoneController),
+            ],
+          ),
         ),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in again before saving your profile.')),
-      );
-      return;
-    }
-
-    final fullName = _fullNameController.text.trim();
-    final email = _emailController.text.trim().isEmpty ? (user.email ?? '') : _emailController.text.trim();
-
-    FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-      'uid': user.uid,
-      'fullName': fullName,
-      'email': email,
-      'phone': _phoneController.text.trim(),
-      'professionalDetails': _professionalDetailsController.text.trim(),
-      'documents': _documentsController.text.trim(),
-      'showPhonePublicly': _showPhonePublicly,
-      'updatedAt': FieldValue.serverTimestamp(),
-      'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true)).then((_) {
-      SessionState.displayName = fullName;
-      if (!mounted) return;
-
-      ModerationState.addPendingContent(
-        type: 'Profile',
-        title: fullName,
-        submittedBy: email.isEmpty ? 'current_user@eurohabesha.app' : email,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved successfully.')),
-      );
-    }).catchError((error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save profile: $error')),
-      );
-    });
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primaryGold),
+            onPressed: () {
+              setState(() {
+                userName = nameController.text;
+                userEmail = emailController.text;
+                userCity = cityController.text;
+                userPhone = phoneController.text;
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Profile updated successfully!')),
+              );
+            },
+            child: Text('Save Changes', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
-  Future<void> _disconnectAccount() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-    } catch (_) {
-      // Ignore sign-out issues and still return to guest mode.
-    }
-
-    SessionState.enterGuest();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
+  // 2. አካውንት የማጥፊያ ማረጋገጫ
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: cardGreen,
+        title: const Text('Delete Account', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Are you sure you want to delete your account? This action is permanent and will remove all your data, posts, and listings from Euro Habesha.',
+          style: TextStyle(color: Colors.white70, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: primaryGold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Account successfully deleted.')),
+              );
+            },
+            child: const Text('Delete Permanently', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF061E12),
+      backgroundColor: primaryDarkGreen,
       appBar: AppBar(
+        title: Text('User Profile & Settings', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        backgroundColor: primaryDarkGreen,
         centerTitle: true,
-        title: const Text('Profile Settings'),
+        iconTheme: IconThemeData(color: primaryGold),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (SessionState.isGuest) ...[
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0E2E1E),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white10),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // ── ራስጌ የፕሮፋይል ፎቶ እና ዝርዝር ──
+            Center(
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: cardGreen,
+                    backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                    child: _profileImage == null ? Icon(Icons.person, color: primaryGold, size: 55) : null,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'Browsing as Guest',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: () => _showEditProfileDialog(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: primaryGold, shape: BoxShape.circle),
+                        child: Icon(Icons.edit, color: primaryDarkGreen, size: 16),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'You can explore all content without signing up. Log in only when you want to contact providers, publish content, or save your profile.',
-                        style: TextStyle(color: Colors.white70, height: 1.4),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.white24),
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const RegistrationScreen()),
-                                );
-                              },
-                              child: const Text('Create Account'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFF59E0B),
-                                foregroundColor: const Color(0xFF061E12),
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                                );
-                              },
-                              child: const Text('Log In'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 46,
-                      backgroundColor: const Color(0xFF0E2E1E),
-                      backgroundImage: _profileImage != null ? FileImage(File(_profileImage!.path)) : null,
-                      child: _profileImage == null
-                          ? const Icon(Icons.person_outline, size: 40, color: Colors.white70)
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: _pickProfileImage,
-                      icon: const Icon(Icons.photo_camera_outlined, color: Color(0xFFF59E0B)),
-                      label: const Text('Upload Optional Profile Photo', style: TextStyle(color: Color(0xFFF59E0B))),
-                    ),
-                    const Text(
-                      'Only image files are accepted. You can skip this step.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
-                    ),
-                  ],
-                ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _fullNameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration('Full Name'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Name is required' : null,
+            ),
+            const SizedBox(height: 12),
+            Text(userName, style: TextStyle(color: primaryGold, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(_isGuest ? 'Browse freely. Sign in only when you want to post or contact.' : '$userCity • $userEmail', style: const TextStyle(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
+            if (!_isGuest) ...[
+              const SizedBox(height: 4),
+              Text(
+                _phonePublic ? 'Phone visible publicly: $userPhone' : 'Phone number is private',
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration('Phone Number'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration('Email'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _professionalDetailsController,
-                maxLines: 3,
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration('Professional Details'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _documentsController,
-                maxLines: 2,
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration('Uploaded Documents (references)'),
-              ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                value: _showPhonePublicly,
-                activeThumbColor: const Color(0xFFF59E0B),
-                title: const Text('Show phone number publicly', style: TextStyle(color: Colors.white)),
-                subtitle: const Text(
-                  'Turn off to keep your phone private and use in-app contact only.',
-                  style: TextStyle(color: Colors.white60),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _showPhonePublicly = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF59E0B),
-                  foregroundColor: const Color(0xFF061E12),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: _saveProfile,
-                child: const Text('Save Profile Settings', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              if (!SessionState.isGuest && FirebaseAuth.instance.currentUser != null) ...[
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.redAccent),
-                    foregroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: _disconnectAccount,
-                  icon: const Icon(Icons.logout_outlined),
-                  label: const Text('Disconnect / Log Out'),
-                ),
-              ],
             ],
-          ),
+            const SizedBox(height: 25),
+
+            // ── ሴቲንግ እና ዝርዝሮች ──
+            Container(
+              decoration: BoxDecoration(
+                color: cardGreen,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Column(
+                children: [
+                  // Edit Profile
+                  ListTile(
+                    leading: Icon(Icons.person_outline, color: primaryGold),
+                    title: const Text('Edit Profile & Credentials', style: TextStyle(color: Colors.white)),
+                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                    onTap: () => _showEditProfileDialog(context),
+                  ),
+                  const Divider(color: Colors.white24, height: 1),
+
+                  ListTile(
+                    leading: Icon(Icons.settings_outlined, color: primaryGold),
+                    title: const Text('Profile Settings', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Notifications, privacy, language, deletion', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()),
+                      );
+                    },
+                  ),
+                  const Divider(color: Colors.white24, height: 1),
+
+                  if (!_isGuest) ...[
+                    ListTile(
+                      leading: Icon(Icons.bookmark_outline, color: primaryGold),
+                      title: const Text('My Saved Listings', style: TextStyle(color: Colors.white)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SavedListingsScreen()),
+                        );
+                      },
+                    ),
+                    const Divider(color: Colors.white24, height: 1),
+                  ],
+
+                  // Notifications Toggle
+                  SwitchListTile(
+                    secondary: Icon(Icons.notifications_outlined, color: primaryGold),
+                    title: const Text('Push Notifications', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Receive alerts & updates', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    activeColor: primaryGold,
+                    value: _pushNotificationsEnabled,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _pushNotificationsEnabled = value;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(value ? 'Notifications enabled' : 'Notifications disabled')),
+                      );
+                    },
+                  ),
+                  const Divider(color: Colors.white24, height: 1),
+
+                  if (!_isGuest) ...[
+                    SwitchListTile(
+                      secondary: Icon(Icons.phone_android, color: primaryGold),
+                      title: const Text('Phone Number Visibility', style: TextStyle(color: Colors.white)),
+                      subtitle: Text(_phonePublic ? 'Public on profile and listings' : 'Private and hidden from other users', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                      activeColor: primaryGold,
+                      value: _phonePublic,
+                      onChanged: (bool value) {
+                        setState(() => _phonePublic = value);
+                      },
+                    ),
+                    const Divider(color: Colors.white24, height: 1),
+                  ],
+
+                  ListTile(
+                    leading: Icon(Icons.language, color: primaryGold),
+                    title: const Text('Language', style: TextStyle(color: Colors.white)),
+                    subtitle: Text('Current: $_selectedLanguage', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                    trailing: DropdownButton<String>(
+                      value: _selectedLanguage,
+                      dropdownColor: cardGreen,
+                      underline: const SizedBox.shrink(),
+                      iconEnabledColor: primaryGold,
+                      style: const TextStyle(color: Colors.white),
+                      items: const ['English', 'French', 'Dutch', 'Amharic'].map((language) {
+                        return DropdownMenuItem<String>(value: language, child: Text(language));
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _selectedLanguage = value);
+                        }
+                      },
+                    ),
+                  ),
+                  const Divider(color: Colors.white24, height: 1),
+
+                  if (!_isGuest) ...[
+                    ListTile(
+                      leading: Icon(Icons.lock_outline, color: primaryGold),
+                      title: const Text('Privacy & Security (GDPR)', style: TextStyle(color: Colors.white)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: cardGreen,
+                            title: Text('Privacy & Data Protection', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+                            content: const SingleChildScrollView(
+                              child: Text(
+                                'Euro Habesha operates strictly under European General Data Protection Regulation (GDPR) standards.\n\n'
+                                '• Your personal information, phone number, and listings are fully encrypted and secured.\n'
+                                '• We do not share your data with third-party advertising networks.\n'
+                                '• You have the full right to export or permanently delete your data at any time through your profile settings.',
+                                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Got It', style: TextStyle(color: primaryGold)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(color: Colors.white24, height: 1),
+                  ],
+
+                  // Log Out (የተስተካከለ እና የሚሰራ)
+                  ListTile(
+                    leading: Icon(_isGuest ? Icons.login : Icons.logout, color: Colors.orangeAccent),
+                    title: Text(_isGuest ? 'Sign In / Register' : 'Log Out', style: const TextStyle(color: Colors.orangeAccent)),
+                    onTap: () {
+                      if (_isGuest) {
+                        Navigator.pushNamed(context, '/login');
+                        return;
+                      }
+                      final profileContext = context;
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          backgroundColor: cardGreen,
+                          title: const Text('Log Out', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                          content: const Text('Are you sure you want to log out from Euro Habesha?', style: TextStyle(color: Colors.white70)),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: Text('Cancel', style: TextStyle(color: primaryGold)),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+                              onPressed: () {
+                                AppSession.signOut();
+                                Navigator.pop(dialogContext);
+                                Navigator.of(profileContext).pushNamedAndRemoveUntil(
+                                  '/login',
+                                  (route) => false,
+                                );
+                              },
+                              child: const Text('Log Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(color: Colors.white24, height: 1),
+
+                  if (!_isGuest)
+                    ListTile(
+                      leading: Icon(Icons.delete_forever, color: Colors.redAccent),
+                      title: const Text('Delete My Account', style: TextStyle(color: Colors.redAccent)),
+                      onTap: () => _showDeleteAccountDialog(context),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+          ],
         ),
       ),
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white60),
-      filled: true,
-      fillColor: const Color(0xFF0E2E1E),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+  Widget _buildDialogField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: primaryGold, fontSize: 12, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: primaryDarkGreen,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ==========================================
+// ── ማይ ሴቭድ ሊስቲንግ ገጽ (Saved Listings Screen) ──
+// ==========================================
+class SavedListingsScreen extends StatelessWidget {
+  const SavedListingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final Color primaryDarkGreen = const Color(0xFF061E12);
+    final Color primaryGold = const Color(0xFFFFD700);
+    final Color cardGreen = const Color(0xFF004D40);
+
+    // ለምሳሌ የተጠቃሚው ሴቭ ያደረጋቸው ሊስቲንጎች (ወደፊት ከዳታቤዝ ይመጣሉ)
+    final List<Map<String, String>> savedItems = [
+      {'title': 'Habesha Market Lyon', 'category': 'Grocery & Store', 'city': 'Lyon, France'},
+      {'title': 'Getafric Production', 'category': 'Photography & Video', 'city': 'Lyon, France'},
+    ];
+
+    return Scaffold(
+      backgroundColor: primaryDarkGreen,
+      appBar: AppBar(
+        title: Text('My Saved Listings', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        backgroundColor: primaryDarkGreen,
+        iconTheme: IconThemeData(color: primaryGold),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFF59E0B)),
-      ),
+      body: savedItems.isEmpty
+          ? const Center(child: Text('No saved listings yet.', style: TextStyle(color: Colors.white54)))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: savedItems.length,
+              itemBuilder: (context, index) {
+                final item = savedItems[index];
+                return Card(
+                  color: cardGreen,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    title: Text(item['title']!, style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold, fontSize: 16)),
+                    subtitle: Text('${item['category']} • ${item['city']}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    trailing: Icon(Icons.bookmark, color: primaryGold),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

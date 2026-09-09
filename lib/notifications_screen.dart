@@ -1,107 +1,111 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
+class NotificationScreen extends StatelessWidget {
+  const NotificationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final Color primaryDarkGreen = const Color(0xFF061E12);
+    final Color primaryGold = const Color(0xFFFFD700);
+    final Color cardGreen = const Color(0xFF004D40);
 
-    if (user == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF061E12),
-        body: Center(
-          child: Text(
-            'Log in to see your notification inbox.',
-            style: TextStyle(color: Colors.white70),
-          ),
-        ),
-      );
-    }
-
-    final query = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('notifications')
-        .orderBy('createdAt', descending: true);
+    // ── የኖቲፊኬሽን ዳታ (Dummy Data) ──
+    final List<Map<String, dynamic>> notifications = [
+      {
+        'title': 'New Message from Dr. Selamawit',
+        'subtitle': 'Hello, your appointment is confirmed...',
+        'time': '2 mins ago',
+        'icon': Icons.chat_bubble,
+        'color': Colors.blueAccent,
+        'isUnread': true,
+      },
+      {
+        'title': 'Event Reminder',
+        'subtitle': 'Ethiopian New Year Mega Concert is tomorrow!',
+        'time': '1 hour ago',
+        'icon': Icons.event,
+        'color': primaryGold,
+        'isUnread': true,
+      },
+      {
+        'title': 'System Update',
+        'subtitle': 'Welcome to Euro Habesha! Complete your profile.',
+        'time': '1 day ago',
+        'icon': Icons.system_update_alt,
+        'color': Colors.greenAccent,
+        'isUnread': false,
+      },
+      {
+        'title': 'Marketplace Alert',
+        'subtitle': 'Your item "iPhone 13 Pro" has a new view.',
+        'time': '2 days ago',
+        'icon': Icons.storefront,
+        'color': Colors.orangeAccent,
+        'isUnread': false,
+      },
+    ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF061E12),
+      backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        centerTitle: true,
-        title: const Text('Notifications Inbox'),
+        title: Text('Notifications', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        backgroundColor: primaryDarkGreen,
+        iconTheme: IconThemeData(color: primaryGold),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.done_all, color: Colors.white54),
+            tooltip: 'Mark all as read',
+            onPressed: () {},
+          ),
+        ],
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: query.snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          final notif = notifications[index];
+          final bool isUnread = notif['isUnread'];
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text(
-                'No notifications yet.',
-                style: TextStyle(color: Colors.white60),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: isUnread ? cardGreen.withOpacity(0.8) : cardGreen.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isUnread ? primaryGold.withOpacity(0.5) : Colors.transparent),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: CircleAvatar(
+                backgroundColor: notif['color'].withOpacity(0.2),
+                child: Icon(notif['icon'], color: notif['color'], size: 20),
               ),
-            );
-          }
-
-          final docs = snapshot.data!.docs;
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: docs.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final data = docs[index].data();
-              final title = (data['title'] as String?) ?? 'Update';
-              final body = (data['body'] as String?) ?? '';
-              final type = (data['type'] as String?) ?? 'announcement';
-
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0E2E1E),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white10),
+              title: Text(
+                notif['title'],
+                style: TextStyle(
+                  color: isUnread ? Colors.white : Colors.white70,
+                  fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 14,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.notifications_active_outlined, color: Color(0xFFF59E0B), size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            type.toUpperCase(),
-                            style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      body,
-                      style: const TextStyle(color: Colors.white70, height: 1.4),
-                    ),
-                  ],
-                ),
-              );
-            },
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(notif['subtitle'], style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              ),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(notif['time'], style: TextStyle(color: primaryGold.withOpacity(0.7), fontSize: 10)),
+                  const SizedBox(height: 5),
+                  if (isUnread)
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: primaryGold, shape: BoxShape.circle)),
+                ],
+              ),
+              onTap: () {
+                // ኖቲፊኬሽኑ ሲነካ የሚሰራው
+              },
+            ),
           );
         },
       ),

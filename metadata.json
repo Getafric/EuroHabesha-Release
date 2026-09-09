@@ -1,6 +1,0 @@
-{
-  "name": "EuroHabesha",
-  "description": "Connecter les Habesha d'Europe. Trouver. Partager. Grandir ensemble.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

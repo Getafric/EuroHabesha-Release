@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "218564066910",
+    "firebase_url": "https://eurohabesha-f3929-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "eurohabesha-f3929",
     "storage_bucket": "eurohabesha-f3929.firebasestorage.app"
   },
@@ -12,7 +13,28 @@
           "package_name": "com.euro.habesha"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "218564066910-fqgmu8tm90jk2uvun0p67j0fka4tsusc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.euro.habesha",
+            "certificate_hash": "c1e7d2164126bdcc395147f1fc92905484234179"
+          }
+        },
+        {
+          "client_id": "218564066910-qfsj4ruaf2ee9udip2qcaoqojjfr3rjv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.euro.habesha",
+            "certificate_hash": "713b9992312419ffed8028d75bfc97c94ac55c8d"
+          }
+        },
+        {
+          "client_id": "218564066910-ufqipbmm208mrm6sirk54d0ft8d9rabi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCVMaMtACft2n11LDFJuy6vtiaNh6lM4eM"
@@ -20,7 +42,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "218564066910-ufqipbmm208mrm6sirk54d0ft8d9rabi.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "218564066910-4ub764ec59qrinkg0qn9s0lif30m1g8c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.euroHabesha"
+              }
+            }
+          ]
         }
       }
     }

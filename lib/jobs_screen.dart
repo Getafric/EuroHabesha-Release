@@ -1,167 +1,349 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart'; 
 import 'cash_on_delivery_order_screen.dart';
+import 'dynamic_submission_screen.dart';
+import 'status_badge_widget.dart';
 
-class JobsScreen extends StatelessWidget {
+class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
 
   @override
+  State<JobsScreen> createState() => _JobsScreenState();
+}
+
+class _JobsScreenState extends State<JobsScreen> {
+  final Color primaryDarkGreen = const Color(0xFF061E12);
+  final Color primaryGold = const Color(0xFFFFD700);
+  final Color cardGreen = const Color(0xFF004D40);
+
+  // ── የቢዝነሶች እና የሰርቪስ አቅራቢዎች የተሟላ መረጃ ──
+  final List<Map<String, dynamic>> _starterJobs = [
+    {
+      'id': 'starter_photo',
+      'title': 'Professional Photographer & Videographer',
+      'name': 'Getafric Production',
+      'location': 'Lyon, France',
+      'rating': '4.9 (140 reviews)',
+      'phone': 'tel:+33600000000',
+      'email': 'getafric@eurohabesha.eu',
+      'website': 'https://www.eurohabesha.eu',
+      'whatsapp': 'https://wa.me/33600000000',
+      'description': 'Professional wedding, commercial, and event photography and videography services using Canon EOS 90D and DJI RS 3 Pro equipment across Europe. Capturing your best moments with high-end cinematic quality.',
+      'icon': Icons.camera_alt,
+      'gallery': [
+        'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=800&q=80',
+      ],
+      'reviews': [
+        {'user': 'Dawit M.', 'comment': 'Amazing photography work in Lyon! Very professional equipment and great quality.', 'rating': '5.0'},
+        {'user': 'Hermela T.', 'comment': 'Getafric Production covered our wedding event. Highly recommended across France!', 'rating': '4.8'},
+      ]
+    }, 
+    {
+      'id': 'starter_translator',
+      'title': 'Translator - Amharic / Tigrinya / French',
+      'name': 'Selam Translation Services',
+      'location': 'Brussels, Belgium',
+      'rating': '4.9 (62 reviews)',
+      'phone': 'tel:+3220000000',
+      'email': 'translator@eurohabesha.eu',
+      'website': 'https://www.eurohabesha.eu',
+      'whatsapp': 'https://wa.me/3220000000',
+      'description': 'Certified translation for phone calls, appointments, legal letters, and documents. Rates available per hour or per paper.',
+      'icon': Icons.translate,
+      'serviceType': 'translator',
+      'ratePerHour': '€25/hour',
+      'ratePerDocument': 'From €30/document',
+      'gallery': [],
+      'reviews': [
+        {'user': 'Mebratu K.', 'comment': 'Very clear and professional translation support.', 'rating': '5.0'},
+      ]
+    },
+    {
+      'id': 'starter_designer',
+      'title': 'Fashion / Clothes Designer',
+      'name': 'Marta Habesha Design',
+      'location': 'Frankfurt, Germany',
+      'rating': '5.0 (44 reviews)',
+      'phone': 'tel:+4915123456789',
+      'email': 'designer@eurohabesha.eu',
+      'website': 'https://www.eurohabesha.eu',
+      'whatsapp': 'https://wa.me/4915123456789',
+      'description': 'Custom Habesha Kemis, modern cultural dresses, wedding outfits, and made-to-measure clothing. Orders are paid on delivery or arrival.',
+      'icon': Icons.checkroom,
+      'serviceType': 'designer',
+      'gallery': [
+        'https://images.unsplash.com/photo-1583391733958-d15317a86976?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
+      ],
+      'reviews': [
+        {'user': 'Sara T.', 'comment': 'Beautiful custom dress and perfect fitting.', 'rating': '5.0'},
+      ]
+    },
+    {
+      'id': 'starter_catering',
+      'title': 'Catering / Injera & Wot Seller',
+      'name': 'Taitu Habesha Catering',
+      'location': 'Lyon, France',
+      'rating': '4.8 (91 reviews)',
+      'phone': 'tel:+33622334455',
+      'email': 'catering@eurohabesha.eu',
+      'website': 'https://www.eurohabesha.eu',
+      'whatsapp': 'https://wa.me/33622334455',
+      'description': 'Fresh injera, doro wot, tibs, vegan platters, and event catering. Orders are cash on delivery or pay on arrival only.',
+      'icon': Icons.restaurant_menu,
+      'serviceType': 'catering',
+      'depositPercentage': 50,
+      'menuItems': [
+        {'name': 'Injera pack', 'price': '€10'},
+        {'name': 'Doro Wot', 'price': '€18'},
+        {'name': 'Tibs Tray', 'price': '€25'},
+      ],
+      'gallery': [
+        'https://images.unsplash.com/photo-1544025162-83569c72f1a6?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+      ],
+      'reviews': [
+        {'user': 'Dawit A.', 'comment': 'Fresh injera and fast delivery.', 'rating': '4.8'},
+      ]
+    },
+  ];
+
+  Map<String, dynamic> _normalizeDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final raw = doc.data() ?? {};
+    final fields = Map<String, dynamic>.from(raw['fields'] ?? {});
+
+    final name = fields['title']?.toString().isNotEmpty == true
+        ? fields['title'].toString()
+        : raw['name']?.toString() ?? raw['title']?.toString() ?? 'Job / Service';
+
+    final title = fields['jobCategory']?.toString().isNotEmpty == true
+        ? fields['jobCategory'].toString()
+        : raw['title']?.toString() ?? 'Service';
+
+    final location = fields['cityAddress']?.toString().isNotEmpty == true
+        ? fields['cityAddress'].toString()
+        : raw['location']?.toString() ?? fields['country']?.toString() ?? 'Europe';
+
+    final phone = fields['phoneNumber']?.toString().isNotEmpty == true
+        ? fields['phoneNumber'].toString()
+        : raw['phone']?.toString() ?? '';
+
+    final email = fields['emailAddress']?.toString().isNotEmpty == true
+        ? fields['emailAddress'].toString()
+        : raw['email']?.toString() ?? raw['submitterEmail']?.toString() ?? '';
+
+    final website = fields['websiteUrl']?.toString().isNotEmpty == true
+        ? fields['websiteUrl'].toString()
+        : raw['website']?.toString() ?? '';
+
+    final whatsapp = phone.isNotEmpty ? 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}' : '';
+
+    final description = fields['description']?.toString().isNotEmpty == true
+        ? fields['description'].toString()
+        : raw['description']?.toString() ?? fields['requirements']?.toString() ?? '';
+
+    final serviceType = fields['jobCategory']?.toString().toLowerCase().contains('cater') == true
+        ? 'catering'
+        : fields['jobCategory']?.toString().toLowerCase().contains('design') == true
+            ? 'designer'
+            : fields['jobCategory']?.toString().toLowerCase().contains('translat') == true
+                ? 'translator'
+                : raw['serviceType']?.toString() ?? 'service';
+
+    final double deposit = (raw['orderingModel'] is Map && raw['orderingModel']['depositPercentage'] != null)
+        ? ((raw['orderingModel']['depositPercentage'] as num).toDouble())
+        : (raw['depositPercentage'] as num?)?.toDouble() ?? 0;
+
+    final isVerified = raw['isVerified'] == true || raw['verificationStatus'] == 'approved';
+    final subscriptionTier = raw['subscriptionTier']?.toString();
+
+    return {
+      'id': doc.id,
+      'name': name,
+      'title': title,
+      'location': location,
+      'rating': raw['rating']?.toString() ?? '5.0 (New)',
+      'isVerified': isVerified,
+      'subscriptionTier': subscriptionTier,
+      'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
+      'email': email,
+      'website': website,
+      'whatsapp': whatsapp,
+      'description': description,
+      'icon': serviceType == 'catering'
+          ? Icons.restaurant_menu
+          : serviceType == 'designer'
+              ? Icons.checkroom
+              : serviceType == 'translator'
+                  ? Icons.translate
+                  : Icons.work,
+      'serviceType': serviceType,
+      'depositPercentage': deposit,
+      'menuItems': raw['menuItems'] is List ? raw['menuItems'] : [],
+      'gallery': raw['gallery'] is List ? raw['gallery'] : [],
+      'reviews': raw['reviews'] is List ? raw['reviews'] : [],
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Color primaryDarkGreen = const Color(0xFF061E12);
-    final Color primaryGold = const Color(0xFFFFD700);
-    final Color cardGreen = const Color(0xFF004D40);
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('jobs').snapshots(),
+      builder: (context, snapshot) {
+        final List<Map<String, dynamic>> combined = [];
 
-    // ── የቢዝነሶች እና የሰርቪስ አቅራቢዎች የተሟላ መረጃ ──
-    final List<Map<String, dynamic>> jobList = [
-      {
-        'title': 'Professional Photographer & Videographer',
-        'name': 'Getafric Production',
-        'location': 'Lyon, France',
-        'rating': '4.9 (140 reviews)',
-        'phone': 'tel:+33600000000',
-        'email': 'getafric@eurohabesha.eu',
-        'website': 'https://www.eurohabesha.eu',
-        'whatsapp': 'https://wa.me/33600000000',
-        'description': 'Professional wedding, commercial, and event photography and videography services using Canon EOS 90D and DJI RS 3 Pro equipment across Europe. Capturing your best moments with high-end cinematic quality.',
-        'icon': Icons.camera_alt,
-        'gallery': [
-          'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=800&q=80',
-        ],
-        'reviews': [
-          {'user': 'Dawit M.', 'comment': 'Amazing photography work in Lyon! Very professional equipment and great quality.', 'rating': '5.0'},
-          {'user': 'Hermela T.', 'comment': 'Getafric Production covered our wedding event. Highly recommended across France!', 'rating': '4.8'},
-        ]
-      },
-      {
-        'title': 'Heavy Goods Vehicle Driver',
-        'name': 'Getu (PERRENOT FOURCHET)',
-        'location': 'Lyon, France',
-        'rating': '5.0 (85 reviews)',
-        'phone': 'tel:+33611223344',
-        'email': 'getu@eurohabesha.eu',
-        'website': 'https://www.perrenot.com',
-        'whatsapp': 'https://wa.me/33611223344',
-        'description': 'Experienced HGV heavy goods vehicle driver specializing in regional and long-distance freight logistics across France, Germany, and neighboring European routes.',
-        'icon': Icons.local_shipping,
-        'gallery': [
-          'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80',
-        ],
-        'reviews': [
-          {'user': 'Transport Manager', 'comment': 'Very reliable and punctual heavy vehicle logistics driver.', 'rating': '5.0'},
-        ]
-      },
-      {
-        'title': 'Translator - Amharic / Tigrinya / French',
-        'name': 'Selam Translation Services',
-        'location': 'Brussels, Belgium',
-        'rating': '4.9 (62 reviews)',
-        'phone': 'tel:+3220000000',
-        'email': 'translator@eurohabesha.eu',
-        'website': 'https://www.eurohabesha.eu',
-        'whatsapp': 'https://wa.me/3220000000',
-        'description': 'Certified translation for phone calls, appointments, legal letters, and documents. Rates available per hour or per paper.',
-        'icon': Icons.translate,
-        'serviceType': 'translator',
-        'ratePerHour': '€25/hour',
-        'ratePerDocument': 'From €30/document',
-        'gallery': [],
-        'reviews': [
-          {'user': 'Mebratu K.', 'comment': 'Very clear and professional translation support.', 'rating': '5.0'},
-        ]
-      },
-      {
-        'title': 'Fashion / Clothes Designer',
-        'name': 'Marta Habesha Design',
-        'location': 'Frankfurt, Germany',
-        'rating': '5.0 (44 reviews)',
-        'phone': 'tel:+4915123456789',
-        'email': 'designer@eurohabesha.eu',
-        'website': 'https://www.eurohabesha.eu',
-        'whatsapp': 'https://wa.me/4915123456789',
-        'description': 'Custom Habesha Kemis, modern cultural dresses, wedding outfits, and made-to-measure clothing. Orders are paid on delivery or arrival.',
-        'icon': Icons.checkroom,
-        'serviceType': 'designer',
-        'gallery': [
-          'https://images.unsplash.com/photo-1583391733958-d15317a86976?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
-        ],
-        'reviews': [
-          {'user': 'Sara T.', 'comment': 'Beautiful custom dress and perfect fitting.', 'rating': '5.0'},
-        ]
-      },
-      {
-        'title': 'Catering / Injera & Wot Seller',
-        'name': 'Taitu Habesha Catering',
-        'location': 'Lyon, France',
-        'rating': '4.8 (91 reviews)',
-        'phone': 'tel:+33622334455',
-        'email': 'catering@eurohabesha.eu',
-        'website': 'https://www.eurohabesha.eu',
-        'whatsapp': 'https://wa.me/33622334455',
-        'description': 'Fresh injera, doro wot, tibs, vegan platters, and event catering. Orders are cash on delivery or pay on arrival only.',
-        'icon': Icons.restaurant_menu,
-        'serviceType': 'catering',
-        'menuItems': [
-          {'name': 'Injera pack', 'price': '€10'},
-          {'name': 'Doro Wot', 'price': '€18'},
-          {'name': 'Tibs Tray', 'price': '€25'},
-        ],
-        'gallery': [
-          'https://images.unsplash.com/photo-1544025162-83569c72f1a6?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
-        ],
-        'reviews': [
-          {'user': 'Dawit A.', 'comment': 'Fresh injera and fast delivery.', 'rating': '4.8'},
-        ]
-      },
-    ];
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          for (final doc in snapshot.data!.docs) {
+            final data = doc.data();
+            final status = data['status']?.toString() ?? 'published';
+            if (status == 'published' || status == 'approved') {
+              combined.add(_normalizeDoc(doc));
+            }
+          }
+        }
 
-    return Scaffold(
-      backgroundColor: primaryDarkGreen,
-      appBar: AppBar(
-        title: Text('Jobs & Services', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryDarkGreen,
-        iconTheme: IconThemeData(color: primaryGold),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: jobList.length,
-        itemBuilder: (context, index) {
-          final job = jobList[index];
-          return Card(
-            color: cardGreen,
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: primaryGold.withOpacity(0.3), width: 1),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: Icon(job['icon'], color: primaryGold, size: 32),
-              title: Text(job['name']!, style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold, fontSize: 16)),
-              subtitle: Text(
-                '${job['title']}\n📍 ${job['location']} • ⭐ ${job['rating']}', 
-                style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+        for (final starter in _starterJobs) {
+          if (!combined.any((j) => j['id'] == starter['id'] || j['name'] == starter['name'])) {
+            combined.add(starter);
+          }
+        }
+
+        return Scaffold(
+          backgroundColor: primaryDarkGreen,
+          appBar: AppBar(
+            title: Text('Jobs & Services', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+            backgroundColor: primaryDarkGreen,
+            iconTheme: IconThemeData(color: primaryGold),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search),
+                tooltip: 'Search services',
+                onPressed: () async {
+                  final selected = await showSearch<Map<String, dynamic>?>(
+                    context: context,
+                    delegate: _ServiceSearchDelegate(combined),
+                  );
+                  if (!context.mounted || selected == null) return;
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => JobDetailScreen(jobData: selected)));
+                },
               ),
-              trailing: Icon(Icons.arrow_forward_ios, color: primaryGold, size: 14),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => JobDetailScreen(jobData: job),
+              IconButton(
+                icon: Icon(Icons.add_circle_outline, color: primaryGold),
+                tooltip: 'Post a Job or Service',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DynamicSubmissionScreen(type: SubmissionType.job)),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: combined.length,
+            itemBuilder: (context, index) {
+              final job = combined[index];
+              return Card(
+                color: cardGreen,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: primaryGold.withOpacity(0.3), width: 1),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: Icon(job['icon'] as IconData? ?? Icons.work, color: primaryGold, size: 32),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(job['name'] ?? '', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                      StatusBadgeWidget(
+                        isVerified: job['isVerified'] == true,
+                        subscriptionTier: job['subscriptionTier']?.toString(),
+                        compact: true,
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          );
-        },
-      ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '${job['title']}\n📍 ${job['location']} • ⭐ ${job['rating']}', 
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                    ),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, color: primaryGold, size: 14),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => JobDetailScreen(jobData: job),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ServiceSearchDelegate extends SearchDelegate<Map<String, dynamic>?> {
+  final List<Map<String, dynamic>> services;
+
+  _ServiceSearchDelegate(this.services);
+
+  @override
+  List<Widget>? buildActions(BuildContext context) => [
+        if (query.isNotEmpty)
+          IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+      ];
+
+  @override
+  Widget? buildLeading(BuildContext context) => IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => close(context, null),
+      );
+
+  @override
+  Widget buildResults(BuildContext context) => _buildMatches(context);
+
+  @override
+  Widget buildSuggestions(BuildContext context) => _buildMatches(context);
+
+  Widget _buildMatches(BuildContext context) {
+    final normalized = query.trim().toLowerCase();
+    final matches = services.where((service) {
+      if (normalized.isEmpty) return true;
+      final searchable = '${service['name']} ${service['title']} ${service['location']} ${service['serviceType'] ?? ''}'.toLowerCase();
+      return searchable.contains(normalized);
+    }).toList();
+
+    if (matches.isEmpty) {
+      return const Center(child: Text('No caterers or services found.'));
+    }
+
+    return ListView.builder(
+      itemCount: matches.length,
+      itemBuilder: (context, index) {
+        final service = matches[index];
+        return ListTile(
+          leading: Icon(service['icon'] as IconData, color: const Color(0xFFFFD700)),
+          title: Text(service['name'].toString()),
+          subtitle: Text('${service['title']} • ${service['location']}'),
+          onTap: () => close(context, service),
+        );
+      },
     );
   }
 }
@@ -194,6 +376,8 @@ class JobDetailScreen extends StatelessWidget {
 
     final List<dynamic> galleryImages = jobData['gallery'] ?? [];
     final List<dynamic> reviewsList = jobData['reviews'] ?? [];
+    final bool isVerified = jobData['isVerified'] == true || jobData['verificationStatus'] == 'approved';
+    final String? subTier = jobData['subscriptionTier']?.toString();
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
@@ -216,6 +400,8 @@ class JobDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(jobData['name'], style: TextStyle(color: primaryGold, fontSize: 20, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      StatusBadgeWidget(isVerified: isVerified, subscriptionTier: subTier),
                       const SizedBox(height: 4),
                       Text(jobData['title'], style: const TextStyle(color: Colors.white70, fontSize: 13)),
                     ],
@@ -420,6 +606,7 @@ class JobDetailScreen extends StatelessWidget {
                           sellerContact: jobData['phone'],
                           price: jobData['serviceType'] == 'catering' ? 'Menu price' : 'Custom quote',
                           sourceData: jobData,
+                          depositPercentage: (jobData['depositPercentage'] as num?)?.toDouble() ?? 0,
                         ),
                       ),
                     );

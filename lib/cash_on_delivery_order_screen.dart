@@ -10,6 +10,7 @@ class CashOnDeliveryOrderScreen extends StatefulWidget {
   final String sellerContact;
   final String price;
   final Map<String, dynamic> sourceData;
+  final double depositPercentage;
 
   const CashOnDeliveryOrderScreen({
     super.key,
@@ -19,6 +20,7 @@ class CashOnDeliveryOrderScreen extends StatefulWidget {
     required this.sellerContact,
     required this.price,
     required this.sourceData,
+    this.depositPercentage = 0,
   });
 
   @override
@@ -34,7 +36,9 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
   final TextEditingController _buyerPhoneController = TextEditingController();
   final TextEditingController _deliveryAddressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _totalController = TextEditingController();
   bool _isSubmitting = false;
+  bool _payDepositInApp = false;
 
   @override
   void initState() {
@@ -49,6 +53,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
     _buyerPhoneController.dispose();
     _deliveryAddressController.dispose();
     _notesController.dispose();
+    _totalController.dispose();
     super.dispose();
   }
 
@@ -69,6 +74,15 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
       return;
     }
 
+    final orderTotal = double.tryParse(_totalController.text.trim());
+    final depositAmount = orderTotal == null ? 0 : orderTotal * widget.depositPercentage / 100;
+    if (_payDepositInApp && (orderTotal == null || orderTotal <= 0 || widget.depositPercentage <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid order total before requesting the deposit payment.')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
       final orderRef = await FirebaseFirestore.instance.collection('cashOnDeliveryOrders').add({
@@ -84,8 +98,11 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
         'buyerPhone': _buyerPhoneController.text.trim(),
         'deliveryAddress': _deliveryAddressController.text.trim(),
         'notes': _notesController.text.trim(),
-        'paymentMethod': 'cashOnDelivery',
-        'status': 'placed',
+        'orderTotal': orderTotal,
+        'depositPercentage': widget.depositPercentage,
+        'depositAmount': depositAmount,
+        'paymentMethod': _payDepositInApp ? 'appDeposit' : 'cashOnDelivery',
+        'status': _payDepositInApp ? 'pendingPayment' : 'placed',
         'sourceData': widget.sourceData,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -142,6 +159,10 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
                 Text('${widget.price} • ${widget.sellerName}', style: const TextStyle(color: Colors.white70)),
                 const SizedBox(height: 10),
                 const Text('No card or online payment will be requested. You will pay directly to the seller upon receiving your item or service.', style: TextStyle(color: Colors.white, height: 1.4)),
+                if (widget.depositPercentage > 0) ...[
+                  const SizedBox(height: 10),
+                  Text('This caterer accepts a ${widget.depositPercentage.toStringAsFixed(0)}% deposit for app orders.', style: const TextStyle(color: Colors.greenAccent, height: 1.4)),
+                ],
               ],
             ),
           ),
@@ -153,6 +174,27 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
           _buildField('Delivery address or meeting place', _deliveryAddressController, maxLines: 2),
           const SizedBox(height: 12),
           _buildField('Order notes', _notesController, maxLines: 4),
+          if (widget.depositPercentage > 0) ...[
+            const SizedBox(height: 12),
+            _buildField('Order total (€) for deposit calculation', _totalController, keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+            const SizedBox(height: 8),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _totalController,
+              builder: (context, value, child) {
+                final total = double.tryParse(value.text.trim()) ?? 0;
+                final deposit = total * widget.depositPercentage / 100;
+                return Text('Deposit due: €${deposit.toStringAsFixed(2)} (${widget.depositPercentage.toStringAsFixed(0)}% of €${total.toStringAsFixed(2)})', style: const TextStyle(color: primaryGold, fontWeight: FontWeight.bold));
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Pay deposit through the app', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('The payment gateway must be enabled before funds are captured.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              value: _payDepositInApp,
+              activeColor: primaryGold,
+              onChanged: (value) => setState(() => _payDepositInApp = value),
+            ),
+          ],
           const SizedBox(height: 24),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryGold, padding: const EdgeInsets.symmetric(vertical: 15)),

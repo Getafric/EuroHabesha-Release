@@ -15,19 +15,45 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>euro_habesha</string>
+		<string>Euro Habesha</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Euro Habesha uses your location to show nearby businesses, events, and service providers.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Euro Habesha may use your location in the background to improve nearby discovery and local recommendations.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Euro Habesha uses the camera to scan event ticket QR codes and add listing photos.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Euro Habesha uses your photo library when you attach photos or short videos to posts and listings.</string>
+		<key>NSUserTrackingUsageDescription</key>
+		<string>This identifier will be used to show personalized content and relevant ads to you.</string>
+		<key>GADApplicationIdentifier</key>
+		<string>ca-app-pub-3940256099942544~1458002511</string>
+		<key>SKAdNetworkItems</key>
+		<array>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>cstr64bu8q.skadnetwork</string>
+			</dict>
+		</array>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.218564066910-mr1fkfq99av90i52n8vlnljrnj8pime3</string>
+				</array>
+			</dict>
+		</array>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
-		<string>1.0.3</string>
+		<string>$(FLUTTER_BUILD_NAME)</string>
 		<key>CFBundleSignature</key>
 		<string>????</string>
 		<key>CFBundleVersion</key>
-		<string>7</string>
+		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>UIApplicationSceneManifest</key>

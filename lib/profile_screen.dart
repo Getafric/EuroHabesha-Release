@@ -1,8 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'app_session.dart';
 import 'profile_settings_screen.dart';
+import 'events_screen.dart';
+import 'verification_screen.dart';
+import 'pro_vip_subscription_screen.dart';
+import 'status_badge_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -206,6 +212,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
             const SizedBox(height: 25),
 
+            if (!_isGuest) ...[
+              const VerificationStatusCard(),
+            ],
+
             // ── ሴቲንግ እና ዝርዝሮች ──
             Container(
               decoration: BoxDecoration(
@@ -238,6 +248,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(color: Colors.white24, height: 1),
 
                   if (!_isGuest) ...[
+                    ListTile(
+                      leading: Icon(Icons.verified_outlined, color: primaryGold),
+                      title: const Text('Request Admin Verification', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Submit business SIRET or ID for "✓ Verified" mark', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const VerificationScreen()),
+                        );
+                      },
+                    ),
+                    const Divider(color: Colors.white24, height: 1),
+                    ListTile(
+                      leading: Icon(Icons.workspace_premium, color: primaryGold),
+                      title: const Text('PRO & VIP Subscriptions', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Upgrade directory ranking via App Store / Google Play', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ProVipSubscriptionScreen()),
+                        );
+                      },
+                    ),
+                    const Divider(color: Colors.white24, height: 1),
+                    ListTile(
+                      leading: Icon(Icons.confirmation_number_outlined, color: primaryGold),
+                      title: const Text('My Tickets', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('View your purchased tickets and QR codes', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTicketsScreen())),
+                    ),
+                    const Divider(color: Colors.white24, height: 1),
                     ListTile(
                       leading: Icon(Icons.bookmark_outline, color: primaryGold),
                       title: const Text('My Saved Listings', style: TextStyle(color: Colors.white)),
@@ -460,6 +504,80 @@ class SavedListingsScreen extends StatelessWidget {
                 );
               },
             ),
+    );
+  }
+}
+
+class VerificationStatusCard extends StatelessWidget {
+  const VerificationStatusCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data();
+        if (data == null) return const SizedBox.shrink();
+
+        final isVerified = data['isVerified'] == true || data['verificationStatus'] == 'approved';
+        final subTier = data['subscriptionTier']?.toString();
+        final isSubActive = data['subscriptionActive'] == true && (subTier == 'pro' || subTier == 'vip');
+
+        if (!isVerified && !isSubActive && data['verificationStatus'] == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Card(
+          color: const Color(0xFF004D40),
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(
+                  isVerified ? Icons.check_circle : Icons.verified_outlined,
+                  color: isVerified ? const Color(0xFF00E676) : const Color(0xFFFFD700),
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            isVerified ? '✓ Verified by Admin' : 'Verification: ${data['verificationStatus'] ?? 'Not Verified'}',
+                            style: TextStyle(
+                              color: isVerified ? const Color(0xFF00E676) : const Color(0xFFFFD700),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (isSubActive) ...[
+                            const SizedBox(width: 8),
+                            StatusBadgeWidget(subscriptionTier: subTier, compact: true),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isVerified
+                            ? 'Your official business/identity proof has been confirmed.'
+                            : 'Verification request is under admin review.',
+                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

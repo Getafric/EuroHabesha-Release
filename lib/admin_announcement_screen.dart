@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'app_session.dart';
@@ -63,10 +64,19 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
     setState(() => _isPosting = true);
     try {
       final user = FirebaseAuth.instance.currentUser;
+      String? mediaUrl;
+      String? mediaStoragePath;
+      if (_mediaFile != null) {
+        mediaStoragePath = 'announcements/${user?.uid}/${DateTime.now().millisecondsSinceEpoch}_${_mediaFile!.uri.pathSegments.last}';
+        final storageRef = FirebaseStorage.instance.ref(mediaStoragePath);
+        await storageRef.putFile(_mediaFile!);
+        mediaUrl = await storageRef.getDownloadURL();
+      }
       await FirebaseFirestore.instance.collection('adminAnnouncements').add({
         'message': _messageController.text.trim(),
         'mediaType': _mediaType,
-        'mediaLocalPath': _mediaFile?.path,
+        'mediaUrl': mediaUrl,
+        'mediaStoragePath': mediaStoragePath,
         'authorId': user?.uid,
         'authorEmail': AppSession.email,
         'createdAt': FieldValue.serverTimestamp(),

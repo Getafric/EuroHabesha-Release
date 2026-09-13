@@ -11,7 +11,6 @@ class ReviewPromptService {
       return;
     }
 
-    await prefs.setBool(_promptedKey, true);
     if (!context.mounted) {
       return;
     }
@@ -37,6 +36,12 @@ class ReviewPromptService {
       return;
     }
 
-    await InAppReview.instance.openStoreListing();
+    final review = InAppReview.instance;
+    if (await review.isAvailable()) {
+      await review.requestReview();
+    } else {
+      await review.openStoreListing();
+    }
+    await prefs.setBool(_promptedKey, true);
   }
 }

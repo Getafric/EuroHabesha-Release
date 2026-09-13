@@ -14,28 +14,27 @@ import 'review_prompt_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  var firebaseReady = false;
   try {
-    print('🟡 Starting Firebase initialization...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase initialized successfully');
-  } catch (e, stackTrace) {
-    print('❌ Firebase initialization error: $e');
-    print('Stack trace: $stackTrace');
+    firebaseReady = true;
+  } catch (_) {
+    firebaseReady = false;
   }
-  
-  // Wrap entire app in error handling
+
   FlutterError.onError = (FlutterErrorDetails details) {
-    print('❌ Flutter Error: ${details.exceptionAsString()}');
-    print('Stack: ${details.stack}');
+    FlutterError.presentError(details);
   };
-  
-  runApp(const EuroHabeshaApp());
+
+  runApp(EuroHabeshaApp(firebaseReady: firebaseReady));
 }
 
 class EuroHabeshaApp extends StatelessWidget {
-  const EuroHabeshaApp({super.key});
+  final bool firebaseReady;
+
+  const EuroHabeshaApp({super.key, this.firebaseReady = true});
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +67,7 @@ class EuroHabeshaApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/admin-passcode': (context) => const AdminPasscodeScreen(),
       },
-      home: const MainNavigationScreen(),
+      home: firebaseReady ? const MainNavigationScreen() : const SafeHomeScreen(),
     );
   }
 }
@@ -144,7 +143,6 @@ class SafeHomeScreen extends StatelessWidget {
                           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
                         );
                       } catch (e) {
-                        print('Navigation error: $e');
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Navigation error: $e')),
                         );
@@ -192,7 +190,7 @@ class WelcomeAuthScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: cardGreen,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: primaryGold.withOpacity(0.4)),
+              border: Border.all(color: primaryGold.withValues(alpha: 0.4)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

@@ -41,13 +41,13 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCVMaMtACft2n11LDFJuy6vtiaNh6lM4eM',
-    appId: 'YOUR_WEB_APP_ID',
+    apiKey: 'AIzaSyBAI6oiz1qSC8znTZSFIrWjZo8y4iHq6LQ',
+    appId: '1:218564066910:web:356f1f5e2de2fb9f0f7ecf',
     messagingSenderId: '218564066910',
     projectId: 'eurohabesha-f3929',
     authDomain: 'eurohabesha-f3929.firebaseapp.com',
     storageBucket: 'eurohabesha-f3929.firebasestorage.app',
-    measurementId: 'YOUR_MEASUREMENT_ID',
+    measurementId: 'G-HCWLFZ6QQW',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -59,28 +59,29 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCVMaMtACft2n11LDFJuy6vtiaNh6lM4eM',
-    appId: 'YOUR_IOS_APP_ID',
+    apiKey: 'AIzaSyBrKsxCi6v5BIuk3Z9wsHFBWpfHtqhOMrY',
+    appId: '1:218564066910:ios:7a12341af9d7926e0f7ecf',
     messagingSenderId: '218564066910',
     projectId: 'eurohabesha-f3929',
     storageBucket: 'eurohabesha-f3929.firebasestorage.app',
-    iosBundleId: 'com.example.euroHabesha',
+    iosBundleId: 'com.getafric.eurohabesha',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCVMaMtACft2n11LDFJuy6vtiaNh6lM4eM',
-    appId: 'YOUR_MACOS_APP_ID',
+    apiKey: 'AIzaSyBrKsxCi6v5BIuk3Z9wsHFBWpfHtqhOMrY',
+    appId: '1:218564066910:ios:84f1e75a919a80010f7ecf',
     messagingSenderId: '218564066910',
     projectId: 'eurohabesha-f3929',
     storageBucket: 'eurohabesha-f3929.firebasestorage.app',
-    iosBundleId: 'com.example.euroHabesha',
+    iosBundleId: 'com.getafric.eurohabesha',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCVMaMtACft2n11LDFJuy6vtiaNh6lM4eM',
-    appId: 'YOUR_WINDOWS_APP_ID',
+    apiKey: 'AIzaSyBAI6oiz1qSC8znTZSFIrWjZo8y4iHq6LQ',
+    appId: '1:218564066910:web:99822b3fc73a53db0f7ecf',
     messagingSenderId: '218564066910',
     projectId: 'eurohabesha-f3929',
     storageBucket: 'eurohabesha-f3929.firebasestorage.app',
+    authDomain: 'eurohabesha-f3929.firebaseapp.com',
   );
 }

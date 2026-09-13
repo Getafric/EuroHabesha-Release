@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
@@ -14,11 +15,12 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
   static const Color primaryGold = Color(0xFFFFD700);
   static const Color cardGreen = Color(0xFF004D40);
   static const String superAdminEmail = 'getafricshow1@gmail.com';
-  static const String requiredPasscode = '7124';
+  static const String masterPasscode = '7124';
 
   final TextEditingController _pinController = TextEditingController();
   String? _errorText;
   bool _isLoggingOut = false;
+  bool _isVerifying = false;
 
   @override
   void dispose() {
@@ -36,34 +38,77 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  void _verifyPasscode() {
+  Future<void> _verifyPasscode() async {
     final user = FirebaseAuth.instance.currentUser;
-    final email = user?.email?.trim().toLowerCase();
+    final email = user?.email?.trim().toLowerCase() ?? '';
+    final enteredCode = _pinController.text.trim();
 
-    if (email != superAdminEmail) {
-      setState(() => _errorText = 'This security screen is only for the Super Admin account.');
+    if (enteredCode.isEmpty) {
+      setState(() => _errorText = 'Please enter your verification code.');
       return;
     }
 
-    if (_pinController.text.trim() != requiredPasscode) {
-      setState(() => _errorText = 'Incorrect security code. Try again or cancel to log out.');
+    setState(() => _isVerifying = true);
+
+    // 1. Check if Super Admin
+    if (email == superAdminEmail && enteredCode == masterPasscode) {
+      AppSession.signIn(
+        name: user?.displayName ?? 'Super Admin',
+        emailAddress: email,
+        verified: true,
+        assignedRoles: const ['superAdmin'],
+        superAdminValidated: true,
+      );
+      if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
       return;
     }
 
-    AppSession.signIn(
-      name: user?.displayName ?? 'Super Admin',
-      emailAddress: user?.email ?? superAdminEmail,
-      verified: true,
-      assignedRoles: const ['superAdmin'],
-      superAdminValidated: true,
-    );
+    // 2. Check if Scoped Admin Invitation exists in Firestore
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('adminInvites')
+          .where('email', isEqualTo: email)
+          .where('accessCode', isEqualTo: enteredCode)
+          .where('status', isEqualTo: 'active')
+          .limit(1)
+          .get();
 
-    Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
+      if (query.docs.isNotEmpty) {
+        final inviteData = query.docs.first.data();
+        final role = inviteData['role']?.toString() ?? 'Editor';
+        final scope = inviteData['scope']?.toString() ?? 'General';
+        final permissions = List<String>.from(inviteData['permissions'] ?? []);
+
+        AppSession.signIn(
+          name: user?.displayName ?? email,
+          emailAddress: email,
+          verified: true,
+          assignedRoles: [role, 'scoped:$scope', ...permissions],
+          superAdminValidated: false, // Scoped admin, NOT super admin
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Welcome, $role for $scope!'),
+            backgroundColor: cardGreen,
+          ));
+          Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
+        }
+        return;
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _isVerifying = false;
+        _errorText = 'Incorrect verification code or no active admin assignment for this email.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userEmail = FirebaseAuth.instance.currentUser?.email ?? superAdminEmail;
+    final userEmail = FirebaseAuth.instance.currentUser?.email ?? 'Admin';
 
     return PopScope(
       canPop: false,
@@ -86,7 +131,7 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                     const Icon(Icons.admin_panel_settings, color: primaryGold, size: 58),
                     const SizedBox(height: 14),
                     const Text(
-                      'Super Admin Verification',
+                      'Admin Access Verification',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: primaryGold, fontSize: 22, fontWeight: FontWeight.bold),
                     ),
@@ -99,14 +144,14 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                     const SizedBox(height: 22),
                     TextField(
                       controller: _pinController,
-                      maxLength: 4,
+                      maxLength: 6,
                       obscureText: true,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 10, fontWeight: FontWeight.bold),
                       decoration: InputDecoration(
                         counterText: '',
-                        labelText: '4-digit security code',
+                        labelText: 'Verification / Access Code',
                         labelStyle: const TextStyle(color: Colors.white54),
                         errorText: _errorText,
                         filled: true,
@@ -121,8 +166,10 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: primaryGold, padding: const EdgeInsets.symmetric(vertical: 14)),
-                        onPressed: _verifyPasscode,
-                        child: const Text('Verify & Continue', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
+                        onPressed: _isVerifying ? null : _verifyPasscode,
+                        child: _isVerifying
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Color(0xFF061E12), strokeWidth: 2))
+                            : const Text('Verify & Enter Admin', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(height: 10),

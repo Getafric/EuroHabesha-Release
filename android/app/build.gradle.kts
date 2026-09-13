@@ -35,6 +35,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            // Google Play Store Obfuscation and Shrinking (ማስተካከያው እዚህ ላይ ተደርጓል)
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }

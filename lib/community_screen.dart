@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart'; // 🗺️ ማፕ ለመክፈት
 import 'subscription_service.dart';
+import 'dynamic_submission_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -168,183 +170,256 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: primaryDarkGreen,
-      appBar: AppBar(
-        title: Text('Habesha Communities & Churches', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryDarkGreen,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: primaryGold),
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search community, city, address...',
-                hintStyle: const TextStyle(color: Colors.white54),
-                prefixIcon: Icon(Icons.search, color: primaryGold),
-                suffixIcon: _searchQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white54),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      ),
-                filled: true,
-                fillColor: cardGreen,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-              ),
-              onChanged: (value) => setState(() => _searchQuery = value),
-            ),
-          ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: ['Orthodox', 'Protestant', 'Muslim', 'Catholic', 'Eritrean'].map((religion) {
-                final selected = _selectedReligion == religion;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(religion),
-                    selected: selected,
-                    backgroundColor: cardGreen,
-                    selectedColor: primaryGold,
-                    checkmarkColor: primaryDarkGreen,
-                    labelStyle: TextStyle(color: selected ? primaryDarkGreen : Colors.white, fontWeight: FontWeight.bold),
-                    side: BorderSide(color: selected ? primaryGold : Colors.white24),
-                    onSelected: (value) {
-                      setState(() {
-                        _selectedReligion = value ? religion : null;
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          Expanded(
-            child: _filteredCommunities.isEmpty
-                ? const Center(child: Text('No communities found.', style: TextStyle(color: Colors.white54)))
-                : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _filteredCommunities.length,
-        itemBuilder: (context, index) {
-          final comm = _filteredCommunities[index];
-          final List posts = comm['posts'] ?? [];
-          final String name = comm['name'] ?? '';
-          final String type = comm['type'] ?? '';
-          final String location = comm['location'] ?? '';
-          final String adminName = comm['adminName'] ?? '';
-          final int followersCount = comm['followersCount'] ?? 0;
-          final String imageUrl = comm['image'] ?? '';
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('communities').snapshots(),
+      builder: (context, snapshot) {
+        final List<Map<String, dynamic>> combined = [];
 
-          return GestureDetector(
-            onTap: () => _openCommunityDetail(comm),
-            child: Card(
-              color: cardGreen,
-              margin: const EdgeInsets.only(bottom: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(30),
-                          child: imageUrl.isNotEmpty
-                              ? Image.network(
-                                  imageUrl,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (c, e, s) => CircleAvatar(
-                                    backgroundColor: primaryGold.withOpacity(0.2),
-                                    child: Icon(Icons.church, color: primaryGold),
-                                  ),
-                                )
-                              : CircleAvatar(
-                                  backgroundColor: primaryGold.withOpacity(0.2),
-                                  child: Icon(Icons.church, color: primaryGold),
-                                ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(name, style: TextStyle(color: primaryGold, fontSize: 15, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 2),
-                              Text('$type • $location', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                              Text('Admin: $adminName • $followersCount Followers', style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                            ],
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          for (final doc in snapshot.data!.docs) {
+            final data = doc.data();
+            final status = data['status']?.toString() ?? 'published';
+            if (status == 'published' || status == 'approved') {
+              final fields = Map<String, dynamic>.from(data['fields'] ?? {});
+              final name = fields['title']?.toString() ?? data['name']?.toString() ?? data['title']?.toString() ?? 'Community';
+              final type = fields['communityType']?.toString() ?? data['type']?.toString() ?? 'Community Group';
+              final location = fields['cityAddress']?.toString() ?? data['location']?.toString() ?? fields['country']?.toString() ?? 'Europe';
+              final address = fields['address']?.toString() ?? data['address']?.toString() ?? location;
+              final phone = fields['phoneNumber']?.toString() ?? data['phone']?.toString() ?? '';
+              final email = fields['emailAddress']?.toString() ?? data['email']?.toString() ?? data['submitterEmail']?.toString() ?? '';
+              final image = data['imageUrl']?.toString() ?? data['image']?.toString() ?? '';
+
+              combined.add({
+                'id': doc.id,
+                'name': name,
+                'type': type,
+                'location': location,
+                'address': address,
+                'phone': phone,
+                'email': email,
+                'image': image,
+                'adminName': fields['leaderName'] ?? data['adminName'] ?? 'Community Admin',
+                'isFollowing': false,
+                'followersCount': 100,
+                'posts': data['posts'] is List ? data['posts'] : [],
+              });
+            }
+          }
+        }
+
+        for (final starter in communities) {
+          if (!combined.any((c) => c['name'] == starter['name'])) {
+            combined.add(starter);
+          }
+        }
+
+        final query = _searchQuery.trim().toLowerCase();
+        final filtered = combined.where((community) {
+          final type = (community['type'] ?? '').toString().toLowerCase();
+          final searchableText = [
+            community['name'],
+            community['type'],
+            community['location'],
+            community['address'],
+            community['adminName'],
+          ].whereType<String>().join(' ').toLowerCase();
+
+          final matchesSearch = query.isEmpty || searchableText.contains(query);
+          final matchesReligion = _selectedReligion == null || type.contains(_selectedReligion!.toLowerCase());
+          return matchesSearch && matchesReligion;
+        }).toList();
+
+        return Scaffold(
+          backgroundColor: primaryDarkGreen,
+          appBar: AppBar(
+            title: Text('Habesha Communities & Churches', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+            backgroundColor: primaryDarkGreen,
+            centerTitle: true,
+            iconTheme: IconThemeData(color: primaryGold),
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: Icon(Icons.add_circle_outline, color: primaryGold),
+                tooltip: 'Register Community',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DynamicSubmissionScreen(type: SubmissionType.community)),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search community, city, address...',
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    prefixIcon: Icon(Icons.search, color: primaryGold),
+                    suffixIcon: _searchQuery.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white54),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
                           ),
-                        ),
-                        const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
-                      ],
-                    ),
-                    const Divider(color: Colors.white24, height: 20),
-                    Text('Latest Announcements:', style: TextStyle(color: primaryGold, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    ...List.generate(posts.length > 1 ? 1 : posts.length, (pIndex) {
-                      final post = posts[pIndex];
-                      return Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: primaryDarkGreen,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(post['author'] ?? '', style: TextStyle(color: primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
-                                Text(post['time'] ?? '', style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(post['text'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
-                          ],
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Tap for full details & map ➔', style: TextStyle(color: primaryGold.withOpacity(0.8), fontSize: 11, fontStyle: FontStyle.italic)),
-                        IconButton(
-                          icon: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(color: primaryGold, shape: BoxShape.circle),
-                            child: Icon(Icons.add, color: primaryDarkGreen, size: 16),
-                          ),
-                          tooltip: 'Page Admin Post',
-                          onPressed: () => _showAddPostDialog(context, index),
-                        ),
-                      ],
-                    ),
-                  ],
+                    filled: true,
+                    fillColor: cardGreen,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
                 ),
               ),
-            ),
-          );
-        },
-      ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: ['Orthodox', 'Protestant', 'Muslim', 'Catholic', 'Eritrean'].map((religion) {
+                    final selected = _selectedReligion == religion;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(religion),
+                        selected: selected,
+                        backgroundColor: cardGreen,
+                        selectedColor: primaryGold,
+                        checkmarkColor: primaryDarkGreen,
+                        labelStyle: TextStyle(color: selected ? primaryDarkGreen : Colors.white, fontWeight: FontWeight.bold),
+                        side: BorderSide(color: selected ? primaryGold : Colors.white24),
+                        onSelected: (value) {
+                          setState(() {
+                            _selectedReligion = value ? religion : null;
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              Expanded(
+                child: filtered.isEmpty
+                    ? const Center(child: Text('No communities found.', style: TextStyle(color: Colors.white54)))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final comm = filtered[index];
+                          final List posts = comm['posts'] ?? [];
+                          final String name = comm['name'] ?? '';
+                          final String type = comm['type'] ?? '';
+                          final String location = comm['location'] ?? '';
+                          final String adminName = comm['adminName'] ?? '';
+                          final int followersCount = comm['followersCount'] ?? 0;
+                          final String imageUrl = comm['image'] ?? '';
+
+                          return GestureDetector(
+                            onTap: () => _openCommunityDetail(comm),
+                            child: Card(
+                              color: cardGreen,
+                              margin: const EdgeInsets.only(bottom: 20),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(30),
+                                          child: imageUrl.isNotEmpty
+                                              ? Image.network(
+                                                  imageUrl,
+                                                  width: 60,
+                                                  height: 60,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (c, e, s) => CircleAvatar(
+                                                    backgroundColor: primaryGold.withOpacity(0.2),
+                                                    child: Icon(Icons.church, color: primaryGold),
+                                                  ),
+                                                )
+                                              : CircleAvatar(
+                                                  backgroundColor: primaryGold.withOpacity(0.2),
+                                                  child: Icon(Icons.church, color: primaryGold),
+                                                ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(name, style: TextStyle(color: primaryGold, fontSize: 15, fontWeight: FontWeight.bold)),
+                                              const SizedBox(height: 2),
+                                              Text('$type • $location', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                                              Text('Admin: $adminName • $followersCount Followers', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
+                                      ],
+                                    ),
+                                    const Divider(color: Colors.white24, height: 20),
+                                    Text('Latest Announcements:', style: TextStyle(color: primaryGold, fontSize: 12, fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 6),
+                                    ...List.generate(posts.length > 1 ? 1 : posts.length, (pIndex) {
+                                      final post = posts[pIndex];
+                                      return Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: primaryDarkGreen,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(post['author'] ?? '', style: TextStyle(color: primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                Text(post['time'] ?? '', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(post['text'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Tap for full details & map ➔', style: TextStyle(color: primaryGold.withOpacity(0.8), fontSize: 11, fontStyle: FontStyle.italic)),
+                                        IconButton(
+                                          icon: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(color: primaryGold, shape: BoxShape.circle),
+                                            child: Icon(Icons.add, color: primaryDarkGreen, size: 16),
+                                          ),
+                                          tooltip: 'Page Admin Post',
+                                          onPressed: () => _showAddPostDialog(context, index),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'app_session.dart';
+import 'admin_banner_screen.dart';
+import 'admin_universal_content_manager_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -63,8 +66,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _inviteEmailController = TextEditingController();
   final TextEditingController _inviteScopeController = TextEditingController();
-  String selectedInviteRole = 'Editor';
-  final List<String> inviteRoles = ['Editor', 'Poster', 'Moderator', 'Helper', 'Event Admin', 'Community Admin'];
+  String selectedInviteRole = 'Community Admin';
+  final List<String> inviteRoles = ['Community Admin', 'Event Admin', 'Business / Commerce Admin', 'Restaurant Admin', 'Jobs & Services Admin', 'Professionals Admin', 'Moderator', 'Editor', 'Helper'];
+
+  String selectedInviteScope = 'Orthodox Community';
+  final List<String> availableScopes = [
+    'All Communities',
+    'Orthodox Community',
+    'Muslim Community',
+    'Protestant Community',
+    'Catholic Community',
+    'Eritrean Community',
+    'Events & Entertainment',
+    'Businesses & Commerce',
+    'Restaurants & Food',
+    'Jobs & Employment',
+    'Professionals & Specialists',
+    'Services & Transport',
+  ];
+
+  final TextEditingController _accessCodeController = TextEditingController(text: '7124');
 
   final List<Map<String, String>> pendingBusinesses = [
     {'title': 'Lalibela Restaurant Lyon', 'city': 'Lyon, France', 'user': 'Dawit M.'},
@@ -79,7 +100,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     selectedCountry = countryPhoneCodes.keys.first;
     phonePrefix = countryPhoneCodes[selectedCountry]!;
     _phoneController.text = '$phonePrefix ';
@@ -106,6 +127,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
     _descController.dispose();
     _inviteEmailController.dispose();
     _inviteScopeController.dispose();
+    _accessCodeController.dispose();
     super.dispose();
   }
 
@@ -121,45 +143,129 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
       return;
     }
 
+    final accessCode = _accessCodeController.text.trim();
+    if (accessCode.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Verification code must be at least 4 digits.')));
+      return;
+    }
+
     await FirebaseFirestore.instance.collection('adminInvites').add({
       'email': email,
       'role': selectedInviteRole,
-      'scope': _inviteScopeController.text.trim(),
-      'status': 'pending',
+      'scope': selectedInviteScope,
+      'accessCode': accessCode,
+      'status': 'active',
       'invitedBy': AppSession.email,
       'createdAt': FieldValue.serverTimestamp(),
       'permissions': _permissionsForRole(selectedInviteRole),
     });
 
     _inviteEmailController.clear();
-    _inviteScopeController.clear();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$selectedInviteRole invite saved.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('$selectedInviteRole ($selectedInviteScope) created! Verification Code: $accessCode'),
+        backgroundColor: cardGreen,
+        duration: const Duration(seconds: 4),
+      ));
     }
   }
 
   List<String> _permissionsForRole(String role) {
     return switch (role) {
-      'Editor' => ['review_submissions', 'edit_content'],
-      'Poster' => ['create_posts'],
-      'Moderator' => ['review_comments', 'hide_content'],
-      'Helper' => ['view_dashboard', 'respond_support'],
-      'Event Admin' => ['manage_scoped_event', 'scan_tickets'],
       'Community Admin' => ['manage_scoped_community', 'post_scoped_updates'],
+      'Event Admin' => ['manage_scoped_event', 'scan_tickets'],
+      'Business / Commerce Admin' => ['manage_scoped_business', 'review_business'],
+      'Restaurant Admin' => ['manage_scoped_restaurant', 'review_restaurant'],
+      'Jobs & Services Admin' => ['manage_scoped_jobs', 'review_jobs'],
+      'Professionals Admin' => ['manage_scoped_pros', 'review_pros'],
+      'Moderator' => ['review_comments', 'hide_content'],
+      'Editor' => ['review_submissions', 'edit_content'],
+      'Helper' => ['view_dashboard', 'respond_support'],
       _ => ['view_dashboard'],
     };
   }
 
-  void _submitAdminListing() {
+  Future<void> _submitAdminListing() async {
     if (_titleController.text.isEmpty || _cityController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in required fields!')),
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$selectedCategory published successfully with logo!'), backgroundColor: cardGreen),
-    );
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      String? logoUrl;
+      if (_businessLogo != null) {
+        final path = 'listings/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${_businessLogo!.path.split(Platform.pathSeparator).last}';
+        final ref = FirebaseStorage.instance.ref(path);
+        await ref.putFile(_businessLogo!);
+        logoUrl = await ref.getDownloadURL();
+      }
+      final collection = switch (selectedCategory) {
+        'Job Listing' => 'jobs',
+        'Community Event' => 'events',
+        _ => 'businesses',
+      };
+      
+      final title = _titleController.text.trim();
+      final city = _cityController.text.trim();
+      final phone = _phoneController.text.trim();
+      final email = _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : user.email ?? '';
+      final website = _websiteController.text.trim();
+      final mapLink = _mapLinkController.text.trim();
+      final description = _descController.text.trim();
+
+      final newDoc = await FirebaseFirestore.instance.collection(collection).add({
+        'title': title,
+        'name': title,
+        'location': city,
+        'address': city,
+        'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
+        'email': email,
+        'website': website,
+        'whatsapp': phone.isNotEmpty ? 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}' : '',
+        'mapLink': mapLink,
+        'description': description,
+        'logoUrl': logoUrl,
+        'gallery': logoUrl != null ? [logoUrl] : [],
+        'category': selectedCategory,
+        'businessCategory': selectedCategory,
+        'badge': 'Premium',
+        'registration': 'SIRET: Verified Business',
+        'openingHours': 'Mon - Sun: Open',
+        'status': 'published',
+        'isDemo': false,
+        'ownerId': user.uid,
+        'rating': '5.0 (New)',
+        'reviewCount': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+        'publishedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Also publish to publicFeed so it is immediately visible everywhere
+      await FirebaseFirestore.instance.collection('publicFeed').doc('${collection}_${newDoc.id}').set({
+        'sourceCollection': collection,
+        'sourceId': newDoc.id,
+        'status': 'published',
+        'category': collection == 'businesses' ? 'business' : collection == 'jobs' ? 'job' : 'event',
+        'title': title,
+        'subtitle': city,
+        'description': description,
+        'phone': phone,
+        'submitterEmail': email,
+        'verificationBadge': {'title': 'Premium', 'price': 'Verified'},
+        'isDemo': false,
+        'rating': 5.0,
+        'reviewCount': 0,
+        'publishedAt': FieldValue.serverTimestamp(),
+        'approvedBy': user.uid,
+      });
+
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$selectedCategory published successfully to Directory and Feed!'), backgroundColor: cardGreen));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Listing publish failed: $error')));
+    }
     _titleController.clear();
     _cityController.clear();
     _phoneController.clear();
@@ -187,10 +293,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           unselectedLabelColor: Colors.white60,
           indicatorColor: primaryGold,
           tabs: const [
-            Tab(text: 'Businesses & Market'),
+            Tab(text: 'Submissions Review'),
             Tab(text: 'Verifications & Docs'),
-            Tab(text: 'Community Events'),
-            Tab(text: 'Direct Admin Post'),
+            Tab(text: 'Events & Community Submissions'),
+            Tab(text: 'Quick Post'),
+            Tab(text: 'All Categories Manager'),
+            Tab(text: 'Sponsored Banners'),
             Tab(text: 'Invite Admin'),
           ],
         ),
@@ -210,6 +318,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
             _ReviewCollection('Community Submissions', 'communitySubmissions'),
           ]),
           _buildAdminPostForm(),
+          const AdminUniversalContentManagerScreen(),
+          const AdminBannerScreen(),
           _buildInviteAdminForm(),
         ],
       ),
@@ -477,13 +587,39 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
     };
 
     if (categoryCollection != null) {
+      final String phone = fields['phoneNumber']?.toString() ?? '';
+      final String location = fields['cityAddress']?.toString() ?? fields['country']?.toString() ?? 'Europe';
+      final String address = fields['address']?.toString() ?? location;
+      final String email = fields['emailAddress']?.toString() ?? fields['email']?.toString() ?? data['submitterEmail']?.toString() ?? '';
+      final String website = fields['websiteUrl']?.toString() ?? fields['website']?.toString() ?? '';
+      final String whatsapp = phone.isNotEmpty ? 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}' : '';
+      final String description = fields['description']?.toString() ?? fields['requirements']?.toString() ?? '';
+      final String businessCategory = fields['businessCategory']?.toString() ?? fields['jobCategory']?.toString() ?? category;
+
       await FirebaseFirestore.instance.collection(categoryCollection).doc(doc.id).set({
         ...data,
+        ...fields,
+        'id': doc.id,
+        'name': title,
+        'title': title,
+        'location': location,
+        'address': address,
+        'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
+        'email': email,
+        'website': website,
+        'whatsapp': whatsapp,
+        'description': description,
+        'businessCategory': businessCategory,
+        'category': businessCategory,
+        'registration': fields['registration']?.toString() ?? fields['siret']?.toString() ?? 'SIRET: Registered Business',
+        'openingHours': fields['openingHours']?.toString() ?? 'Mon - Sun: Open',
+        'badge': badge['title']?.toString() ?? (verificationMode ? data['tierTitle']?.toString() : 'Verified'),
+        'gallery': data['gallery'] ?? [],
+        'rating': '5.0 (New)',
+        'reviewCount': 0,
         'status': 'published',
         'sourceCollection': sourceCollection,
         'sourceId': doc.id,
-        'title': title,
-        'category': category,
         'publishedAt': FieldValue.serverTimestamp(),
         'approvedBy': FirebaseAuth.instance.currentUser?.uid,
       }, SetOptions(merge: true));
@@ -526,13 +662,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Invite Admin', style: TextStyle(color: primaryGold, fontSize: 18, fontWeight: FontWeight.bold)),
+          Text('Invite Scoped Admin', style: TextStyle(color: primaryGold, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          const Text('Assign a role and optional scope. Example scope: church_orthodox_lyon or event_2026_paris.', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+          const Text('Assign a scoped role and category. The admin will only have access to manage their assigned category or community with their unique Verification Code.', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
           const SizedBox(height: 16),
-          _buildField('User Email *', 'newadmin@example.com', _inviteEmailController, keyboardType: TextInputType.emailAddress),
+          _buildField('User Email *', 'admin@eurohabesha.eu', _inviteEmailController, keyboardType: TextInputType.emailAddress),
           const SizedBox(height: 15),
-          Text('Role', style: TextStyle(color: primaryGold, fontWeight: FontWeight.w600, fontSize: 13)),
+          Text('Assigned Role', style: TextStyle(color: primaryGold, fontWeight: FontWeight.w600, fontSize: 13)),
           const SizedBox(height: 5),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -549,13 +685,30 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
             ),
           ),
           const SizedBox(height: 15),
-          _buildField('Scope ID', 'optional community/event/business ID', _inviteScopeController),
+          Text('Select Scope / Category *', style: TextStyle(color: primaryGold, fontWeight: FontWeight.w600, fontSize: 13)),
+          const SizedBox(height: 5),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(color: cardGreen, borderRadius: BorderRadius.circular(10)),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedInviteScope,
+                dropdownColor: cardGreen,
+                style: const TextStyle(color: Colors.white),
+                isExpanded: true,
+                items: availableScopes.map((scope) => DropdownMenuItem<String>(value: scope, child: Text(scope))).toList(),
+                onChanged: (value) => setState(() => selectedInviteScope = value!),
+              ),
+            ),
+          ),
+          const SizedBox(height: 15),
+          _buildField('Verification / Access Code (4+ digits) *', 'e.g., 7124', _accessCodeController, keyboardType: TextInputType.number),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(backgroundColor: primaryGold, minimumSize: const Size(double.infinity, 50)),
             onPressed: _sendAdminInvite,
             icon: Icon(Icons.person_add_alt_1, color: primaryDarkGreen),
-            label: Text('Save Admin Invite', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
+            label: Text('Save & Issue Scoped Admin Code', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

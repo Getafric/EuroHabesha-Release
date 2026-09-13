@@ -14,7 +14,7 @@ class DynamicSubmissionScreen extends StatefulWidget {
   State<DynamicSubmissionScreen> createState() => _DynamicSubmissionScreenState();
 }
 
-enum SubmissionType { business, event, community, job, verification }
+enum SubmissionType { business, professional, event, community, job, verification, marketplace }
 
 class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   static const Color primaryDarkGreen = Color(0xFF061E12);
@@ -29,42 +29,16 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   bool _kidsAllowed = false;
   bool _whatsappEnabled = true;
   bool _showExactAddress = false;
+  bool _nonRefundable = false;
+  bool _nonTransferable = false;
   String _selectedCountry = 'France';
   String _selectedJobCategory = 'Cleaning';
   String _translatorServiceType = 'In-person';
-  String? _selectedVerificationTier;
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _portfolioPhotos = [];
   final List<XFile> _workPhotos = [];
   final List<XFile> _cateringPhotos = [];
   final List<_MenuItemInput> _menuItems = [];
-
-  final List<_EmbeddedBadgeTier> _badgeTiers = const [
-    _EmbeddedBadgeTier(
-      productId: 'silver_badge_yearly',
-      title: 'Silver Badge',
-      price: '€5 / year',
-      description: 'Personal trust badge',
-      icon: Icons.verified,
-      color: Color(0xFFC0C0C0),
-    ),
-    _EmbeddedBadgeTier(
-      productId: 'pro_badge_yearly',
-      title: 'Pro Badge',
-      price: '€10 / year',
-      description: 'For businesses and professionals',
-      icon: Icons.workspace_premium,
-      color: Color(0xFF64B5F6),
-    ),
-    _EmbeddedBadgeTier(
-      productId: 'vip_badge_yearly',
-      title: 'VIP Badge',
-      price: '€15 / year',
-      description: 'Highest visibility tier',
-      icon: Icons.diamond,
-      color: Color(0xFFFFD700),
-    ),
-  ];
 
   final Map<String, String> _countryDialCodes = const {
     'France': '+33',
@@ -137,21 +111,25 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
 
   String get _title {
     return switch (widget.type) {
-      SubmissionType.business => 'Register a Business',
+      SubmissionType.business => 'Register a Business / Restaurant',
+      SubmissionType.professional => 'Register as a Professional',
       SubmissionType.event => 'Submit an Event',
       SubmissionType.community => 'Register a Community',
       SubmissionType.job => 'Submit a Job or Service',
       SubmissionType.verification => 'Request Verification',
+      SubmissionType.marketplace => 'Post Marketplace Item',
     };
   }
 
   String get _collectionName {
     return switch (widget.type) {
       SubmissionType.business => 'businessSubmissions',
+      SubmissionType.professional => 'jobSubmissions',
       SubmissionType.event => 'eventSubmissions',
       SubmissionType.community => 'communitySubmissions',
       SubmissionType.job => 'jobSubmissions',
       SubmissionType.verification => 'verificationRequests',
+      SubmissionType.marketplace => 'marketplaceSubmissions',
     };
   }
 
@@ -174,25 +152,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       return;
     }
 
-    if (widget.type == SubmissionType.verification && _selectedVerificationTier == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Silver, Pro, or VIP before continuing.')),
-      );
-      return;
-    }
-
     setState(() => _isSubmitting = true);
     try {
-      if (_selectedVerificationTier != null) {
-        final iapStarted = await _startSelectedBadgePurchase();
-        if (!iapStarted) {
-          return;
-        }
-      }
-
       final data = <String, dynamic>{
         'type': widget.type.name,
         'status': 'pendingApproval',
+        'isVerified': false,
         'submittedBy': user.uid,
         'ownerId': user.uid,
         'creatorId': user.uid,
@@ -202,13 +167,11 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           ..._controllers.map((key, controller) => MapEntry(key, controller.text.trim())),
           'country': _selectedCountry,
           'showExactAddress': _showExactAddress,
-          if (_selectedVerificationTier != null) 'verificationBadgeProductId': _selectedVerificationTier,
           if (widget.type == SubmissionType.job) ...{
             'jobCategory': _selectedJobCategory,
             'translatorServiceType': _translatorServiceType,
           },
         },
-        if (_selectedVerificationTier != null) 'verificationBadge': _selectedBadgeTierMap(),
       };
 
       if (widget.type == SubmissionType.business) {
@@ -232,8 +195,9 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         };
         data['menuItems'] = _menuItems.map((item) => item.toMap()).toList();
         data['orderingModel'] = {
-          'cashOnDeliveryOnly': _selectedJobCategory == 'Catering / Food Seller (Injera & Wot)' || _selectedJobCategory == 'Fashion/Clothes Designer',
-          'paymentMethod': 'cashOnDelivery',
+          'cashOnDeliveryOnly': _selectedJobCategory == 'Fashion/Clothes Designer',
+          'depositPercentage': double.tryParse(_controller('depositPercentage').text.trim()) ?? 0,
+          'paymentMethods': ['cashOnDelivery', 'appDeposit'],
         };
       }
 
@@ -241,6 +205,8 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         data['eventDetails'] = {
           'kidsAllowed': _kidsAllowed,
           'shishaAvailable': _shishaAvailable,
+          'nonRefundable': _nonRefundable,
+          'nonTransferable': _nonTransferable,
           'visualBadges': ['performer', 'endTime', 'ageRestriction', if (_shishaAvailable) 'shisha'],
         };
       }
@@ -262,51 +228,6 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         setState(() => _isSubmitting = false);
       }
     }
-  }
-
-  Future<bool> _startSelectedBadgePurchase() async {
-    final productId = _selectedVerificationTier;
-    if (productId == null) {
-      return true;
-    }
-
-    final available = await _inAppPurchase.isAvailable();
-    if (!available) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Store billing is not available on this device yet.')),
-        );
-      }
-      return false;
-    }
-
-    final response = await _inAppPurchase.queryProductDetails({productId});
-    if (response.productDetails.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selected badge product is not configured in Google Play / App Store yet.')),
-        );
-      }
-      return false;
-    }
-
-    return _inAppPurchase.buyNonConsumable(
-      purchaseParam: PurchaseParam(productDetails: response.productDetails.first),
-    );
-  }
-
-  Map<String, String>? _selectedBadgeTierMap() {
-    final productId = _selectedVerificationTier;
-    if (productId == null) {
-      return null;
-    }
-    final tier = _badgeTiers.firstWhere((item) => item.productId == productId);
-    return {
-      'productId': tier.productId,
-      'title': tier.title,
-      'price': tier.price,
-      'status': 'iapStarted',
-    };
   }
 
   void _showSignInRequired(String message) {
@@ -348,13 +269,11 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
             _buildCommonFields(),
             const SizedBox(height: 12),
             ..._buildTypeFields(),
-            const SizedBox(height: 16),
-            _buildEmbeddedVerificationTiers(),
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: primaryGold, padding: const EdgeInsets.symmetric(vertical: 15)),
               onPressed: _isSubmitting ? null : _submit,
-              child: Text(_isSubmitting ? 'Submitting...' : 'Submit for Approval', style: const TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
+              child: Text(_isSubmitting ? 'Submitting...' : 'Submit for Admin Approval', style: const TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -390,6 +309,8 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           _buildField('ageRestriction', 'Age restriction, e.g. 18+ only'),
           _buildSwitch('Kids allowed', _kidsAllowed, (value) => setState(() => _kidsAllowed = value)),
           _buildSwitch('Shisha available', _shishaAvailable, (value) => setState(() => _shishaAvailable = value)),
+          _buildSwitch('Tickets are non-refundable', _nonRefundable, (value) => setState(() => _nonRefundable = value)),
+          _buildSwitch('Tickets are non-transferable', _nonTransferable, (value) => setState(() => _nonTransferable = value)),
           _buildField('amenities', 'Amenities, e.g. parking, VIP, food', maxLines: 3),
         ],
       SubmissionType.community => [
@@ -412,6 +333,22 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           const SizedBox(height: 12),
           _buildField('requirements', 'Requirements / service details', maxLines: 3),
         ],
+      SubmissionType.professional => [
+          _buildField('professionTitle', 'Professional Title (Doctor, Lawyer, Translator, Caterer, etc.) *'),
+          const SizedBox(height: 12),
+          _buildField('registrationNumber', 'SIRET / Professional License / Registration ID'),
+          const SizedBox(height: 12),
+          _buildField('servicesOffered', 'Services Offered (list services, one per line) *', maxLines: 3),
+          const SizedBox(height: 12),
+          _buildField('pricingDetails', 'Pricing & Rates (e.g. €25/hour, from €30/doc, menu prices) *', maxLines: 3),
+          const SizedBox(height: 12),
+          _buildField('qualifications', 'Qualifications, Diplomas & Experience', maxLines: 3),
+          const SizedBox(height: 12),
+          _buildField('websiteUrl', 'Website, LinkedIn or Portfolio URL (optional)'),
+          const SizedBox(height: 12),
+          _buildSwitch('Allow WhatsApp contact using this phone number', _whatsappEnabled, (value) => setState(() => _whatsappEnabled = value)),
+          _buildSwitch('Show exact address publicly', _showExactAddress, (value) => setState(() => _showExactAddress = value)),
+        ],
       SubmissionType.business => [
           _buildField('businessCategory', 'Business category'),
           const SizedBox(height: 12),
@@ -427,6 +364,13 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           _buildField('documentSummary', 'Document or proof summary', maxLines: 3),
           const SizedBox(height: 12),
           _buildField('publicProfileLink', 'Website or profile link'),
+        ],
+      SubmissionType.marketplace => [
+          _buildField('itemCategory', 'Category (Vehicles, Electronics, Clothing, Habesha, etc.) *'),
+          const SizedBox(height: 12),
+          _buildField('price', 'Price (€) *'),
+          const SizedBox(height: 12),
+          _buildField('condition', 'Item Condition (New, Used - Like New, Used - Good) *'),
         ],
     };
   }
@@ -519,7 +463,9 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         const SizedBox(height: 12),
         _buildMenuBuilder(),
         const SizedBox(height: 12),
-        const Text('Food orders are cash on delivery / pay on arrival only.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        _buildField('depositPercentage', 'Deposit percentage (0-100, optional)', keyboardType: TextInputType.number),
+        const SizedBox(height: 12),
+        const Text('Customers can contact you directly or request an in-app deposit. The deposit is calculated from the order total.', style: TextStyle(color: Colors.white60, fontSize: 12)),
       ];
     }
 
@@ -550,95 +496,6 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       onChanged: (item) {
         if (item != null) onChanged(item);
       },
-    );
-  }
-
-  Widget _buildEmbeddedVerificationTiers() {
-    final required = widget.type == SubmissionType.verification;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cardGreen,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: required && _selectedVerificationTier == null ? Colors.orangeAccent : primaryGold.withOpacity(0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.verified_user, color: primaryGold, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Verification Badge Tier', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            required ? 'Required for verification requests.' : 'Optional: add a yearly trust badge to this submission.',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 10),
-          for (final tier in _badgeTiers) _buildBadgeTierRadio(tier),
-          if (!required && _selectedVerificationTier != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => setState(() => _selectedVerificationTier = null),
-                child: const Text('No badge for now'),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBadgeTierRadio(_EmbeddedBadgeTier tier) {
-    final selected = _selectedVerificationTier == tier.productId;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => setState(() => _selectedVerificationTier = tier.productId),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: selected ? primaryDarkGreen : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? tier.color : Colors.white12),
-        ),
-        child: Row(
-          children: [
-            Icon(tier.icon, color: tier.color, size: 24),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(tier.title, style: TextStyle(color: tier.color, fontWeight: FontWeight.bold)),
-                  Text(tier.description, style: const TextStyle(color: Colors.white60, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(tier.price, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                Radio<String>(
-                  value: tier.productId,
-                  groupValue: _selectedVerificationTier,
-                  activeColor: tier.color,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  onChanged: (value) => setState(() => _selectedVerificationTier = value),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -736,10 +593,16 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     );
   }
 
-  Widget _buildField(String key, String label, {int maxLines = 1}) {
+  Widget _buildField(
+    String key,
+    String label, {
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return TextFormField(
       controller: _controller(key),
       maxLines: maxLines,
+      keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white),
       validator: label.endsWith('*') ? (value) => value == null || value.trim().isEmpty ? 'Required' : null : null,
       decoration: InputDecoration(
@@ -777,22 +640,4 @@ class _MenuItemInput {
       'price': priceController.text.trim(),
     };
   }
-}
-
-class _EmbeddedBadgeTier {
-  final String productId;
-  final String title;
-  final String price;
-  final String description;
-  final IconData icon;
-  final Color color;
-
-  const _EmbeddedBadgeTier({
-    required this.productId,
-    required this.title,
-    required this.price,
-    required this.description,
-    required this.icon,
-    required this.color,
-  });
 }

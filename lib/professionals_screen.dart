@@ -1,190 +1,446 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dynamic_submission_screen.dart';
+import 'quote_request_screen.dart';
+import 'status_badge_widget.dart';
 
-class ProfessionalsScreen extends StatelessWidget {
+class ProfessionalsScreen extends StatefulWidget {
   const ProfessionalsScreen({super.key});
 
   @override
+  State<ProfessionalsScreen> createState() => _ProfessionalsScreenState();
+}
+
+class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
+  final Color primaryDarkGreen = const Color(0xFF061E12);
+  final Color primaryGold = const Color(0xFFFFD700);
+  final Color cardGreen = const Color(0xFF004D40);
+
+  String _selectedCategory = 'All';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _categories = [
+    'All',
+    'Medical / Doctor',
+    'Legal / Lawyer',
+    'Accounting / Tax',
+    'Translators',
+    'Caterers',
+    'Photographers',
+    'Beauty & Style',
+    'Services',
+  ];
+
+  // ── የተረጋገጡ ባለሙያዎች (Verified Professionals) መረጃ ──
+  final List<Map<String, dynamic>> _starterPros = [
+    {
+      'id': 'starter_dr_selam',
+      'title': 'General Practitioner & Pediatrician',
+      'name': 'Dr. Selamawit T.',
+      'location': 'Paris, France',
+      'category': 'Medical / Doctor',
+      'rating': '5.0 (210 reviews)',
+      'isVerified': true,
+      'subscriptionTier': 'vip',
+      'phone': 'tel:+33100000000',
+      'email': 'dr.selam@eurohabesha.eu',
+      'website': 'https://www.eurohabesha.eu',
+      'whatsapp': 'https://wa.me/33100000000',
+      'description': 'Certified Medical Doctor specializing in general practice and pediatrics. Providing culturally understanding medical consultations, check-ups, and pediatric care for the Habesha diaspora.',
+      'icon': Icons.medical_services,
+      'gallery': [
+        'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1638202371092-22538cb097f5?auto=format&fit=crop&w=800&q=80',
+      ],
+      'reviews': [
+        {'user': 'Amanuel D.', 'comment': 'Dr. Selam is incredibly caring and professional. Highly recommended!', 'rating': '5.0'},
+        {'user': 'Sara M.', 'comment': 'Best pediatrician in Paris. She speaks Amharic and French fluently.', 'rating': '5.0'},
+      ]
+    },
+    {
+      'id': 'starter_dawit_law',
+      'title': 'Immigration & Corporate Lawyer',
+      'name': 'Dawit Legesse Legal Services',
+      'location': 'Lyon & Geneva',
+      'category': 'Legal / Lawyer',
+      'rating': '4.9 (134 reviews)',
+      'isVerified': true,
+      'subscriptionTier': 'pro',
+      'phone': 'tel:+33611223344',
+      'email': 'dawit.law@eurohabesha.eu',
+      'website': 'https://www.eurohabesha.eu',
+      'whatsapp': 'https://wa.me/33611223344',
+      'description': 'Licensed attorney helping the Habesha community with asylum cases, residency permits, business registration, and corporate law across France and Switzerland.',
+      'icon': Icons.gavel,
+      'gallery': [
+        'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1505664159816-781512bf6df4?auto=format&fit=crop&w=800&q=80',
+      ],
+      'reviews': [
+        {'user': 'Yonas K.', 'comment': 'Helped me get my residence permit smoothly. Very knowledgeable.', 'rating': '5.0'},
+      ]
+    },
+    {
+      'id': 'starter_beth_tax',
+      'title': 'Certified Accountant & Tax Advisor',
+      'name': 'Bethlehem Financials',
+      'location': 'Marseille, France',
+      'category': 'Accounting / Tax',
+      'rating': '4.8 (95 reviews)',
+      'isVerified': true,
+      'subscriptionTier': null,
+      'phone': 'tel:+33400000000',
+      'email': 'beth.tax@eurohabesha.eu',
+      'website': 'https://www.eurohabesha.eu',
+      'whatsapp': 'https://wa.me/33400000000',
+      'description': 'Professional tax advisory and accounting services for Habesha-owned small businesses, freelancers, and individuals in France.',
+      'icon': Icons.account_balance,
+      'gallery': [
+        'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
+      ],
+      'reviews': [
+        {'user': 'Getafric Prod.', 'comment': 'Bethlehem handles all our business taxes. 100% accurate and timely!', 'rating': '4.9'},
+      ]
+    },
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _normalizeDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final raw = doc.data() ?? {};
+    final fields = Map<String, dynamic>.from(raw['fields'] ?? {});
+    final badgeMap = Map<String, dynamic>.from(raw['verificationBadge'] ?? {});
+
+    final name = fields['title']?.toString().isNotEmpty == true
+        ? fields['title'].toString()
+        : raw['name']?.toString() ?? raw['title']?.toString() ?? 'Professional';
+
+    final title = fields['professionTitle']?.toString().isNotEmpty == true
+        ? fields['professionTitle'].toString()
+        : fields['jobCategory']?.toString() ?? raw['title']?.toString() ?? 'Professional Service';
+
+    final location = fields['cityAddress']?.toString().isNotEmpty == true
+        ? fields['cityAddress'].toString()
+        : raw['location']?.toString() ?? fields['country']?.toString() ?? 'Europe';
+
+    final phone = fields['phoneNumber']?.toString().isNotEmpty == true
+        ? fields['phoneNumber'].toString()
+        : raw['phone']?.toString() ?? '';
+
+    final email = fields['emailAddress']?.toString().isNotEmpty == true
+        ? fields['emailAddress'].toString()
+        : raw['email']?.toString() ?? raw['submitterEmail']?.toString() ?? '';
+
+    final website = fields['websiteUrl']?.toString().isNotEmpty == true
+        ? fields['websiteUrl'].toString()
+        : raw['website']?.toString() ?? '';
+
+    final whatsapp = phone.isNotEmpty ? 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}' : '';
+
+    final description = fields['description']?.toString().isNotEmpty == true
+        ? fields['description'].toString()
+        : raw['description']?.toString() ?? fields['servicesOffered']?.toString() ?? '';
+
+    final badge = badgeMap['title']?.toString().isNotEmpty == true
+        ? badgeMap['title'].toString()
+        : raw['badge']?.toString() ?? 'Verified';
+
+    final galleryList = raw['gallery'] is List
+        ? List<String>.from((raw['gallery'] as List).map((e) => e.toString()))
+        : <String>[];
+
+    IconData iconData = Icons.medical_services;
+    final tLower = title.toLowerCase();
+    if (tLower.contains('law') || tLower.contains('legal')) {
+      iconData = Icons.gavel;
+    } else if (tLower.contains('tax') || tLower.contains('account')) {
+      iconData = Icons.account_balance;
+    } else if (tLower.contains('translat')) {
+      iconData = Icons.translate;
+    } else if (tLower.contains('cater') || tLower.contains('injera') || tLower.contains('food')) {
+      iconData = Icons.restaurant_menu;
+    } else if (tLower.contains('photo') || tLower.contains('video')) {
+      iconData = Icons.camera_alt;
+    } else if (tLower.contains('design') || tLower.contains('dress')) {
+      iconData = Icons.checkroom;
+    }
+
+    final isVerified = raw['isVerified'] == true || raw['verificationStatus'] == 'approved';
+    final subscriptionTier = raw['subscriptionTier']?.toString();
+
+    return {
+      'id': doc.id,
+      'name': name,
+      'title': title,
+      'location': location,
+      'category': title,
+      'rating': raw['rating']?.toString() ?? '5.0 (New)',
+      'badge': badge,
+      'isVerified': isVerified,
+      'subscriptionTier': subscriptionTier,
+      'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
+      'email': email,
+      'website': website,
+      'whatsapp': whatsapp,
+      'description': description,
+      'icon': iconData,
+      'gallery': galleryList,
+      'reviews': raw['reviews'] is List ? raw['reviews'] : [],
+      'docRef': doc.reference,
+      'ownerId': raw['submittedBy'] ?? raw['ownerId'] ?? '',
+    };
+  }
+
+  bool _matchesFilter(Map<String, dynamic> pro) {
+    if (_selectedCategory != 'All') {
+      final proCat = (pro['category'] ?? pro['title'] ?? '').toString().toLowerCase();
+      final filterCat = _selectedCategory.toLowerCase();
+      if (!proCat.contains(filterCat.split(' ').first)) {
+        return false;
+      }
+    }
+
+    if (_searchQuery.trim().isNotEmpty) {
+      final query = _searchQuery.trim().toLowerCase();
+      final name = (pro['name'] ?? '').toString().toLowerCase();
+      final loc = (pro['location'] ?? '').toString().toLowerCase();
+      final desc = (pro['description'] ?? '').toString().toLowerCase();
+      final title = (pro['title'] ?? '').toString().toLowerCase();
+      if (!name.contains(query) && !loc.contains(query) && !desc.contains(query) && !title.contains(query)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Color primaryDarkGreen = const Color(0xFF061E12);
-    final Color primaryGold = const Color(0xFFFFD700);
-    final Color cardGreen = const Color(0xFF004D40);
-
-    // ── የተረጋገጡ ባለሙያዎች (Verified Professionals) መረጃ ──
-    final List<Map<String, dynamic>> prosList = [
-      {
-        'title': 'General Practitioner & Pediatrician',
-        'name': 'Dr. Selamawit T.',
-        'location': 'Paris, France',
-        'rating': '5.0 (210 reviews)',
-        'badge': 'VIP', // 🌟 ወርቃማ ቪአይፒ ማረጋገጫ
-        'phone': 'tel:+33100000000',
-        'email': 'dr.selam@eurohabesha.eu',
-        'website': 'https://www.eurohabesha.eu',
-        'whatsapp': 'https://wa.me/33100000000',
-        'description': 'Certified Medical Doctor specializing in general practice and pediatrics. Providing culturally understanding medical consultations, check-ups, and pediatric care for the Habesha diaspora.',
-        'icon': Icons.medical_services,
-        'gallery': [
-          'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1638202371092-22538cb097f5?auto=format&fit=crop&w=800&q=80',
-        ],
-        'reviews': [
-          {'user': 'Amanuel D.', 'comment': 'Dr. Selam is incredibly caring and professional. Highly recommended!', 'rating': '5.0'},
-          {'user': 'Sara M.', 'comment': 'Best pediatrician in Paris. She speaks Amharic and French fluently.', 'rating': '5.0'},
-        ]
-      },
-      {
-        'title': 'Immigration & Corporate Lawyer',
-        'name': 'Dawit Legesse Legal Services',
-        'location': 'Lyon & Geneva',
-        'rating': '4.9 (134 reviews)',
-        'badge': 'Silver', // 🛡️ የብር ማረጋገጫ
-        'phone': 'tel:+33611223344',
-        'email': 'dawit.law@eurohabesha.eu',
-        'website': 'https://www.eurohabesha.eu',
-        'whatsapp': 'https://wa.me/33611223344',
-        'description': 'Licensed attorney helping the Habesha community with asylum cases, residency permits, business registration, and corporate law across France and Switzerland.',
-        'icon': Icons.gavel,
-        'gallery': [
-          'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1505664159816-781512bf6df4?auto=format&fit=crop&w=800&q=80',
-        ],
-        'reviews': [
-          {'user': 'Yonas K.', 'comment': 'Helped me get my residence permit smoothly. Very knowledgeable.', 'rating': '5.0'},
-        ]
-      },
-      {
-        'title': 'Certified Accountant & Tax Advisor',
-        'name': 'Bethlehem Financials',
-        'location': 'Marseille, France',
-        'rating': '4.8 (95 reviews)',
-        'badge': 'Verified', // ✅ ሰማያዊ መደበኛ ማረጋገጫ
-        'phone': 'tel:+33400000000',
-        'email': 'beth.tax@eurohabesha.eu',
-        'website': 'https://www.eurohabesha.eu',
-        'whatsapp': 'https://wa.me/33400000000',
-        'description': 'Professional tax advisory and accounting services for Habesha-owned small businesses, freelancers, and individuals in France.',
-        'icon': Icons.account_balance,
-        'gallery': [
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
-        ],
-        'reviews': [
-          {'user': 'Getafric Prod.', 'comment': 'Bethlehem handles all our business taxes. 100% accurate and timely!', 'rating': '4.9'},
-        ]
-      },
-    ];
-
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
         title: Text('Trusted Professionals', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
         backgroundColor: primaryDarkGreen,
         iconTheme: IconThemeData(color: primaryGold),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.person_add, color: primaryGold),
+            tooltip: 'Register as Professional',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DynamicSubmissionScreen(type: SubmissionType.professional)),
+              );
+            },
+          ),
+        ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: prosList.length,
-        itemBuilder: (context, index) {
-          final pro = prosList[index];
-          return Card(
-            color: cardGreen,
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: primaryGold.withOpacity(0.3), width: 1),
+      body: Column(
+        children: [
+          // ── Search Bar ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search doctors, lawyers, translators, cities...',
+                hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                prefixIcon: Icon(Icons.search, color: primaryGold),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: cardGreen,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
             ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProDetailScreen(proData: pro),
+          ),
+
+          // ── Category Chips ──
+          SizedBox(
+            height: 44,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final cat = _categories[index];
+                final isSelected = _selectedCategory == cat;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: ChoiceChip(
+                    label: Text(cat),
+                    selected: isSelected,
+                    selectedColor: primaryGold,
+                    backgroundColor: cardGreen,
+                    labelStyle: TextStyle(
+                      color: isSelected ? primaryDarkGreen : Colors.white70,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                    side: BorderSide(color: isSelected ? primaryGold : Colors.white12),
+                    onSelected: (selected) {
+                      if (selected) setState(() => _selectedCategory = cat);
+                    },
                   ),
                 );
               },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 25,
-                      backgroundColor: primaryGold.withOpacity(0.2),
-                      child: Icon(pro['icon'], color: primaryGold, size: 28),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // ── Stream + Starters ──
+          Expanded(
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance.collection('jobs').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator(color: primaryGold));
+                }
+
+                final List<Map<String, dynamic>> combined = [];
+
+                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                  for (final doc in snapshot.data!.docs) {
+                    final data = doc.data();
+                    final status = data['status']?.toString() ?? 'published';
+                    if (status == 'published' || status == 'approved') {
+                      combined.add(_normalizeDoc(doc));
+                    }
+                  }
+                }
+
+                for (final starter in _starterPros) {
+                  if (!combined.any((p) => p['id'] == starter['id'] || p['name'] == starter['name'])) {
+                    combined.add(starter);
+                  }
+                }
+
+                final filtered = combined.where(_matchesFilter).toList();
+
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  pro['name']!, 
-                                  style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold, fontSize: 16),
-                                  maxLines: 1, overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 14),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          // ── የማረጋገጫ ባጅ (Verification Badge) ──
-                          _buildBadge(pro['badge']),
-                          const SizedBox(height: 8),
-                          Text(pro['title']!, style: const TextStyle(color: Colors.white, fontSize: 13)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '📍 ${pro['location']} • ⭐ ${pro['rating']}', 
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          Icon(Icons.badge_outlined, color: primaryGold.withOpacity(0.5), size: 56),
+                          const SizedBox(height: 12),
+                          const Text('No professionals found.', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          const Text('Register your professional profile today.', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: primaryGold),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const DynamicSubmissionScreen(type: SubmissionType.professional)),
+                              );
+                            },
+                            icon: Icon(Icons.person_add, color: primaryDarkGreen),
+                            label: Text('Register as Professional', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final pro = filtered[index];
+                    return Card(
+                      color: cardGreen,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: primaryGold.withOpacity(0.3), width: 1),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProDetailScreen(proData: pro),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 25,
+                                backgroundColor: primaryGold.withOpacity(0.2),
+                                child: Icon(pro['icon'] as IconData? ?? Icons.work, color: primaryGold, size: 28),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            pro['name'] ?? '',
+                                            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold, fontSize: 16),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 14),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    StatusBadgeWidget(
+                                      isVerified: pro['isVerified'] == true,
+                                      subscriptionTier: pro['subscriptionTier']?.toString(),
+                                      compact: true,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(pro['title']?.toString() ?? '', style: const TextStyle(color: Colors.white, fontSize: 13)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '📍 ${pro['location']} • ⭐ ${pro['rating']}',
+                                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ── ባጅ ሰሪ (Badge Generator) ──
-  Widget _buildBadge(String tier) {
-    Color badgeColor;
-    IconData badgeIcon = Icons.verified;
-    String label;
-
-    if (tier == 'VIP') {
-      badgeColor = const Color(0xFFFFD700); // ወርቃማ
-      label = 'VIP Verified';
-    } else if (tier == 'Silver') {
-      badgeColor = const Color(0xFFC0C0C0); // ብር
-      label = 'Silver Verified';
-    } else {
-      badgeColor = const Color(0xFF64B5F6); // ሰማያዊ
-      label = 'Verified Pro';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeColor.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(badgeIcon, color: badgeColor, size: 12),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
@@ -219,6 +475,8 @@ class ProDetailScreen extends StatelessWidget {
 
     final List<dynamic> galleryImages = proData['gallery'] ?? [];
     final List<dynamic> reviewsList = proData['reviews'] ?? [];
+    final bool isVerified = proData['isVerified'] == true || proData['verificationStatus'] == 'approved';
+    final String? subTier = proData['subscriptionTier']?.toString();
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
@@ -247,7 +505,7 @@ class ProDetailScreen extends StatelessWidget {
                     children: [
                       Text(proData['name'], style: TextStyle(color: primaryGold, fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
-                      _buildDetailBadge(proData['badge']),
+                      StatusBadgeWidget(isVerified: isVerified, subscriptionTier: subTier),
                       const SizedBox(height: 6),
                       Text(proData['title'], style: const TextStyle(color: Colors.white70, fontSize: 13)),
                     ],
@@ -267,6 +525,16 @@ class ProDetailScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 25),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QuoteRequestScreen(provider: proData))),
+                icon: const Icon(Icons.request_quote),
+                label: const Text('Request a Quote'),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // ── 3. ጋለሪ (Portfolio/Certificates) ──
             if (galleryImages.isNotEmpty) ...[
@@ -436,35 +704,6 @@ class ProDetailScreen extends StatelessWidget {
             Text(label, style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 12)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailBadge(String tier) {
-    Color badgeColor;
-    IconData badgeIcon = Icons.verified;
-    String label;
-    if (tier == 'VIP') {
-      badgeColor = const Color(0xFFFFD700); label = 'VIP Verified Professional';
-    } else if (tier == 'Silver') {
-      badgeColor = const Color(0xFFC0C0C0); label = 'Silver Verified Professional';
-    } else {
-      badgeColor = const Color(0xFF64B5F6); label = 'Verified Professional';
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeColor.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(badgeIcon, color: badgeColor, size: 14),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
       ),
     );
   }

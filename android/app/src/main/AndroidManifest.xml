@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
-        android:label="euro_habesha"
+        android:label="Euro Habesha"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         

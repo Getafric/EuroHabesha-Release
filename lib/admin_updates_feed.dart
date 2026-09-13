@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AdminUpdatesFeed extends StatelessWidget {
   const AdminUpdatesFeed({super.key});
@@ -61,7 +62,13 @@ class _AdminUpdateCard extends StatelessWidget {
       return;
     }
 
-    await doc.reference.update({'likesCount': FieldValue.increment(1)});
+    final likeRef = doc.reference.collection('likes').doc(user.uid);
+    final existing = await likeRef.get();
+    if (existing.exists) {
+      await likeRef.delete();
+    } else {
+      await likeRef.set({'userId': user.uid, 'createdAt': FieldValue.serverTimestamp()});
+    }
   }
 
   Future<void> _comment(BuildContext context) async {
@@ -137,6 +144,7 @@ class _AdminUpdateCard extends StatelessWidget {
     final message = data['message'] as String? ?? '';
     final likes = data['likesCount'] ?? 0;
     final comments = data['commentsCount'] ?? 0;
+    final mediaUrl = data['mediaUrl']?.toString();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -158,6 +166,10 @@ class _AdminUpdateCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           if (message.isNotEmpty) Text(message, style: const TextStyle(color: Colors.white, height: 1.45)),
+          if (mediaUrl != null && mediaUrl.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ClipRRect(borderRadius: BorderRadius.circular(10), child: CachedNetworkImage(imageUrl: mediaUrl, width: double.infinity, height: 180, fit: BoxFit.cover)),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [

@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'cash_on_delivery_order_screen.dart';
+import 'dynamic_submission_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -334,85 +337,157 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
         elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryGold,
-                    foregroundColor: primaryDarkGreen,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  ),
-                  icon: const Icon(Icons.edit_square, size: 18),
-                  label: const Text('Sell', style: TextStyle(fontWeight: FontWeight.bold)),
-                  onPressed: _showSellForm,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: categories.map((category) {
-                        bool isSelected = selectedCategory == category;
-                        return GestureDetector(
-                          onTap: () => setState(() => selectedCategory = category),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected ? primaryGold.withOpacity(0.2) : cardGreen,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isSelected ? primaryGold : Colors.transparent),
-                            ),
-                            child: Text(
-                              category,
-                              style: TextStyle(
-                                color: isSelected ? primaryGold : Colors.white70,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, 
-                childAspectRatio: 0.72, 
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetailScreen(product: product),
-                      ),
-                    );
-                  },
-                  child: _buildProductCard(product),
-                );
-              },
-            ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add_circle_outline, color: primaryGold),
+            tooltip: 'Post Listing',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DynamicSubmissionScreen(type: SubmissionType.marketplace)),
+              );
+            },
           ),
         ],
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance.collection('marketplace').snapshots(),
+        builder: (context, snapshot) {
+          final List<Map<String, dynamic>> combined = [];
+
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            for (final doc in snapshot.data!.docs) {
+              final data = doc.data();
+              final status = data['status']?.toString() ?? 'published';
+              if (status == 'published' || status == 'approved') {
+                final fields = Map<String, dynamic>.from(data['fields'] ?? {});
+                final title = fields['title']?.toString() ?? data['title']?.toString() ?? 'Listing';
+                final price = fields['price']?.toString() ?? data['price']?.toString() ?? '€0';
+                final location = fields['cityAddress']?.toString() ?? data['location']?.toString() ?? 'Europe';
+                final category = fields['itemCategory']?.toString() ?? data['category']?.toString() ?? 'All';
+                final condition = fields['condition']?.toString() ?? data['condition']?.toString() ?? 'Good';
+                final desc = fields['description']?.toString() ?? data['description']?.toString() ?? '';
+                final seller = data['submitterName']?.toString() ?? data['sellerName']?.toString() ?? 'Habesha Member';
+                final image = data['imageUrl']?.toString() ?? data['image']?.toString() ?? '';
+
+                combined.add({
+                  'id': doc.id,
+                  'title': title,
+                  'price': price.startsWith('€') ? price : '€$price',
+                  'location': location,
+                  'category': category,
+                  'condition': condition,
+                  'time': 'Recent',
+                  'sellerName': seller,
+                  'sellerPhone': '',
+                  'description': desc,
+                  'image': image.isNotEmpty ? image : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+                });
+              }
+            }
+          }
+
+          for (final starter in products) {
+            if (!combined.any((p) => p['title'] == starter['title'])) {
+              combined.add(starter);
+            }
+          }
+
+          final filtered = combined.where((product) {
+            if (selectedCategory == 'All') return true;
+            final productCat = (product['category'] ?? '').toString().toLowerCase();
+            final titleCat = (product['title'] ?? '').toString().toLowerCase();
+            final sel = selectedCategory.toLowerCase();
+            return productCat.contains(sel) || titleCat.contains(sel);
+          }).toList();
+
+          return Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryGold,
+                        foregroundColor: primaryDarkGreen,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      icon: const Icon(Icons.edit_square, size: 18),
+                      label: const Text('Sell', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const DynamicSubmissionScreen(type: SubmissionType.marketplace)),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: categories.map((category) {
+                            bool isSelected = selectedCategory == category;
+                            return GestureDetector(
+                              onTap: () => setState(() => selectedCategory = category),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? primaryGold.withOpacity(0.2) : cardGreen,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: isSelected ? primaryGold : Colors.transparent),
+                                ),
+                                child: Text(
+                                  category,
+                                  style: TextStyle(
+                                    color: isSelected ? primaryGold : Colors.white70,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: filtered.isEmpty
+                    ? const Center(child: Text('No listings in this category.', style: TextStyle(color: Colors.white54)))
+                    : GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.72,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final product = filtered[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductDetailScreen(product: product),
+                                ),
+                              );
+                            },
+                            child: _buildProductCard(product),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

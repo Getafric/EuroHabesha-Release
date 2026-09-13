@@ -12,6 +12,9 @@ import 'app_session.dart';
 import 'admin_updates_feed.dart';
 import 'dynamic_submission_screen.dart';
 import 'public_feed_section.dart';
+import 'sponsored_banner_section.dart';
+import 'community_posts_section.dart';
+import 'nearby_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -151,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'Pros': {'English': 'Professionals', 'Amharic': 'ባለሙያዎች', 'French': 'Professionnels', 'Dutch': 'Professionals'},
     'Events': {'English': 'Events', 'Amharic': 'ክስተት', 'French': 'Événements', 'Dutch': 'Evenementen'},
     'Community': {'English': 'Community', 'Amharic': 'ማህበረሰብ', 'French': 'Communauté', 'Dutch': 'Gemeenschap'},
+    'Nearby': {'English': 'Nearby', 'Amharic': 'በአቅራቢያ', 'French': 'À proximité', 'Dutch': 'In de buurt'},
   };
 
   String getTxt(String key) => texts[key]![currentLang]!;
@@ -559,22 +563,35 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: cardGreen,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.location_on, color: Color(0xFFFFD700), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Current Location: $userLocation', 
-                          style: const TextStyle(color: Colors.white70, fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
+                InkWell(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const NearbyScreen()));
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    color: cardGreen,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.near_me, color: Color(0xFFFFD700), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Nearby / À proximité • $userLocation', 
+                            style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: primaryGold,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('Radar 📍', style: TextStyle(color: Color(0xFF061E12), fontWeight: FontWeight.bold, fontSize: 11)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -742,6 +759,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 30),
 
                 const AdminUpdatesFeed(),
+                const SponsoredBannerSection(),
+                const CommunityPostsSection(),
                 const PublicFeedSection(),
 
                 const Padding(
@@ -827,6 +846,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           
+          _buildDrawerItem(const Icon(Icons.near_me, color: Color(0xFFFFD700)), 'Nearby / À proximité', () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const NearbyScreen()));
+          }, goldColor),
           _buildDrawerItem(const Icon(Icons.work, color: Color(0xFFFFD700)), 'Jobs & Services', () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(builder: (context) => const JobsScreen()));

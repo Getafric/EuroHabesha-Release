@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -40,7 +43,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
   }
 
   // ── ፖስቱን ፐብሊሽ ለማድረግ ──
-  void _submitPost() {
+  Future<void> _submitPost() async {
     if (_postController.text.trim().isEmpty && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -52,20 +55,40 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
 
     setState(() => _isPosting = true);
-
-    // ወደ ዳታቤዝ (Firebase) ፖስት የሚላክበትን ጊዜ ለመምሰል የተሰራ
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isPosting = false);
-        Navigator.pop(context); // ፖስት ከተደረገ በኋላ ወደ ኋላ ይመለሳል
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Post published successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw StateError('Please sign in before posting.');
       }
-    });
+
+      String? imageUrl;
+      String? storagePath;
+      if (_selectedImage != null) {
+        storagePath = 'posts/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${_selectedImage!.uri.pathSegments.last}';
+        final storageRef = FirebaseStorage.instance.ref(storagePath);
+        await storageRef.putFile(_selectedImage!);
+        imageUrl = await storageRef.getDownloadURL();
+      }
+
+      await FirebaseFirestore.instance.collection('posts').add({
+        'ownerId': user.uid,
+        'authorId': user.uid,
+        'authorName': user.displayName ?? user.email ?? 'Community Member',
+        'text': _postController.text.trim(),
+        'imageUrl': imageUrl,
+        'imageStoragePath': storagePath,
+        'status': 'published',
+        'likesCount': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post published successfully.'), backgroundColor: Colors.green));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post failed: $error'), backgroundColor: Colors.redAccent));
+    } finally {
+      if (mounted) setState(() => _isPosting = false);
+    }
   }
 
   @override

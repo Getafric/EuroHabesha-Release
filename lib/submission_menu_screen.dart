@@ -11,11 +11,12 @@ class SubmissionMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = [
-      _SubmissionOption('Register a Business', 'Business profile, phone, address, reservation-ready setup', Icons.storefront, SubmissionType.business),
+      _SubmissionOption('Request Verification', 'Optional: verify your personal, business, or community page', Icons.verified_user, SubmissionType.verification),
+      _SubmissionOption('Register a Business / Restaurant', 'Business profile, phone, address, reservation-ready setup', Icons.storefront, SubmissionType.business),
+      _SubmissionOption('Register as a Professional', 'Doctor, lawyer, accountant, translator, caterer, photographer, etc.', Icons.medical_services_outlined, SubmissionType.professional),
+      _SubmissionOption('Submit a Job or Service', 'Job/service listing with WhatsApp or in-app contact options', Icons.work, SubmissionType.job),
       _SubmissionOption('Submit an Event', 'Tickets, performers, end time, age rules, and amenities', Icons.event, SubmissionType.event),
       _SubmissionOption('Register a Community', 'Church, mosque, association, gathering schedule, and contacts', Icons.groups, SubmissionType.community),
-      _SubmissionOption('Submit a Job', 'Job/service listing with WhatsApp or in-app contact options', Icons.work, SubmissionType.job),
-      _SubmissionOption('Request Verification', 'Professional, business, or community verification review', Icons.verified_user, SubmissionType.verification),
     ];
 
     return Scaffold(

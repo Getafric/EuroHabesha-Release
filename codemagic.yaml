@@ -74,7 +74,7 @@ workflows:
 
       - name: Build iOS IPA
         script: |
-          UPDATED_BUILD_NUMBER=$(($BUILD_NUMBER + 102))
+          UPDATED_BUILD_NUMBER=$(($BUILD_NUMBER + 101))
           flutter build ipa --release --build-name="2.1.2" --build-number=$UPDATED_BUILD_NUMBER
 
     artifacts:

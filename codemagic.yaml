@@ -75,7 +75,7 @@ workflows:
       - name: Build iOS IPA
         script: |
           UNIQUE_BUILD_NUMBER=$(date +%s)
-          flutter build ipa --release --build-name="2.1.1" --build-number=$UNIQUE_BUILD_NUMBER
+          flutter build ipa --release --build-name="3.2.1" --build-number=$UNIQUE_BUILD_NUMBER
 
     artifacts:
       - build/ios/ipa/*.ipa

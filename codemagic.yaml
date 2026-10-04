@@ -72,7 +72,7 @@ workflows:
         script: |
           xcode-project use-profiles
 
-            - name: Build iOS IPA
+      - name: Build iOS IPA
         script: |
           UNIQUE_BUILD_NUMBER=$(date +%s)
           flutter build ipa --release \

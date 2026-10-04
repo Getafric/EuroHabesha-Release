@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'app_session.dart';
+import 'notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,7 +13,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const String _googleWebClientId = '218564066910-ufqipbmm208mrm6sirk54d0ft8d9rabi.apps.googleusercontent.com';
+  static const String _googleWebClientId =
+      '218564066910-ufqipbmm208mrm6sirk54d0ft8d9rabi.apps.googleusercontent.com';
 
   final Color primaryDarkGreen = const Color(0xFF061E12);
   final Color primaryGold = const Color(0xFFFFD700);
@@ -34,28 +37,46 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pushReplacementNamed(context, '/app');
   }
 
-  void _routeAfterVerifiedAuth(User user, {String? fallbackName, String? fallbackEmail}) {
+  Future<void> _routeAfterVerifiedAuth(
+    User user, {
+    String? fallbackName,
+    String? fallbackEmail,
+  }) async {
     final email = (user.email ?? fallbackEmail ?? '').trim().toLowerCase();
+
+    await NotificationService.instance.registerCurrentToken();
+
+    if (!mounted) {
+      return;
+    }
+
     if (email == 'getafricshow1@gmail.com') {
       Navigator.pushReplacementNamed(context, '/admin-passcode');
       return;
     }
 
     AppSession.signIn(
-      name: user.displayName ?? fallbackName ?? user.email ?? 'Euro Habesha Member',
+      name: user.displayName ??
+          fallbackName ??
+          user.email ??
+          'Euro Habesha Member',
       emailAddress: user.email ?? fallbackEmail ?? '',
       verified: true,
     );
+
     _enterApp();
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   bool _validateEmailForm() {
-    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().length < 6) {
-      _showMessage('Enter a valid email and a password with at least 6 characters.');
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().length < 6) {
+      _showMessage(
+          'Enter a valid email and a password with at least 6 characters.');
       return false;
     }
     return true;
@@ -78,16 +99,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (refreshedUser == null || !refreshedUser.emailVerified) {
         await refreshedUser?.sendEmailVerification();
-        AppSession.signIn(name: refreshedUser?.displayName ?? 'Unverified member', emailAddress: _emailController.text.trim(), verified: false);
+        AppSession.signIn(
+            name: refreshedUser?.displayName ?? 'Unverified member',
+            emailAddress: _emailController.text.trim(),
+            verified: false);
         if (mounted) {
           setState(() => _verificationSent = true);
-          _showMessage('Please verify your email. We sent a new verification link.');
+          _showMessage(
+              'Please verify your email. We sent a new verification link.');
         }
         return;
       }
 
       if (mounted) {
-        _routeAfterVerifiedAuth(refreshedUser, fallbackEmail: _emailController.text.trim());
+        _routeAfterVerifiedAuth(refreshedUser,
+            fallbackEmail: _emailController.text.trim());
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -107,15 +133,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+      final user = credential.user;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'email': _emailController.text.trim(),
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
       await credential.user?.sendEmailVerification();
-      AppSession.signIn(name: 'Unverified member', emailAddress: _emailController.text.trim(), verified: false);
+      AppSession.signIn(
+          name: 'Unverified member',
+          emailAddress: _emailController.text.trim(),
+          verified: false);
       if (mounted) {
         setState(() => _verificationSent = true);
-        _showMessage('Verification link sent. Check your email before full access.');
+        _showMessage(
+            'Verification link sent. Check your email before full access.');
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -135,7 +173,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && user.emailVerified) {
         if (mounted) {
-          _routeAfterVerifiedAuth(user, fallbackEmail: _emailController.text.trim());
+          _routeAfterVerifiedAuth(user,
+              fallbackEmail: _emailController.text.trim());
         }
       } else if (mounted) {
         _showMessage('Email is not verified yet. Please click the link first.');
@@ -166,12 +205,17 @@ class _LoginScreenState extends State<LoginScreen> {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
       final user = userCredential.user;
       if (!mounted || user == null) {
         return;
       }
-      _routeAfterVerifiedAuth(user, fallbackName: account.displayName, fallbackEmail: account.email);
+      await _routeAfterVerifiedAuth(
+        user,
+        fallbackName: account.displayName,
+        fallbackEmail: account.email,
+      );
     } catch (e) {
       if (!mounted) {
         return;
@@ -182,18 +226,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _continueWithOAuthProvider(String providerId, String providerName) async {
+  Future<void> _continueWithOAuthProvider(
+      String providerId, String providerName) async {
     setState(() => _isLoading = true);
     try {
       final provider = OAuthProvider(providerId);
-      final credential = await FirebaseAuth.instance.signInWithProvider(provider);
+      final credential =
+          await FirebaseAuth.instance.signInWithProvider(provider);
       final user = credential.user;
       if (mounted && user != null) {
-        _routeAfterVerifiedAuth(user, fallbackName: providerName, fallbackEmail: user.email ?? '$providerId@eurohabesha.local');
+        _routeAfterVerifiedAuth(user,
+            fallbackName: providerName,
+            fallbackEmail: user.email ?? '$providerId@eurohabesha.local');
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        _showMessage('$providerName sign-in needs Firebase provider setup: ${e.message ?? e.code}');
+        _showMessage(
+            '$providerName sign-in needs Firebase provider setup: ${e.message ?? e.code}');
       }
     } catch (e) {
       if (mounted) {
@@ -216,7 +265,8 @@ class _LoginScreenState extends State<LoginScreen> {
         centerTitle: true,
         title: Text(
           'Euro Habesha Trust Gateway',
-          style: TextStyle(color: primaryGold, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: primaryGold, fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -224,7 +274,9 @@ class _LoginScreenState extends State<LoginScreen> {
           24,
           24,
           24,
-          MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 32,
+          MediaQuery.of(context).viewInsets.bottom +
+              MediaQuery.of(context).padding.bottom +
+              32,
         ),
         child: Column(
           children: [
@@ -258,11 +310,13 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 TextButton(
                   onPressed: () {},
-                  child: Text('Forgot Password?', style: TextStyle(color: primaryGold)),
+                  child: Text('Forgot Password?',
+                      style: TextStyle(color: primaryGold)),
                 ),
                 TextButton(
                   onPressed: () {},
-                  child: Text('Resend Verification', style: TextStyle(color: primaryGold)),
+                  child: Text('Resend Verification',
+                      style: TextStyle(color: primaryGold)),
                 ),
               ],
             ),
@@ -275,14 +329,20 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGold,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: _isLoading ? null : _signInWithEmail,
-                child: Text(_isLoading ? 'Please wait...' : 'Log In', style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(_isLoading ? 'Please wait...' : 'Log In',
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 10),
-            const Text('Use this button for email and password sign-in.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+            const Text('Use this button for email and password sign-in.',
+                style: TextStyle(color: Colors.white54, fontSize: 11)),
             const SizedBox(height: 20),
 
             // ── Create Account & Connect (French) ──
@@ -292,12 +352,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: cardGreen,
-                      side: BorderSide(color: primaryGold.withOpacity(0.5)),
+                      side:
+                          BorderSide(color: primaryGold.withValues(alpha: 0.5)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: _isLoading ? null : _registerWithEmail,
-                    child: const Text('Créer un compte', style: TextStyle(color: Colors.white)),
+                    child: const Text('Créer un compte',
+                        style: TextStyle(color: Colors.white)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -306,10 +369,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGold,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: _isLoading ? null : _signInWithEmail,
-                    child: const Text('Se connecter', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    child: const Text('Se connecter',
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -322,11 +388,14 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 48,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: primaryGold.withOpacity(0.5)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  side: BorderSide(color: primaryGold.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                icon: const Icon(Icons.remove_red_eye_outlined, color: Colors.white),
-                label: const Text('Continuer en tant qu\'invité', style: TextStyle(color: Colors.white)),
+                icon: const Icon(Icons.remove_red_eye_outlined,
+                    color: Colors.white),
+                label: const Text('Continuer en tant qu\'invité',
+                    style: TextStyle(color: Colors.white)),
                 onPressed: _continueAsGuest,
               ),
             ),
@@ -342,9 +411,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Column(
                   children: [
-                    Text('Email verification required', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+                    Text('Email verification required',
+                        style: TextStyle(
+                            color: primaryGold, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
-                    const Text('Open your email and click the verification link before full access is enabled.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    const Text(
+                        'Open your email and click the verification link before full access is enabled.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 10),
                     OutlinedButton(
                       onPressed: _isLoading ? null : _checkEmailVerification,
@@ -359,17 +433,27 @@ class _LoginScreenState extends State<LoginScreen> {
             const Center(
               child: Text(
                 'Or continue with',
-                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildProviderIcon(Icons.g_mobiledata, 'Google', _continueWithGoogle),
-                _buildProviderIcon(Icons.apple, 'Apple', () => _continueWithOAuthProvider('apple.com', 'Apple')),
-                _buildProviderIcon(Icons.facebook, 'Facebook', () => _continueWithOAuthProvider('facebook.com', 'Facebook')),
-                _buildProviderIcon(Icons.music_note, 'TikTok', () => _continueWithOAuthProvider('oidc.tiktok', 'TikTok')),
+                _buildProviderIcon(
+                    Icons.g_mobiledata, 'Google', _continueWithGoogle),
+                _buildProviderIcon(Icons.apple, 'Apple',
+                    () => _continueWithOAuthProvider('apple.com', 'Apple')),
+                _buildProviderIcon(
+                    Icons.facebook,
+                    'Facebook',
+                    () =>
+                        _continueWithOAuthProvider('facebook.com', 'Facebook')),
+                _buildProviderIcon(Icons.music_note, 'TikTok',
+                    () => _continueWithOAuthProvider('oidc.tiktok', 'TikTok')),
               ],
             ),
           ],
@@ -378,7 +462,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField({required String label, required IconData icon, required TextEditingController controller, bool isPassword = false}) {
+  Widget _buildTextField(
+      {required String label,
+      required IconData icon,
+      required TextEditingController controller,
+      bool isPassword = false}) {
     return TextFormField(
       controller: controller,
       obscureText: isPassword ? _isObscure : false,
@@ -387,12 +475,13 @@ class _LoginScreenState extends State<LoginScreen> {
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54),
         prefixIcon: Icon(icon, color: primaryGold),
-        suffixIcon: isPassword 
-          ? IconButton(
-              icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility, color: Colors.white54),
-              onPressed: () => setState(() => _isObscure = !_isObscure),
-            )
-          : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.white54),
+                onPressed: () => setState(() => _isObscure = !_isObscure),
+              )
+            : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFFFD700)),
@@ -405,7 +494,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildProviderIcon(IconData icon, String tooltip, VoidCallback onPressed) {
+  Widget _buildProviderIcon(
+      IconData icon, String tooltip, VoidCallback onPressed) {
     return Tooltip(
       message: tooltip,
       child: InkWell(

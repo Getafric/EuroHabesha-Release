@@ -1,0 +1,18 @@
+﻿{
+  "app_name": "Euro Habesha",
+  "profile_settings": "ናይ ፕሮፋይል ቅንብራት",
+  "language": "ቋንቋ",
+  "system_language": "ቋንቋ ስርዓት",
+
+  "ticker_legal_title": "ዝእመኑ ናይ ሕጊ ኣገልግሎታት",
+  "ticker_legal_desc": "ኣብ ፓሪስን ሮማን ዝርከቡ ናይ ኢሚግሬሽን ጠበቓታት ርኸቡ።",
+
+  "ticker_transport_title": "ቅልጡፍ ጽዕነትን መጓዓዝያን",
+  "ticker_transport_desc": "ኣብ ፈረንሳን ጀርመንን ዝእመን ናይ ጽዕነትን ሎጂስቲክስን ኣገልግሎት።",
+
+  "ticker_verify_title": "ፕሮፋይልኩም ኣረጋግጹ",
+  "ticker_verify_desc": "ንናይ ንግዲ ፕሮፋይልኩም Silver ወይ VIP Gold ባጅ ርኸቡ።",
+
+  "ticker_events_title": "ናይ ሓበሻ ማሕበረሰብ ፍጻመታት",
+  "ticker_events_desc": "ዝመጹ ባህላዊ በዓላትን ባህላዊ ርክባትን ተኸታተሉ።"
+}

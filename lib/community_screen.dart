@@ -27,13 +27,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
       'address': 'Via di Monte Polacco, 5, 00184 Roma RM, Italy',
       'phone': '+39 06 1234567',
       'email': 'rome.orthodox@eurohabesha.eu',
-      'image': 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=800&q=80',
+      'image':
+          'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=800&q=80',
       'adminName': 'Kes Geleta (Lead Admin)',
       'isFollowing': false,
       'followersCount': 342,
       'posts': [
-        {'author': 'Kes Geleta', 'text': 'እንኳን ለብርሃነ ትንሳኤው በሰላም አደረሳችሁ! የእሁድ መርሃ-ግብር ከጥዋቱ 2:00 ሰዓት ይጀምራል።', 'time': '2 hours ago'},
-        {'author': 'Kes Geleta', 'text': 'የሰንበት ትምህርት ቤት መርሃ-ግብር ከሰዓት በኋላ ይካሄዳል።', 'time': '5 hours ago'},
+        {
+          'author': 'Kes Geleta',
+          'text':
+              'እንኳን ለብርሃነ ትንሳኤው በሰላም አደረሳችሁ! የእሁድ መርሃ-ግብር ከጥዋቱ 2:00 ሰዓት ይጀምራል።',
+          'time': '2 hours ago'
+        },
+        {
+          'author': 'Kes Geleta',
+          'text': 'የሰንበት ትምህርት ቤት መርሃ-ግብር ከሰዓት በኋላ ይካሄዳል።',
+          'time': '5 hours ago'
+        },
       ]
     },
     {
@@ -43,12 +53,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
       'address': '15 Rue de Marseille, 69007 Lyon, France',
       'phone': '+33 4 78 00 00 00',
       'email': 'lyon.mosque@eurohabesha.eu',
-      'image': 'https://images.unsplash.com/photo-1564769625615-f10b0e5a914d?auto=format&fit=crop&w=800&q=80',
+      'image':
+          'https://images.unsplash.com/photo-1564769625615-f10b0e5a914d?auto=format&fit=crop&w=800&q=80',
       'adminName': 'Sheikh Ahmed (Page Admin)',
       'isFollowing': true,
       'followersCount': 512,
       'posts': [
-        {'author': 'Sheikh Ahmed', 'text': 'የጁምዓ ሶላት ከቀኑ 7:00 ሰዓት ይጀምራል። ሁሉም በሰዓቱ እንዲገኙ እናሳስባለን።', 'time': 'Yesterday'},
+        {
+          'author': 'Sheikh Ahmed',
+          'text': 'የጁምዓ ሶላት ከቀኑ 7:00 ሰዓት ይጀምራል። ሁሉም በሰዓቱ እንዲገኙ እናሳስባለን።',
+          'time': 'Yesterday'
+        },
       ]
     },
     {
@@ -58,12 +73,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
       'address': '10 Rue de la Paix, 75002 Paris, France',
       'phone': '+33 1 42 00 00 00',
       'email': 'paris.evangelical@eurohabesha.eu',
-      'image': 'https://images.unsplash.com/photo-1548625361-1694f454a372?auto=format&fit=crop&w=800&q=80',
+      'image':
+          'https://images.unsplash.com/photo-1548625361-1694f454a372?auto=format&fit=crop&w=800&q=80',
       'adminName': 'Pastor Daniel (Admin)',
       'isFollowing': false,
       'followersCount': 280,
       'posts': [
-        {'author': 'Pastor Daniel', 'text': 'የሐሙስ የምስጋና ጸሎት ማህበር ከማታው 12:00 ሰዓት ጀምሮ ይካሄዳል።', 'time': '3 days ago'},
+        {
+          'author': 'Pastor Daniel',
+          'text': 'የሐሙስ የምስጋና ጸሎት ማህበር ከማታው 12:00 ሰዓት ጀምሮ ይካሄዳል።',
+          'time': '3 days ago'
+        },
       ]
     },
     {
@@ -73,12 +93,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
       'address': 'Central Stockholm, Sweden',
       'phone': '+46 70 000 00 00',
       'email': 'eritrean.stockholm@eurohabesha.eu',
-      'image': 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=800&q=80',
+      'image':
+          'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=800&q=80',
       'adminName': 'Community Admin',
       'isFollowing': false,
       'followersCount': 185,
       'posts': [
-        {'author': 'Community Admin', 'text': 'Community gathering and cultural support updates will be posted here.', 'time': 'Today'},
+        {
+          'author': 'Community Admin',
+          'text':
+              'Community gathering and cultural support updates will be posted here.',
+          'time': 'Today'
+        },
       ]
     },
   ];
@@ -102,7 +128,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ].whereType<String>().join(' ').toLowerCase();
 
       final matchesSearch = query.isEmpty || searchableText.contains(query);
-      final matchesReligion = _selectedReligion == null || type.contains(_selectedReligion!.toLowerCase());
+      final matchesReligion = _selectedReligion == null ||
+          type.contains(_selectedReligion!.toLowerCase());
       return matchesSearch && matchesReligion;
     }).toList();
   }
@@ -117,7 +144,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardGreen,
-        title: Text('Admin Post: $commName', style: TextStyle(color: primaryGold, fontSize: 15)),
+        title: Text('Admin Post: $commName',
+            style: TextStyle(color: primaryGold, fontSize: 15)),
         content: TextField(
           controller: postController,
           maxLines: 4,
@@ -131,7 +159,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryGold),
@@ -148,11 +177,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 });
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Official announcement published!')),
+                  const SnackBar(
+                      content: Text('Official announcement published!')),
                 );
               }
             },
-            child: const Text('Publish', style: TextStyle(color: Color(0xFF061E12), fontWeight: FontWeight.bold)),
+            child: const Text('Publish',
+                style: TextStyle(
+                    color: Color(0xFF061E12), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -181,13 +213,30 @@ class _CommunityScreenState extends State<CommunityScreen> {
             final status = data['status']?.toString() ?? 'published';
             if (status == 'published' || status == 'approved') {
               final fields = Map<String, dynamic>.from(data['fields'] ?? {});
-              final name = fields['title']?.toString() ?? data['name']?.toString() ?? data['title']?.toString() ?? 'Community';
-              final type = fields['communityType']?.toString() ?? data['type']?.toString() ?? 'Community Group';
-              final location = fields['cityAddress']?.toString() ?? data['location']?.toString() ?? fields['country']?.toString() ?? 'Europe';
-              final address = fields['address']?.toString() ?? data['address']?.toString() ?? location;
-              final phone = fields['phoneNumber']?.toString() ?? data['phone']?.toString() ?? '';
-              final email = fields['emailAddress']?.toString() ?? data['email']?.toString() ?? data['submitterEmail']?.toString() ?? '';
-              final image = data['imageUrl']?.toString() ?? data['image']?.toString() ?? '';
+              final name = fields['title']?.toString() ??
+                  data['name']?.toString() ??
+                  data['title']?.toString() ??
+                  'Community';
+              final type = fields['communityType']?.toString() ??
+                  data['type']?.toString() ??
+                  'Community Group';
+              final location = fields['cityAddress']?.toString() ??
+                  data['location']?.toString() ??
+                  fields['country']?.toString() ??
+                  'Europe';
+              final address = fields['address']?.toString() ??
+                  data['address']?.toString() ??
+                  location;
+              final phone = fields['phoneNumber']?.toString() ??
+                  data['phone']?.toString() ??
+                  '';
+              final email = fields['emailAddress']?.toString() ??
+                  data['email']?.toString() ??
+                  data['submitterEmail']?.toString() ??
+                  '';
+              final image = data['imageUrl']?.toString() ??
+                  data['image']?.toString() ??
+                  '';
 
               combined.add({
                 'id': doc.id,
@@ -198,7 +247,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 'phone': phone,
                 'email': email,
                 'image': image,
-                'adminName': fields['leaderName'] ?? data['adminName'] ?? 'Community Admin',
+                'adminName': fields['leaderName'] ??
+                    data['adminName'] ??
+                    'Community Admin',
                 'isFollowing': false,
                 'followersCount': 100,
                 'posts': data['posts'] is List ? data['posts'] : [],
@@ -225,14 +276,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ].whereType<String>().join(' ').toLowerCase();
 
           final matchesSearch = query.isEmpty || searchableText.contains(query);
-          final matchesReligion = _selectedReligion == null || type.contains(_selectedReligion!.toLowerCase());
+          final matchesReligion = _selectedReligion == null ||
+              type.contains(_selectedReligion!.toLowerCase());
           return matchesSearch && matchesReligion;
         }).toList();
 
         return Scaffold(
           backgroundColor: primaryDarkGreen,
           appBar: AppBar(
-            title: Text('Habesha Communities & Churches', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+            title: Text('Habesha Communities & Churches',
+                style:
+                    TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
             backgroundColor: primaryDarkGreen,
             centerTitle: true,
             iconTheme: IconThemeData(color: primaryGold),
@@ -244,7 +298,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const DynamicSubmissionScreen(type: SubmissionType.community)),
+                    MaterialPageRoute(
+                        builder: (_) => const DynamicSubmissionScreen(
+                            type: SubmissionType.community)),
                   );
                 },
               ),
@@ -264,7 +320,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     suffixIcon: _searchQuery.isEmpty
                         ? null
                         : IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white54),
+                            icon:
+                                const Icon(Icons.close, color: Colors.white54),
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
@@ -272,16 +329,25 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           ),
                     filled: true,
                     fillColor: cardGreen,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none),
                   ),
                   onChanged: (value) => setState(() => _searchQuery = value),
                 ),
               ),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
-                  children: ['Orthodox', 'Protestant', 'Muslim', 'Catholic', 'Eritrean'].map((religion) {
+                  children: [
+                    'Orthodox',
+                    'Protestant',
+                    'Muslim',
+                    'Catholic',
+                    'Eritrean'
+                  ].map((religion) {
                     final selected = _selectedReligion == religion;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -291,8 +357,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         backgroundColor: cardGreen,
                         selectedColor: primaryGold,
                         checkmarkColor: primaryDarkGreen,
-                        labelStyle: TextStyle(color: selected ? primaryDarkGreen : Colors.white, fontWeight: FontWeight.bold),
-                        side: BorderSide(color: selected ? primaryGold : Colors.white24),
+                        labelStyle: TextStyle(
+                            color: selected ? primaryDarkGreen : Colors.white,
+                            fontWeight: FontWeight.bold),
+                        side: BorderSide(
+                            color: selected ? primaryGold : Colors.white24),
                         onSelected: (value) {
                           setState(() {
                             _selectedReligion = value ? religion : null;
@@ -305,7 +374,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
               Expanded(
                 child: filtered.isEmpty
-                    ? const Center(child: Text('No communities found.', style: TextStyle(color: Colors.white54)))
+                    ? const Center(
+                        child: Text('No communities found.',
+                            style: TextStyle(color: Colors.white54)))
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: filtered.length,
@@ -316,7 +387,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           final String type = comm['type'] ?? '';
                           final String location = comm['location'] ?? '';
                           final String adminName = comm['adminName'] ?? '';
-                          final int followersCount = comm['followersCount'] ?? 0;
+                          final int followersCount =
+                              comm['followersCount'] ?? 0;
                           final String imageUrl = comm['image'] ?? '';
 
                           return GestureDetector(
@@ -324,7 +396,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             child: Card(
                               color: cardGreen,
                               margin: const EdgeInsets.only(bottom: 20),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
                               child: Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Column(
@@ -333,78 +406,135 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                     Row(
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(30),
+                                          borderRadius:
+                                              BorderRadius.circular(30),
                                           child: imageUrl.isNotEmpty
                                               ? Image.network(
                                                   imageUrl,
                                                   width: 60,
                                                   height: 60,
                                                   fit: BoxFit.cover,
-                                                  errorBuilder: (c, e, s) => CircleAvatar(
-                                                    backgroundColor: primaryGold.withOpacity(0.2),
-                                                    child: Icon(Icons.church, color: primaryGold),
+                                                  errorBuilder: (c, e, s) =>
+                                                      CircleAvatar(
+                                                    backgroundColor: primaryGold
+                                                        .withValues(alpha: 0.2),
+                                                    child: Icon(Icons.church,
+                                                        color: primaryGold),
                                                   ),
                                                 )
                                               : CircleAvatar(
-                                                  backgroundColor: primaryGold.withOpacity(0.2),
-                                                  child: Icon(Icons.church, color: primaryGold),
+                                                  backgroundColor: primaryGold
+                                                      .withValues(alpha: 0.2),
+                                                  child: Icon(Icons.church,
+                                                      color: primaryGold),
                                                 ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
-                                              Text(name, style: TextStyle(color: primaryGold, fontSize: 15, fontWeight: FontWeight.bold)),
+                                              Text(name,
+                                                  style: TextStyle(
+                                                      color: primaryGold,
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.bold)),
                                               const SizedBox(height: 2),
-                                              Text('$type • $location', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                                              Text('Admin: $adminName • $followersCount Followers', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                                              Text('$type • $location',
+                                                  style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 11)),
+                                              Text(
+                                                  'Admin: $adminName • $followersCount Followers',
+                                                  style: const TextStyle(
+                                                      color: Colors.white38,
+                                                      fontSize: 10)),
                                             ],
                                           ),
                                         ),
-                                        const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
+                                        const Icon(Icons.arrow_forward_ios,
+                                            color: Colors.white38, size: 16),
                                       ],
                                     ),
-                                    const Divider(color: Colors.white24, height: 20),
-                                    Text('Latest Announcements:', style: TextStyle(color: primaryGold, fontSize: 12, fontWeight: FontWeight.bold)),
+                                    const Divider(
+                                        color: Colors.white24, height: 20),
+                                    Text('Latest Announcements:',
+                                        style: TextStyle(
+                                            color: primaryGold,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 6),
-                                    ...List.generate(posts.length > 1 ? 1 : posts.length, (pIndex) {
+                                    ...List.generate(
+                                        posts.length > 1 ? 1 : posts.length,
+                                        (pIndex) {
                                       final post = posts[pIndex];
                                       return Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
                                           color: primaryDarkGreen,
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
-                                                Text(post['author'] ?? '', style: TextStyle(color: primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
-                                                Text(post['time'] ?? '', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                                                Text(post['author'] ?? '',
+                                                    style: TextStyle(
+                                                        color: primaryGold,
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.bold)),
+                                                Text(post['time'] ?? '',
+                                                    style: const TextStyle(
+                                                        color: Colors.white38,
+                                                        fontSize: 10)),
                                               ],
                                             ),
                                             const SizedBox(height: 4),
-                                            Text(post['text'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                            Text(post['text'] ?? '',
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                    height: 1.3),
+                                                maxLines: 2,
+                                                overflow:
+                                                    TextOverflow.ellipsis),
                                           ],
                                         ),
                                       );
                                     }),
                                     const SizedBox(height: 10),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('Tap for full details & map ➔', style: TextStyle(color: primaryGold.withOpacity(0.8), fontSize: 11, fontStyle: FontStyle.italic)),
+                                        Text('Tap for full details & map ➔',
+                                            style: TextStyle(
+                                                color: primaryGold.withValues(
+                                                    alpha: 0.8),
+                                                fontSize: 11,
+                                                fontStyle: FontStyle.italic)),
                                         IconButton(
                                           icon: Container(
                                             padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(color: primaryGold, shape: BoxShape.circle),
-                                            child: Icon(Icons.add, color: primaryDarkGreen, size: 16),
+                                            decoration: BoxDecoration(
+                                                color: primaryGold,
+                                                shape: BoxShape.circle),
+                                            child: Icon(Icons.add,
+                                                color: primaryDarkGreen,
+                                                size: 16),
                                           ),
                                           tooltip: 'Page Admin Post',
-                                          onPressed: () => _showAddPostDialog(context, index),
+                                          onPressed: () => _showAddPostDialog(
+                                              context, index),
                                         ),
                                       ],
                                     ),
@@ -430,7 +560,8 @@ class CommunityDetailScreen extends StatelessWidget {
 
   // 🗺️ ሉቋል: ጉግል ማፕ በቀጥታ የሚከፍትበት ፈንክሽን (Google Maps Launcher)
   Future<void> _openMap(String address) async {
-    final Uri mapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
+    final Uri mapUri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
     try {
       if (await canLaunchUrl(mapUri)) {
         await launchUrl(mapUri, mode: LaunchMode.externalApplication);
@@ -450,15 +581,18 @@ class CommunityDetailScreen extends StatelessWidget {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(followed ? 'You will receive updates from $name.' : 'Sign in and verify your email to follow this community.')),
+      SnackBar(
+          content: Text(followed
+              ? 'You will receive updates from $name.'
+              : 'Sign in and verify your email to follow this community.')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryDarkGreen = const Color(0xFF061E12);
-    final Color primaryGold = const Color(0xFFFFD700);
-    final Color cardGreen = const Color(0xFF004D40);
+    const Color primaryDarkGreen = Color(0xFF061E12);
+    const Color primaryGold = Color(0xFFFFD700);
+    const Color cardGreen = Color(0xFF004D40);
 
     final String name = community['name'] ?? '';
     final String type = community['type'] ?? '';
@@ -471,9 +605,11 @@ class CommunityDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: Text(name, style: TextStyle(color: primaryGold, fontSize: 15, fontWeight: FontWeight.bold)),
+        title: Text(name,
+            style: const TextStyle(
+                color: primaryGold, fontSize: 15, fontWeight: FontWeight.bold)),
         backgroundColor: primaryDarkGreen,
-        iconTheme: IconThemeData(color: primaryGold),
+        iconTheme: const IconThemeData(color: primaryGold),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -485,17 +621,31 @@ class CommunityDetailScreen extends StatelessWidget {
                     height: 220,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (c, e, s) => Container(height: 220, color: cardGreen, child: Icon(Icons.church, color: primaryGold, size: 80)),
+                    errorBuilder: (c, e, s) => Container(
+                        height: 220,
+                        color: cardGreen,
+                        child: const Icon(Icons.church,
+                            color: primaryGold, size: 80)),
                   )
-                : Container(height: 220, color: cardGreen, child: Icon(Icons.church, color: primaryGold, size: 80)),
+                : Container(
+                    height: 220,
+                    color: cardGreen,
+                    child:
+                        const Icon(Icons.church, color: primaryGold, size: 80)),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: TextStyle(color: primaryGold, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(name,
+                      style: const TextStyle(
+                          color: primaryGold,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
-                  Text('$type • $location', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                  Text('$type • $location',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 14)),
                   const SizedBox(height: 15),
                   SizedBox(
                     width: double.infinity,
@@ -504,33 +654,45 @@ class CommunityDetailScreen extends StatelessWidget {
                         backgroundColor: primaryGold,
                         foregroundColor: primaryDarkGreen,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       icon: const Icon(Icons.notifications_active_outlined),
-                      label: const Text('Follow for Updates', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      label: const Text('Follow for Updates',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15)),
                       onPressed: () => _followForUpdates(context, name),
                     ),
                   ),
                   const SizedBox(height: 15),
                   Container(
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: cardGreen, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                        color: cardGreen,
+                        borderRadius: BorderRadius.circular(12)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.location_on, color: Color(0xFFFFD700), size: 20),
+                            const Icon(Icons.location_on,
+                                color: Color(0xFFFFD700), size: 20),
                             const SizedBox(width: 8),
-                            Expanded(child: Text('Address: $address', style: const TextStyle(color: Colors.white, fontSize: 13))),
+                            Expanded(
+                                child: Text('Address: $address',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 13))),
                           ],
                         ),
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(Icons.phone, color: Color(0xFFFFD700), size: 20),
+                            const Icon(Icons.phone,
+                                color: Color(0xFFFFD700), size: 20),
                             const SizedBox(width: 8),
-                            Text('Phone: $phone', style: const TextStyle(color: Colors.white, fontSize: 13)),
+                            Text('Phone: $phone',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 13)),
                           ],
                         ),
                         const SizedBox(height: 15),
@@ -545,33 +707,53 @@ class CommunityDetailScreen extends StatelessWidget {
                               // 🗺️ አሁን ማፑን በቀጥታ ይከፍታል!
                               _openMap(address);
                             },
-                            child: Text('Get Directions / Map 🗺️', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold, fontSize: 15)),
+                            child: const Text('Get Directions / Map 🗺️',
+                                style: TextStyle(
+                                    color: primaryDarkGreen,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15)),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text('Official Announcements (${posts.length})', style: TextStyle(color: primaryGold, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Official Announcements (${posts.length})',
+                      style: const TextStyle(
+                          color: primaryGold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   ...List.generate(posts.length, (i) {
                     final p = posts[i];
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: cardGreen, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                          color: cardGreen,
+                          borderRadius: BorderRadius.circular(10)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Admin: ${p['author'] ?? 'Admin'}', style: TextStyle(color: primaryGold, fontSize: 12, fontWeight: FontWeight.bold)),
-                              Text(p['time'] ?? '', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                              Text('Admin: ${p['author'] ?? 'Admin'}',
+                                  style: const TextStyle(
+                                      color: primaryGold,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold)),
+                              Text(p['time'] ?? '',
+                                  style: const TextStyle(
+                                      color: Colors.white38, fontSize: 10)),
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Text(p['text'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4)),
+                          Text(p['text'] ?? '',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  height: 1.4)),
                         ],
                       ),
                     );

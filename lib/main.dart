@@ -1,20 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'notification_service.dart';
 import 'firebase_options.dart';
-import 'home_screen.dart';
+import 'package:euro_habesha/home_screen.dart';
 import 'business_screen.dart';
 import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
 import 'app_session.dart';
 import 'admin_announcement_screen.dart';
-import 'submission_menu_screen.dart';
+import 'advertisement_request_screen.dart';
 import 'admin_passcode_screen.dart';
 import 'review_prompt_service.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+  const stripePublishableKey = String.fromEnvironment(
+    'STRIPE_PUBLISHABLE_KEY',
+  );
+
+  if (stripePublishableKey.isNotEmpty) {
+    Stripe.publishableKey = stripePublishableKey;
+    await Stripe.instance.applySettings();
+  }
   var firebaseReady = false;
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -28,7 +44,22 @@ void main() async {
     FlutterError.presentError(details);
   };
 
-  runApp(EuroHabeshaApp(firebaseReady: firebaseReady));
+  await EasyLocalization.ensureInitialized();
+
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [
+        Locale('en'),
+        Locale('am'),
+        Locale('fr'),
+        Locale('ti'),
+      ],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('en'),
+      useOnlyLangCode: true,
+      child: EuroHabeshaApp(firebaseReady: firebaseReady),
+    ),
+  );
 }
 
 class EuroHabeshaApp extends StatelessWidget {
@@ -39,8 +70,12 @@ class EuroHabeshaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Euro Habesha',
       debugShowCheckedModeBanner: false,
+      locale: context.locale,
+      supportedLocales: context.supportedLocales,
+      localizationsDelegates: context.localizationDelegates,
       theme: ThemeData(
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
@@ -66,8 +101,11 @@ class EuroHabeshaApp extends StatelessWidget {
         '/app': (context) => const MainNavigationScreen(),
         '/login': (context) => const LoginScreen(),
         '/admin-passcode': (context) => const AdminPasscodeScreen(),
+        '/advertisement-request': (context) =>
+            const AdvertisementRequestScreen(),
       },
-      home: firebaseReady ? const MainNavigationScreen() : const SafeHomeScreen(),
+      home:
+          firebaseReady ? const MainNavigationScreen() : const SafeHomeScreen(),
     );
   }
 }
@@ -89,7 +127,8 @@ class SafeHomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 50),
-                  const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 60),
+                  const Icon(Icons.check_circle,
+                      color: Color(0xFFFFD700), size: 60),
                   const SizedBox(height: 20),
                   const Text(
                     'Euro Habesha',
@@ -101,7 +140,7 @@ class SafeHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'App Initialized Successfully! ✅',
+                    'App Initialized Successfully! âœ…',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white70,
@@ -120,12 +159,20 @@ class SafeHomeScreen extends StatelessWidget {
                       children: [
                         Text(
                           'System Status:',
-                          style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Color(0xFFFFD700),
+                              fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 10),
-                        Text('Firebase: Connected ✅', style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
-                        Text('UI Framework: Loaded ✅', style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
-                        Text('Plugins: Initialized ✅', style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                        Text('Firebase: Connected âœ…',
+                            style: TextStyle(
+                                color: Colors.greenAccent, fontSize: 12)),
+                        Text('UI Framework: Loaded âœ…',
+                            style: TextStyle(
+                                color: Colors.greenAccent, fontSize: 12)),
+                        Text('Plugins: Initialized âœ…',
+                            style: TextStyle(
+                                color: Colors.greenAccent, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -133,14 +180,18 @@ class SafeHomeScreen extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFFD700),
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () {
                       try {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const MainNavigationScreen()),
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -169,7 +220,7 @@ class SafeHomeScreen extends StatelessWidget {
 }
 
 // ==========================================
-// ── 1. መጀመሪያ ሲከፈት የሚመጣው የ Welcome / Sign-Up ገጽ ──
+// â”€â”€ 1. áˆ˜áŒ€áˆ˜áˆªá‹« áˆ²áŠ¨áˆá‰µ á‹¨áˆšáˆ˜áŒ£á‹ á‹¨ Welcome / Sign-Up áŒˆáŒ½ â”€â”€
 // ==========================================
 class WelcomeAuthScreen extends StatelessWidget {
   const WelcomeAuthScreen({super.key});
@@ -195,18 +246,21 @@ class WelcomeAuthScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ሎጎ ከላይ በግልጽ እንዲታይ (ወደ አዲሱ ፎልደር ተቀይሯል)
                 Image.asset(
                   'assets/images/euro_habesha_logo.png',
                   width: 65,
                   height: 65,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.hub, color: primaryGold, size: 50),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.hub, color: primaryGold, size: 50),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'Join Euro Habesha',
-                  style: TextStyle(color: primaryGold, fontSize: 22, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: primaryGold,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -224,16 +278,20 @@ class WelcomeAuthScreen extends StatelessWidget {
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black87,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const MainNavigationScreen()),
                       );
                     },
                     icon: const Icon(Icons.g_mobiledata, size: 26),
-                    label: const Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    label: const Text('Continue with Google',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -246,16 +304,20 @@ class WelcomeAuthScreen extends StatelessWidget {
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const MainNavigationScreen()),
                       );
                     },
                     icon: const Icon(Icons.apple, size: 20),
-                    label: const Text('Continue with Apple', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    label: const Text('Continue with Apple',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -268,16 +330,20 @@ class WelcomeAuthScreen extends StatelessWidget {
                       backgroundColor: primaryGold,
                       foregroundColor: primaryDarkGreen,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const MainNavigationScreen()),
                       );
                     },
                     icon: const Icon(Icons.email, size: 18),
-                    label: const Text('Sign Up with Email', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    label: const Text('Sign Up with Email',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
                   ),
                 ),
                 const SizedBox(height: 15),
@@ -287,10 +353,12 @@ class WelcomeAuthScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const MainNavigationScreen()),
                     );
                   },
-                  child: const Text('Maybe Later', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                  child: const Text('Maybe Later',
+                      style: TextStyle(color: Colors.white60, fontSize: 13)),
                 ),
               ],
             ),
@@ -302,7 +370,7 @@ class WelcomeAuthScreen extends StatelessWidget {
 }
 
 // ==========================================
-// ── 2. ዋናው የማሰሳያ ስክሪን (Main Navigation) ──
+// â”€â”€ 2. á‹‹áŠ“á‹ á‹¨áˆ›áˆ°áˆ³á‹« áˆµáŠ­áˆªáŠ• (Main Navigation) â”€â”€
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -313,7 +381,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
-  
+
   final Color primaryDarkGreen = const Color(0xFF061E12);
   final Color primaryGold = const Color(0xFFFFD700);
   final Color cardGreen = const Color(0xFF004D40);
@@ -321,11 +389,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+
+    _initializeSession();
+
     Future.delayed(const Duration(seconds: 35), () {
       if (mounted) {
         ReviewPromptService.maybeShowReviewPrompt(context);
       }
     });
+  }
+
+  Future<void> _initializeSession() async {
+    await AppSession.restoreFromFirebase();
+
+    if (!mounted) {
+      return;
+    }
+
+    await NotificationService.instance.initialize(
+      navigatorKey: navigatorKey,
+    );
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _selectTab(int index) {
@@ -339,7 +426,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (AppSession.isSuperAdmin) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const AdminAnnouncementScreen()),
+        MaterialPageRoute(
+            builder: (context) => const AdminAnnouncementScreen()),
       );
       return;
     }
@@ -358,7 +446,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         bottom: false,
         child: IndexedStack(
           index: _selectedIndex,
-          children: const [
+          children: [
             HomeScreen(),
             BusinessDirectoryScreen(),
             ChatScreen(),
@@ -393,7 +481,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 _buildNavItem(Icons.home, 'Home', 0),
                 _buildNavItem(Icons.storefront, 'Business', 1),
                 const SizedBox(width: 56),
-                _buildNavItem(Icons.chat, 'Messages', 2),
+                _buildMessagesNavItem(),
                 _buildNavItem(Icons.person, 'Profile', 3),
               ],
             ),
@@ -403,7 +491,53 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
+  Widget _buildMessagesNavItem() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return _buildNavItem(Icons.chat, 'Messages', 2);
+    }
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('chats')
+          .where('participants', arrayContains: user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final chats = snapshot.data?.docs ?? [];
+
+        var unreadCount = 0;
+
+        for (final chatDoc in chats) {
+          final data = chatDoc.data();
+
+          final unreadCounts = Map<String, dynamic>.from(
+            data['unreadCounts'] ?? const <String, dynamic>{},
+          );
+
+          final value = unreadCounts[user.uid];
+
+          if (value is num) {
+            unreadCount += value.toInt();
+          }
+        }
+
+        return _buildNavItem(
+          Icons.chat,
+          'Messages',
+          2,
+          badgeCount: unreadCount,
+        );
+      },
+    );
+  }
+
+  Widget _buildNavItem(
+    IconData icon,
+    String label,
+    int index, {
+    int badgeCount = 0,
+  }) {
     final isSelected = _selectedIndex == index;
     final color = isSelected ? primaryGold : Colors.white54;
 
@@ -417,9 +551,44 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: color, size: 23),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, color: color, size: 23),
+                  if (badgeCount > 0)
+                    Positioned(
+                      right: -11,
+                      top: -9,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: primaryGold,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          badgeCount > 99 ? '99+' : '$badgeCount',
+                          style: TextStyle(
+                            color: primaryDarkGreen,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 3),
-              Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500)),
+              Text(label,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500)),
             ],
           ),
         ),

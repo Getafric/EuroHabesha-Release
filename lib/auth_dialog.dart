@@ -30,26 +30,30 @@ class AuthComponents {
                 child: const Icon(Icons.public, color: primaryGold, size: 40),
               ),
               const SizedBox(height: 20),
-              
+
               const Text(
                 'Join Euro Habesha',
-                style: TextStyle(color: primaryGold, fontSize: 22, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: primaryGold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              
+
               const Text(
                 'Create an account to post,\nmessage, and connect with the\ncommunity.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                style:
+                    TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
               ),
               const SizedBox(height: 30),
 
               // ── Google Button ──
               _buildAuthButton(
-                icon: Icons.g_mobiledata, 
-                label: 'Continue with Google', 
-                bgColor: Colors.white, 
-                textColor: Colors.black, 
+                icon: Icons.g_mobiledata,
+                label: 'Continue with Google',
+                bgColor: Colors.white,
+                textColor: Colors.black,
                 iconColor: Colors.black,
                 onTap: () {},
               ),
@@ -57,10 +61,10 @@ class AuthComponents {
 
               // ── Apple Button ──
               _buildAuthButton(
-                icon: Icons.apple, 
-                label: 'Continue with Apple', 
-                bgColor: Colors.black, 
-                textColor: Colors.white, 
+                icon: Icons.apple,
+                label: 'Continue with Apple',
+                bgColor: Colors.black,
+                textColor: Colors.white,
                 iconColor: Colors.white,
                 onTap: () {},
               ),
@@ -68,10 +72,10 @@ class AuthComponents {
 
               // ── Email Button ──
               _buildAuthButton(
-                icon: Icons.email, 
-                label: 'Sign Up with Email', 
-                bgColor: primaryGold, 
-                textColor: Colors.black, 
+                icon: Icons.email,
+                label: 'Sign Up with Email',
+                bgColor: primaryGold,
+                textColor: Colors.black,
                 iconColor: Colors.black,
                 onTap: () {},
               ),
@@ -82,7 +86,10 @@ class AuthComponents {
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'Maybe Later',
-                  style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -92,21 +99,21 @@ class AuthComponents {
     );
   }
 
-  static Widget _buildAuthButton({
-    required IconData icon, 
-    required String label, 
-    required Color bgColor, 
-    required Color textColor, 
-    required Color iconColor,
-    required VoidCallback onTap
-  }) {
+  static Widget _buildAuthButton(
+      {required IconData icon,
+      required String label,
+      required Color bgColor,
+      required Color textColor,
+      required Color iconColor,
+      required VoidCallback onTap}) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: bgColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: onTap,
         child: Row(
@@ -114,7 +121,11 @@ class AuthComponents {
           children: [
             Icon(icon, color: iconColor, size: 24),
             const SizedBox(width: 10),
-            Text(label, style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.bold)),
+            Text(label,
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
       ),

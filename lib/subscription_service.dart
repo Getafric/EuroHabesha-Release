@@ -3,7 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'app_session.dart';
 
 class SubscriptionService {
-  static Future<bool> follow({required String type, required String targetId, required String targetName}) async {
+  static Future<bool> follow(
+      {required String type,
+      required String targetId,
+      required String targetName}) async {
     if (type != 'community' && type != 'event') {
       return false;
     }
@@ -17,7 +20,10 @@ class SubscriptionService {
       return false;
     }
 
-    await FirebaseFirestore.instance.collection('subscriptions').doc('${user.uid}_${type}_$targetId').set({
+    await FirebaseFirestore.instance
+        .collection('subscriptions')
+        .doc('${user.uid}_${type}_$targetId')
+        .set({
       'userId': user.uid,
       'userEmail': user.email,
       'type': type,

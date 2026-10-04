@@ -1,0 +1,18 @@
+﻿{
+  "app_name": "Euro Habesha",
+  "profile_settings": "Profile Settings",
+  "language": "Language",
+  "system_language": "System language",
+
+  "ticker_legal_title": "Trusted Legal Services",
+  "ticker_legal_desc": "Connect with Habesha immigration lawyers in Paris & Rome.",
+
+  "ticker_transport_title": "Fast Cargo & Transport",
+  "ticker_transport_desc": "Reliable heavy vehicle logistics across France and Germany.",
+
+  "ticker_verify_title": "Get Verified Today",
+  "ticker_verify_desc": "Upgrade to Silver or VIP Gold badge for your business profile.",
+
+  "ticker_events_title": "Habesha Community Events",
+  "ticker_events_desc": "Join upcoming traditional celebrations and cultural meetings."
+}

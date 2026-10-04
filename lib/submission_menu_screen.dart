@@ -1,71 +1,267 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dynamic_submission_screen.dart';
 
-class SubmissionMenuScreen extends StatelessWidget {
-  const SubmissionMenuScreen({super.key});
+import 'app_session.dart';
 
-  static const Color primaryDarkGreen = Color(0xFF061E12);
-  static const Color primaryGold = Color(0xFFFFD700);
-  static const Color cardGreen = Color(0xFF004D40);
+class AdvertisementRequestScreen extends StatefulWidget {
+  const AdvertisementRequestScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final options = [
-      _SubmissionOption('Request Verification', 'Optional: verify your personal, business, or community page', Icons.verified_user, SubmissionType.verification),
-      _SubmissionOption('Register a Business / Restaurant', 'Business profile, phone, address, reservation-ready setup', Icons.storefront, SubmissionType.business),
-      _SubmissionOption('Register as a Professional', 'Doctor, lawyer, accountant, translator, caterer, photographer, etc.', Icons.medical_services_outlined, SubmissionType.professional),
-      _SubmissionOption('Submit a Job or Service', 'Job/service listing with WhatsApp or in-app contact options', Icons.work, SubmissionType.job),
-      _SubmissionOption('Submit an Event', 'Tickets, performers, end time, age rules, and amenities', Icons.event, SubmissionType.event),
-      _SubmissionOption('Register a Community', 'Church, mosque, association, gathering schedule, and contacts', Icons.groups, SubmissionType.community),
-    ];
+  State<AdvertisementRequestScreen> createState() =>
+      _AdvertisementRequestScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: primaryDarkGreen,
-      appBar: AppBar(
-        title: const Text('Submission & Registration', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryDarkGreen,
-        iconTheme: const IconThemeData(color: primaryGold),
+class _AdvertisementRequestScreenState
+    extends State<AdvertisementRequestScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _businessNameController = TextEditingController();
+  final _contactController = TextEditingController();
+  final _budgetController = TextEditingController();
+
+  String _advertisementType = 'Business';
+  String _duration = '30 days';
+  bool _isSubmitting = false;
+
+  static const primaryDarkGreen = Color(0xFF061E12);
+  static const primaryGold = Color(0xFFFFD700);
+  static const cardGreen = Color(0xFF004D40);
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _businessNameController.dispose();
+    _contactController.dispose();
+    _budgetController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitRequest() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null || AppSession.isGuest) {
+      _showMessage('Please sign in before requesting advertising.');
+      return;
+    }
+
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await FirebaseFirestore.instance.collection('advertisementRequests').add({
+        'title': _titleController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'businessName': _businessNameController.text.trim(),
+        'advertisementType': _advertisementType,
+        'duration': _duration,
+        'contact': _contactController.text.trim(),
+        'budget': _budgetController.text.trim(),
+        'submittedBy': user.uid,
+        'ownerId': user.uid,
+        'submitterEmail': user.email ?? '',
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Your advertising request has been sent for admin approval.',
+          ),
+        ),
+      );
+    } catch (e) {
+      _showMessage('Request failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  InputDecoration _decoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white70),
+      filled: true,
+      fillColor: Colors.white10,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final option = options[index];
-          return Card(
-            color: cardGreen,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: CircleAvatar(
-                backgroundColor: primaryGold,
-                child: Icon(option.icon, color: primaryDarkGreen),
-              ),
-              title: Text(option.title, style: const TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 5),
-                child: Text(option.subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => DynamicSubmissionScreen(type: option.type)),
-                );
-              },
-            ),
-          );
-        },
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
       ),
     );
   }
-}
 
-class _SubmissionOption {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final SubmissionType type;
-
-  const _SubmissionOption(this.title, this.subtitle, this.icon, this.type);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: primaryDarkGreen,
+      appBar: AppBar(
+        title: const Text(
+          'Request Sponsored Advertising',
+          style: TextStyle(
+            color: primaryGold,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: primaryDarkGreen,
+        iconTheme: const IconThemeData(color: primaryGold),
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text(
+              'Promote your business, service, event, or product on Euro Habesha.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: _titleController,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Advertisement title'),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter an advertisement title'
+                  : null,
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _businessNameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Business / brand name'),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter your business or brand name'
+                  : null,
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              value: _advertisementType,
+              dropdownColor: cardGreen,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Advertisement type'),
+              items: const [
+                DropdownMenuItem(
+                  value: 'Business',
+                  child: Text('Business'),
+                ),
+                DropdownMenuItem(
+                  value: 'Professional',
+                  child: Text('Professional'),
+                ),
+                DropdownMenuItem(
+                  value: 'Marketplace',
+                  child: Text('Marketplace'),
+                ),
+                DropdownMenuItem(
+                  value: 'Event',
+                  child: Text('Event'),
+                ),
+                DropdownMenuItem(
+                  value: 'Service',
+                  child: Text('Service'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _advertisementType = value);
+                }
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _descriptionController,
+              maxLines: 4,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Advertisement description'),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter a description'
+                  : null,
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _contactController,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Phone / WhatsApp / Email'),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter a contact method'
+                  : null,
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              value: _duration,
+              dropdownColor: cardGreen,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Requested duration'),
+              items: const [
+                DropdownMenuItem(
+                  value: '7 days',
+                  child: Text('7 days'),
+                ),
+                DropdownMenuItem(
+                  value: '30 days',
+                  child: Text('30 days'),
+                ),
+                DropdownMenuItem(
+                  value: '60 days',
+                  child: Text('60 days'),
+                ),
+                DropdownMenuItem(
+                  value: '90 days',
+                  child: Text('90 days'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _duration = value);
+                }
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _budgetController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: _decoration('Estimated budget (optional)'),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _isSubmitting ? null : _submitRequest,
+              icon: const Icon(Icons.send),
+              label: Text(
+                _isSubmitting ? 'Sending...' : 'Send Advertising Request',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGold,
+                foregroundColor: primaryDarkGreen,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

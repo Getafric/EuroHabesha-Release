@@ -22,11 +22,17 @@ class PublicFeedSection extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(height: 64, child: Center(child: CircularProgressIndicator(color: primaryGold)));
+          return const SizedBox(
+              height: 64,
+              child:
+                  Center(child: CircularProgressIndicator(color: primaryGold)));
         }
 
-        final docs = (snapshot.data?.docs ?? []).where((doc) => doc.data()['status'] == 'published').toList()
-          ..sort((left, right) => _priorityScore(right.data()).compareTo(_priorityScore(left.data())));
+        final docs = (snapshot.data?.docs ?? [])
+            .where((doc) => doc.data()['status'] == 'published')
+            .toList()
+          ..sort((left, right) => _priorityScore(right.data())
+              .compareTo(_priorityScore(left.data())));
         if (docs.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -36,7 +42,11 @@ class PublicFeedSection extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Approved Community Feed', style: TextStyle(color: primaryGold, fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text('Approved Community Feed',
+                  style: TextStyle(
+                      color: primaryGold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 10),
             ...docs.map((doc) => _PublicFeedCard(doc: doc)),
@@ -51,7 +61,9 @@ class PublicFeedSection extends StatelessWidget {
     final badge = Map<String, dynamic>.from(data['verificationBadge'] ?? {});
     final badgeTitle = badge['title']?.toString().toLowerCase() ?? '';
     final publishedAt = data['publishedAt'];
-    final timestamp = publishedAt is Timestamp ? publishedAt.millisecondsSinceEpoch ~/ 100000 : 0;
+    final timestamp = publishedAt is Timestamp
+        ? publishedAt.millisecondsSinceEpoch ~/ 100000
+        : 0;
     final reviewScore = ((data['rating'] as num?)?.toDouble() ?? 0) * 1000;
     final reviewCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
     final verifiedBoost = badgeTitle.isNotEmpty ? 5000000 : 0;
@@ -60,7 +72,14 @@ class PublicFeedSection extends StatelessWidget {
     final silverBoost = badgeTitle.contains('silver') ? 6000000 : 0;
     final demoPenalty = data['isDemo'] == true ? -20000000 : 0;
 
-    return demoPenalty + vipBoost + proBoost + silverBoost + verifiedBoost + reviewScore.round() + reviewCount + timestamp;
+    return demoPenalty +
+        vipBoost +
+        proBoost +
+        silverBoost +
+        verifiedBoost +
+        reviewScore.round() +
+        reviewCount +
+        timestamp;
   }
 }
 
@@ -88,7 +107,8 @@ class _PublicFeedCard extends StatelessWidget {
               'location': data['subtitle'] ?? 'Europe',
               'address': data['subtitle'] ?? 'Europe',
               'rating': '5.0 (New)',
-              'badge': (data['verificationBadge'] as Map?)?['title'] ?? 'Verified',
+              'badge':
+                  (data['verificationBadge'] as Map?)?['title'] ?? 'Verified',
               'registration': 'SIRET: Verified Business',
               'phone': data['phone'] ?? '',
               'email': data['submitterEmail'] ?? '',
@@ -97,14 +117,24 @@ class _PublicFeedCard extends StatelessWidget {
               'openingHours': 'Mon - Sun: Open',
               'description': data['description'] ?? '',
               'icon': Icons.storefront,
-              'gallery': data['gallery'] ?? [],
-              'reviews': [],
+              'logoUrl': data['logoUrl'] ?? data['imageUrl'] ?? '',
+              'imageUrl': data['imageUrl'] ?? data['logoUrl'] ?? '',
+              'gallery': data['gallery'] ??
+                  ((data['imageUrl'] ?? data['logoUrl'] ?? '')
+                          .toString()
+                          .trim()
+                          .isNotEmpty
+                      ? [data['imageUrl'] ?? data['logoUrl']]
+                      : <dynamic>[]),
+              'reviews': const [],
               'docRef': doc.reference,
             },
           ),
         ),
       );
-    } else if (cat.contains('job') || cat.contains('pro') || sourceCol.contains('job')) {
+    } else if (cat.contains('job') ||
+        cat.contains('pro') ||
+        sourceCol.contains('job')) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -120,8 +150,16 @@ class _PublicFeedCard extends StatelessWidget {
               'whatsapp': data['phone'] ?? '',
               'description': data['description'] ?? '',
               'icon': Icons.work,
-              'gallery': [],
-              'reviews': [],
+              'logoUrl': data['logoUrl'] ?? data['imageUrl'] ?? '',
+              'imageUrl': data['imageUrl'] ?? data['logoUrl'] ?? '',
+              'gallery': data['gallery'] ??
+                  ((data['imageUrl'] ?? data['logoUrl'] ?? '')
+                          .toString()
+                          .trim()
+                          .isNotEmpty
+                      ? [data['imageUrl'] ?? data['logoUrl']]
+                      : <dynamic>[]),
+              'reviews': const [],
             },
           ),
         ),
@@ -142,9 +180,10 @@ class _PublicFeedCard extends StatelessWidget {
               'price': 'Free / See details',
               'description': data['description'] ?? '',
               'performerDj': 'Community',
-              'amenities': ['Community'],
-              'artists': [],
-              'image': 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
+              'amenities': const ['Community'],
+              'artists': const [],
+              'image':
+                  'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
             },
           ),
         ),
@@ -161,11 +200,12 @@ class _PublicFeedCard extends StatelessWidget {
               'address': data['subtitle'] ?? 'Europe',
               'phone': data['phone'] ?? '',
               'email': data['submitterEmail'] ?? '',
-              'image': 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=800&q=80',
+              'image':
+                  'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=800&q=80',
               'adminName': 'Community Admin',
               'isFollowing': false,
               'followersCount': 100,
-              'posts': [],
+              'posts': const [],
             },
           ),
         ),
@@ -180,7 +220,8 @@ class _PublicFeedCard extends StatelessWidget {
     final category = data['category']?.toString().toUpperCase() ?? 'APPROVED';
     final subtitle = data['subtitle']?.toString() ?? '';
     final description = data['description']?.toString() ?? '';
-    final isVerified = data['isVerified'] == true || data['verificationStatus'] == 'approved';
+    final isVerified =
+        data['isVerified'] == true || data['verificationStatus'] == 'approved';
     final subTier = data['subscriptionTier']?.toString();
 
     return Container(
@@ -188,7 +229,7 @@ class _PublicFeedCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: primaryGold.withOpacity(0.25)),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.25)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -201,38 +242,63 @@ class _PublicFeedCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: primaryGold.withOpacity(0.18), borderRadius: BorderRadius.circular(20)),
-                    child: Text(category, style: const TextStyle(color: primaryGold, fontSize: 10, fontWeight: FontWeight.bold)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: primaryGold.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text(category,
+                        style: const TextStyle(
+                            color: primaryGold,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 8),
-                  StatusBadgeWidget(isVerified: isVerified, subscriptionTier: subTier, compact: true),
+                  StatusBadgeWidget(
+                      isVerified: isVerified,
+                      subscriptionTier: subTier,
+                      compact: true),
                   const Spacer(),
                   if (AppSession.isSuperAdmin)
                     IconButton(
                       tooltip: 'Delete post',
                       visualDensity: VisualDensity.compact,
                       onPressed: () => _confirmDelete(context),
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.redAccent, size: 20),
                     ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(title, style: const TextStyle(color: primaryGold, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(title,
+                  style: const TextStyle(
+                      color: primaryGold,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               if (subtitle.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(subtitle,
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 12)),
               ],
               if (description.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(description, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.35), maxLines: 4, overflow: TextOverflow.ellipsis),
+                Text(description,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 13, height: 1.35),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis),
               ],
               const SizedBox(height: 8),
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text('View Full Profile', style: TextStyle(color: primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 4),
+                  Text('View Full Profile',
+                      style: TextStyle(
+                          color: primaryGold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                  SizedBox(width: 4),
                   Icon(Icons.arrow_forward_ios, color: primaryGold, size: 10),
                 ],
               ),
@@ -248,21 +314,29 @@ class _PublicFeedCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardGreen,
-        title: const Text('Delete feed item?', style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
-        content: const Text('This will remove the approved post from the public feed immediately.', style: TextStyle(color: Colors.white70)),
+        title: const Text('Delete feed item?',
+            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        content: const Text(
+            'This will remove the approved post from the public feed immediately.',
+            style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
 
     if (shouldDelete == true) {
-      await doc.reference.update({'status': 'deleted', 'deletedAt': FieldValue.serverTimestamp()});
+      await doc.reference.update(
+          {'status': 'deleted', 'deletedAt': FieldValue.serverTimestamp()});
     }
   }
 }

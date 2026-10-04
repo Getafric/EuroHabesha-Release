@@ -48,3 +48,11 @@ app.*.map.json
 .widget_preview/
 
 build/
+
+# Local backups and Java crash dumps
+backup/
+backup_files/
+*.hprof
+.agents/
+skills-lock.json
+lib/nearby_screen_backup.txt

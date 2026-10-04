@@ -59,7 +59,8 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
         assignedRoles: const ['superAdmin'],
         superAdminValidated: true,
       );
-      if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
+      if (mounted)
+        Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
       return;
     }
 
@@ -101,7 +102,8 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
     if (mounted) {
       setState(() {
         _isVerifying = false;
-        _errorText = 'Incorrect verification code or no active admin assignment for this email.';
+        _errorText =
+            'Incorrect verification code or no active admin assignment for this email.';
       });
     }
   }
@@ -123,23 +125,29 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                 decoration: BoxDecoration(
                   color: cardGreen,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: primaryGold.withOpacity(0.45)),
+                  border:
+                      Border.all(color: primaryGold.withValues(alpha: 0.45)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.admin_panel_settings, color: primaryGold, size: 58),
+                    const Icon(Icons.admin_panel_settings,
+                        color: primaryGold, size: 58),
                     const SizedBox(height: 14),
                     const Text(
                       'Admin Access Verification',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: primaryGold, fontSize: 22, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: primaryGold,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       userEmail,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                     const SizedBox(height: 22),
                     TextField(
@@ -148,7 +156,11 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                       obscureText: true,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 10, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          letterSpacing: 10,
+                          fontWeight: FontWeight.bold),
                       decoration: InputDecoration(
                         counterText: '',
                         labelText: 'Verification / Access Code',
@@ -156,8 +168,13 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                         errorText: _errorText,
                         filled: true,
                         fillColor: primaryDarkGreen,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryGold, width: 2)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: primaryGold, width: 2)),
                       ),
                       onSubmitted: (_) => _verifyPasscode(),
                     ),
@@ -165,11 +182,20 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: primaryGold, padding: const EdgeInsets.symmetric(vertical: 14)),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryGold,
+                            padding: const EdgeInsets.symmetric(vertical: 14)),
                         onPressed: _isVerifying ? null : _verifyPasscode,
                         child: _isVerifying
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Color(0xFF061E12), strokeWidth: 2))
-                            : const Text('Verify & Enter Admin', style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold)),
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    color: Color(0xFF061E12), strokeWidth: 2))
+                            : const Text('Verify & Enter Admin',
+                                style: TextStyle(
+                                    color: primaryDarkGreen,
+                                    fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -178,7 +204,11 @@ class _AdminPasscodeScreenState extends State<AdminPasscodeScreen> {
                       child: TextButton.icon(
                         onPressed: _isLoggingOut ? null : _cancelAndLogOut,
                         icon: const Icon(Icons.logout, color: Colors.white70),
-                        label: Text(_isLoggingOut ? 'Logging out...' : 'Cancel / Log Out', style: const TextStyle(color: Colors.white70)),
+                        label: Text(
+                            _isLoggingOut
+                                ? 'Logging out...'
+                                : 'Cancel / Log Out',
+                            style: const TextStyle(color: Colors.white70)),
                       ),
                     ),
                   ],

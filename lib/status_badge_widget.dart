@@ -28,16 +28,20 @@ class StatusBadgeWidget extends StatelessWidget {
       children: [
         if (isVerified)
           Container(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
+            padding: EdgeInsets.symmetric(
+                horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
             decoration: BoxDecoration(
               color: const Color(0xFF00E676).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.5), width: 1),
+              border: Border.all(
+                  color: const Color(0xFF00E676).withValues(alpha: 0.5),
+                  width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, color: const Color(0xFF00E676), size: compact ? 11 : 13),
+                Icon(Icons.check_circle,
+                    color: const Color(0xFF00E676), size: compact ? 11 : 13),
                 const SizedBox(width: 4),
                 Text(
                   'Verified',
@@ -52,7 +56,8 @@ class StatusBadgeWidget extends StatelessWidget {
           ),
         if (hasVip)
           Container(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
+            padding: EdgeInsets.symmetric(
+                horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
             decoration: BoxDecoration(
               color: const Color(0xFFFFD700).withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(6),
@@ -61,7 +66,8 @@ class StatusBadgeWidget extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.diamond, color: const Color(0xFFFFD700), size: compact ? 11 : 13),
+                Icon(Icons.diamond,
+                    color: const Color(0xFFFFD700), size: compact ? 11 : 13),
                 const SizedBox(width: 3),
                 Text(
                   'VIP',
@@ -76,7 +82,8 @@ class StatusBadgeWidget extends StatelessWidget {
           )
         else if (hasPro)
           Container(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
+            padding: EdgeInsets.symmetric(
+                horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
             decoration: BoxDecoration(
               color: const Color(0xFF64B5F6).withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(6),
@@ -85,7 +92,8 @@ class StatusBadgeWidget extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.workspace_premium, color: const Color(0xFF64B5F6), size: compact ? 11 : 13),
+                Icon(Icons.workspace_premium,
+                    color: const Color(0xFF64B5F6), size: compact ? 11 : 13),
                 const SizedBox(width: 3),
                 Text(
                   'PRO',

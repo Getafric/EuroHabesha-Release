@@ -1,0 +1,18 @@
+﻿{
+  "app_name": "Euro Habesha",
+  "profile_settings": "የመገለጫ ቅንብሮች",
+  "language": "ቋንቋ",
+  "system_language": "የስልኩ ቋንቋ",
+
+  "ticker_legal_title": "የታመኑ የሕግ አገልግሎቶች",
+  "ticker_legal_desc": "በፓሪስ እና ሮም የሚገኙ የኢሚግሬሽን ጠበቆችን ያግኙ።",
+
+  "ticker_transport_title": "ፈጣን ጭነትና ትራንስፖርት",
+  "ticker_transport_desc": "በፈረንሳይና ጀርመን አስተማማኝ የጭነትና ሎጂስቲክስ አገልግሎት።",
+
+  "ticker_verify_title": "ዛሬ መገለጫዎን ያረጋግጡ",
+  "ticker_verify_desc": "ለንግድ መገለጫዎ የSilver ወይም VIP Gold ባጅ ያግኙ።",
+
+  "ticker_events_title": "የሐበሻ ማህበረሰብ ዝግጅቶች",
+  "ticker_events_desc": "መጪዎቹን ባህላዊ በዓላትና የባህል ስብሰባዎች ይከታተሉ።"
+}

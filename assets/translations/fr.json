@@ -1,0 +1,18 @@
+﻿{
+  "app_name": "Euro Habesha",
+  "profile_settings": "Paramètres du profil",
+  "language": "Langue",
+  "system_language": "Langue du système",
+
+  "ticker_legal_title": "Services juridiques de confiance",
+  "ticker_legal_desc": "Trouvez des avocats spécialisés en immigration à Paris et à Rome.",
+
+  "ticker_transport_title": "Transport et fret rapides",
+  "ticker_transport_desc": "Services de transport et de logistique fiables en France et en Allemagne.",
+
+  "ticker_verify_title": "Faites vérifier votre profil",
+  "ticker_verify_desc": "Passez au badge Silver ou VIP Gold pour votre profil professionnel.",
+
+  "ticker_events_title": "Événements de la communauté Habesha",
+  "ticker_events_desc": "Découvrez les prochaines célébrations traditionnelles et rencontres culturelles."
+}

@@ -2,171 +2,1475 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+
+  
+    // ============================================================
+    // AUTHENTICATION HELPERS
+    // ============================================================
+
     function signedIn() {
       return request.auth != null;
     }
 
+    // Un vrai compte Firebase.
+    // Les utilisateurs anonymes ne peuvent pas envoyer de demande,
+    // publier, commenter ou aimer.
+    function hasRealAccount() {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // ============================================================
+    // ADMIN HELPERS
+    // ============================================================
+
     function isGlobalAdmin() {
       return signedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        && exists(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        );
     }
 
     function isSuperAdmin() {
-      return signedIn() && request.auth.token.email == 'getafricshow1@gmail.com';
+      return signedIn()
+        && request.auth.token.email == 'getafricshow1@gmail.com';
     }
 
-    match /users/{userId} {
-      allow read: if signedIn() && (request.auth.uid == userId || isGlobalAdmin());
-      allow create: if signedIn() && request.auth.uid == userId;
-      allow update: if signedIn() && (request.auth.uid == userId || isGlobalAdmin());
-      allow delete: if signedIn() && (request.auth.uid == userId || isGlobalAdmin());
+    // Administrateur ayant une invitation active.
+    //
+    // Le nouveau système utilise :
+    // adminInvites/{email}
+    function isScopedAdmin() {
+      return signedIn()
+        && request.auth.token.email != null
+        && exists(
+          /databases/$(database)/documents/adminInvites/$(request.auth.token.email)
+        )
+        && get(
+          /databases/$(database)/documents/adminInvites/$(request.auth.token.email)
+        ).data.status == 'active';
     }
+
+    function adminScope() {
+  return get(
+    /databases/$(database)/documents/adminInvites/$(request.auth.token.email)
+  ).data.scope;
+}
+
+function hasAdminPermission(permission) {
+  return isScopedAdmin()
+    && permission in get(
+      /databases/$(database)/documents/adminInvites/$(request.auth.token.email)
+    ).data.permissions;
+}
+
+// Vérifie si l'administrateur possède le droit de gérer
+// une catégorie précise de Habesha Connect.
+function canManageConnectCategory(category) {
+  return isSuperAdmin()
+    || isGlobalAdmin()
+    || (
+      isScopedAdmin()
+      && adminScope() == category
+    );
+}
+
+function canManageCommunitySubmission(data) {
+  return isScopedAdmin()
+    && data.fields is map
+    && data.fields.communityCategory is string
+    && (
+      hasAdminPermission('manage_habesha_connect_category')
+      || hasAdminPermission('review_habesha_connect_requests')
+    )
+    && adminScope() == data.fields.communityCategory;
+}
+
+function canManagePublicFeed(data) {
+  return isSuperAdmin()
+    || isGlobalAdmin()
+
+    || (
+      data.sourceCollection == 'eventSubmissions'
+      && (
+        hasAdminPermission('manage_events')
+        || hasAdminPermission('review_events')
+      )
+    )
+
+    || (
+      data.sourceCollection == 'businessSubmissions'
+      && (
+        hasAdminPermission('manage_businesses')
+        || hasAdminPermission('review_businesses')
+      )
+    )
+
+    || (
+      data.sourceCollection == 'jobSubmissions'
+      && (
+        hasAdminPermission('manage_jobs')
+        || hasAdminPermission('review_jobs')
+        || (
+          data.type == 'professional'
+          && (
+            hasAdminPermission('manage_professionals')
+            || hasAdminPermission('review_professionals')
+          )
+        )
+      )
+    )
+
+    || (
+      data.sourceCollection == 'marketplaceSubmissions'
+      && (
+        hasAdminPermission('manage_marketplace')
+        || hasAdminPermission('review_marketplace')
+      )
+    )
+
+    || (
+      data.sourceCollection == 'communitySubmissions'
+      && data.communityCategory is string
+      && (
+        hasAdminPermission('manage_habesha_connect_category')
+        || hasAdminPermission('review_habesha_connect_requests')
+      )
+      && adminScope() == data.communityCategory
+    )
+
+    || (
+      data.sourceCollection == 'habeshaConnectRequests'
+      && data.category is string
+      && (
+        hasAdminPermission('manage_habesha_connect_category')
+        || hasAdminPermission('review_habesha_connect_requests')
+      )
+      && adminScope() == data.category
+    );
+}
+    // ============================================================
+// USERS
+// ============================================================
+
+match /users/{userId} {
+
+  allow read: if signedIn()
+    && (
+      request.auth.uid == userId
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+
+  allow create: if signedIn()
+    && request.auth.uid == userId;
+
+  allow update: if signedIn()
+    && (
+      request.auth.uid == userId
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+
+  // FCM device tokens for push notifications
+  match /fcmTokens/{tokenId} {
+    allow read, create, update, delete: if signedIn()
+      && request.auth.uid == userId;
+  }
+
+  allow delete: if signedIn()
+    && (
+      request.auth.uid == userId
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+}
+
+    // ============================================================
+    // BUSINESSES
+    // ============================================================
 
     match /businesses/{businessId} {
+
       allow read: if true;
+
       allow create, update, delete: if signedIn();
+
       match /reviews/{reviewId} {
+
         allow read: if true;
-        allow create, update: if signedIn();
-        allow delete: if isSuperAdmin() || isGlobalAdmin();
+
+        allow create, update: if hasRealAccount();
+
+        allow delete: if isSuperAdmin()
+          || isGlobalAdmin();
       }
     }
+
+    // ============================================================
+    // JOBS
+    // ============================================================
 
     match /jobs/{jobId} {
-      allow read: if true;
-      allow create, update, delete: if signedIn();
-      match /reviews/{reviewId} {
-        allow read: if true;
-        allow create, update: if signedIn();
-        allow delete: if isSuperAdmin() || isGlobalAdmin();
-      }
-    }
+
+  allow read: if true;
+
+  // Création et suppression réservées aux administrateurs.
+  allow create, delete: if isSuperAdmin()
+    || isGlobalAdmin();
+
+  // L'admin peut tout mettre à jour.
+  //
+  // Le propriétaire peut mettre à jour sa page déjà publiée,
+  // mais il ne peut pas changer son identité propriétaire,
+  // son statut de publication ou les informations de validation.
+  allow update: if
+  isGlobalAdmin()
+  || isSuperAdmin()
+    || (
+      hasRealAccount()
+      && resource.data.ownerId == request.auth.uid
+
+      // Identité propriétaire protégée
+      && request.resource.data.ownerId == resource.data.ownerId
+      && request.resource.data.submittedBy == resource.data.submittedBy
+      && request.resource.data.creatorId == resource.data.creatorId
+
+      // Publication / validation protégées
+      && request.resource.data.status == resource.data.status
+      && request.resource.data.approvedBy == resource.data.approvedBy
+      && request.resource.data.publishedAt == resource.data.publishedAt
+      && request.resource.data.isVerified == resource.data.isVerified
+    );
+
+  match /reviews/{reviewId} {
+
+    allow read: if true;
+
+    allow create, update: if hasRealAccount();
+
+    allow delete: if isSuperAdmin()
+      || isGlobalAdmin();
+  }
+}
+
+    // ============================================================
+    // VERIFICATIONS
+    // ============================================================
 
     match /verifications/{verificationId} {
+
       allow read: if true;
+
       allow create, update, delete: if signedIn();
     }
+
+    // ============================================================
+    // POSTS / HABESHA CONNECT FEED
+    // ============================================================
 
     match /posts/{postId} {
+
+      // Les publications approuvées sont publiques.
       allow read: if true;
-      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if signedIn() && (resource.data.ownerId == request.auth.uid || isGlobalAdmin() || isSuperAdmin());
+
+      // ----------------------------------------------------------
+      // CREATE
+      // ----------------------------------------------------------
+
+      allow create: if hasRealAccount()
+        && (
+          request.resource.data.ownerId == request.auth.uid
+
+          || isGlobalAdmin()
+
+          || isSuperAdmin()
+
+          || (
+            request.resource.data.source == 'habeshaConnect'
+            && canManageConnectCategory(
+              request.resource.data.connectCategory
+            )
+          )
+        );
+
+      // ----------------------------------------------------------
+      // UPDATE
+      // ----------------------------------------------------------
+      //
+      // Le propriétaire ou un administrateur peut modifier
+      // normalement la publication.
+      //
+      // Un utilisateur réel peut modifier uniquement le compteur
+      // de likes dans le cadre de son propre like.
+      //
+      // Un utilisateur réel peut également incrémenter le compteur
+      // de commentaires lorsqu'il vient d'ajouter un commentaire.
+      // ----------------------------------------------------------
+
+      allow update: if hasRealAccount()
+        && (
+          // Propriétaire
+          resource.data.ownerId == request.auth.uid
+
+          // Administrateurs
+          || isGlobalAdmin()
+
+          || isSuperAdmin()
+
+          // Administrateur spécialisé Habesha Connect
+          || (
+            resource.data.source == 'habeshaConnect'
+            && canManageConnectCategory(
+              resource.data.connectCategory
+            )
+          )
+
+          // ------------------------------------------------------
+          // LIKE : +1
+          // ------------------------------------------------------
+          ||
+          (
+            request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['likeCount'])
+
+            && request.resource.data.likeCount
+              == resource.data.likeCount + 1
+
+            && exists(
+              /databases/$(database)/documents/posts/$(postId)/likes/$(request.auth.uid)
+            )
+          )
+
+          // ------------------------------------------------------
+          // LIKE : -1
+          // ------------------------------------------------------
+          ||
+          (
+            request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['likeCount'])
+
+            && resource.data.likeCount > 0
+
+            && request.resource.data.likeCount
+              == resource.data.likeCount - 1
+
+            && !exists(
+              /databases/$(database)/documents/posts/$(postId)/likes/$(request.auth.uid)
+            )
+          )
+
+          // ------------------------------------------------------
+          // COMMENTAIRE : +1
+          // ------------------------------------------------------
+          ||
+          (
+            request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['commentCount'])
+
+            && request.resource.data.commentCount
+              == resource.data.commentCount + 1
+          )
+        );
+
+      // ----------------------------------------------------------
+      // DELETE
+      // ----------------------------------------------------------
+
+      allow delete: if hasRealAccount()
+        && (
+          resource.data.ownerId == request.auth.uid
+
+          || isGlobalAdmin()
+
+          || isSuperAdmin()
+
+          || (
+            resource.data.source == 'habeshaConnect'
+            && canManageConnectCategory(
+              resource.data.connectCategory
+            )
+          )
+        );
+
+      // ----------------------------------------------------------
+      // LIKES
+      // ----------------------------------------------------------
+
       match /likes/{userId} {
+
+        // Les likes peuvent être comptés/consultés publiquement.
         allow read: if true;
-        allow create, delete: if signedIn() && request.auth.uid == userId;
+
+        // Un utilisateur réel peut créer son propre like.
+        allow create: if hasRealAccount()
+          && request.auth.uid == userId;
+
+        // Un utilisateur réel peut supprimer son propre like.
+        allow delete: if isSuperAdmin()
+  || isGlobalAdmin()
+  || (
+    hasRealAccount()
+    && request.auth.uid == userId
+  );
       }
+
+      // ----------------------------------------------------------
+      // COMMENTS
+      // ----------------------------------------------------------
+
       match /comments/{commentId} {
+
+        // Les commentaires sont publics.
         allow read: if true;
-        allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if signedIn() && (resource.data.authorId == request.auth.uid || isGlobalAdmin() || isSuperAdmin());
+
+        // Création :
+        // l'auteur doit être l'utilisateur connecté.
+        //
+        // parentCommentId peut être null pour un commentaire
+        // principal ou contenir l'ID d'un commentaire parent
+        // pour une réponse.
+        allow create: if hasRealAccount()
+          && request.resource.data.authorId == request.auth.uid;
+
+        // Modification/suppression :
+        // auteur du commentaire ou administrateur.
+        allow update, delete: if hasRealAccount()
+          && (
+            resource.data.authorId == request.auth.uid
+
+            || isGlobalAdmin()
+
+            || isSuperAdmin()
+          );
       }
     }
 
-    match /adminAnnouncements/{announcementId} {
-      allow read: if true;
-      allow create, update, delete: if isSuperAdmin() || isGlobalAdmin();
+    // ============================================================
+    // NOTIFICATIONS
+    // ============================================================
 
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if isSuperAdmin() || isGlobalAdmin() || (signedIn() && resource.data.authorId == request.auth.uid);
-      }
-      match /likes/{userId} {
-        allow read: if true;
-        allow create, delete: if signedIn() && request.auth.uid == userId;
-      }
+    match /notifications/{notificationId} {
+
+      // ----------------------------------------------------------
+      // READ
+      // ----------------------------------------------------------
+      //
+      // Un utilisateur ne peut lire que ses propres notifications.
+      //
+      allow read: if hasRealAccount()
+        && resource.data.recipientId == request.auth.uid;
+
+      // ----------------------------------------------------------
+      // CREATE
+      // ----------------------------------------------------------
+      //
+      // Le créateur doit être l'expéditeur réel.
+      //
+      // Une notification ne peut pas être envoyée à soi-même.
+      //
+      allow create: if hasRealAccount()
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.recipientId != request.auth.uid;
+
+      // ----------------------------------------------------------
+      // UPDATE
+      // ----------------------------------------------------------
+      //
+      // Le destinataire peut uniquement modifier "read".
+      //
+      allow update: if hasRealAccount()
+        && resource.data.recipientId == request.auth.uid
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['read']);
+
+      // ----------------------------------------------------------
+      // DELETE
+      // ----------------------------------------------------------
+
+      allow delete: if hasRealAccount()
+        && (
+          resource.data.recipientId == request.auth.uid
+
+          || isGlobalAdmin()
+
+          || isSuperAdmin()
+        );
     }
+
+    // ============================================================
+    // HABESHA CONNECT
+    // COMMUNITY REQUESTS
+    // ============================================================
+
+    match /habeshaConnectRequests/{requestId} {
+
+      // ----------------------------------------------------------
+      // READ
+      // ----------------------------------------------------------
+
+      allow read: if
+        resource.data.status == 'approved'
+
+        || (
+          hasRealAccount()
+          && resource.data.authorId == request.auth.uid
+        )
+
+        || canManageConnectCategory(
+          resource.data.category
+        );
+
+      // ----------------------------------------------------------
+      // CREATE
+      // ----------------------------------------------------------
+
+      allow create: if hasRealAccount()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.category in [
+
+          'Groupes & Associations',
+
+          'Habesha par ville',
+
+          'Entraide',
+
+          'Logement',
+
+          'Transport & déplacement',
+
+          'Aide administrative',
+
+          'Langues & traduction',
+
+          'Études & formation',
+
+          'Familles & parents',
+
+          'Carrière & mentorat',
+
+          'Culture & rencontres',
+
+          'Bénévolat & solidarité'
+        ];
+
+      // ----------------------------------------------------------
+      // UPDATE
+      // ----------------------------------------------------------
+
+      allow update: if
+        (
+          hasRealAccount()
+          && resource.data.authorId == request.auth.uid
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'pending'
+        )
+
+        || canManageConnectCategory(
+          resource.data.category
+        );
+
+      // ----------------------------------------------------------
+      // DELETE
+      // ----------------------------------------------------------
+
+      allow delete: if
+        isSuperAdmin()
+
+        || isGlobalAdmin()
+
+        || (
+          hasRealAccount()
+          && resource.data.authorId == request.auth.uid
+        );
+    }
+
+    // ============================================================
+    // ANCIEN COMMUNITY REQUESTS
+    // ============================================================
+
+    match /community_requests/{requestId} {
+
+      allow create: if signedIn()
+        && request.resource.data.submittedBy == request.auth.uid;
+
+      allow read: if signedIn()
+        && (
+          resource.data.submittedBy == request.auth.uid
+          || isGlobalAdmin()
+          || isSuperAdmin()
+        );
+
+      allow update: if isGlobalAdmin()
+        || isSuperAdmin();
+
+      allow delete: if isGlobalAdmin()
+        || isSuperAdmin();
+    }
+
+    // ============================================================
+    // ADMIN ANNOUNCEMENTS
+    // ============================================================
+
+   match /adminAnnouncements/{announcementId} {
+
+  // Les publications officielles sont publiques.
+  allow read: if true;
+
+  // Seuls les administrateurs peuvent créer,
+  // modifier ou supprimer une publication officielle.
+  allow create, update, delete: if isSuperAdmin()
+    || isGlobalAdmin();
+
+  // ------------------------------------------------------------
+  // COMMENTS + REPLIES
+  // ------------------------------------------------------------
+
+  match /comments/{commentId} {
+
+    allow read: if true;
+
+    // Un utilisateur connecté peut créer son propre
+    // commentaire ou sa propre réponse.
+    allow create: if hasRealAccount()
+      && request.resource.data.authorId == request.auth.uid
+      && request.resource.data.text is string
+      && request.resource.data.text.size() > 0
+      && request.resource.data.text.size() <= 2000;
+
+    // L'auteur peut modifier/supprimer son commentaire.
+    // Les admins peuvent également le modérer.
+    allow update, delete: if isSuperAdmin()
+      || isGlobalAdmin()
+      || (
+        hasRealAccount()
+        && resource.data.authorId == request.auth.uid
+      );
+
+    // Likes sur un commentaire ou une réponse.
+    match /likes/{userId} {
+
+      allow read: if true;
+
+      allow create: if hasRealAccount()
+        && request.auth.uid == userId
+        && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if isSuperAdmin()
+  || isGlobalAdmin()
+  || (
+    hasRealAccount()
+    && request.auth.uid == userId
+  );
+
+      allow update: if false;
+    }
+    }
+      // ------------------------------------------------------------
+  // POLL VOTES
+  // ------------------------------------------------------------
+
+  match /votes/{userId} {
+
+    allow read: if true;
+
+    // Un compte peut créer uniquement son propre vote.
+    // Le sondage doit être encore ouvert.
+    allow create: if hasRealAccount()
+      && request.auth.uid == userId
+      && request.resource.data.userId == request.auth.uid
+      && request.resource.data.optionId is string
+      && request.resource.data.optionId.size() > 0
+      && get(
+        /databases/$(database)/documents/adminAnnouncements/$(announcementId)
+      ).data.pollClosed != true;
+
+    // Permet de changer son choix,
+    // mais pas de transformer le vote d'un autre utilisateur.
+    allow update: if hasRealAccount()
+      && request.auth.uid == userId
+      && resource.data.userId == request.auth.uid
+      && request.resource.data.userId == request.auth.uid
+      && request.resource.data.optionId is string
+      && request.resource.data.optionId.size() > 0
+      && get(
+        /databases/$(database)/documents/adminAnnouncements/$(announcementId)
+      ).data.pollClosed != true;
+
+    // L'admin peut supprimer les votes lors de la
+// suppression complète d'une publication officielle.
+allow delete: if isSuperAdmin()
+  || isGlobalAdmin();
+  }
+
+  // ------------------------------------------------------------
+  // LIKES DE LA PUBLICATION
+  // ------------------------------------------------------------
+
+  match /likes/{userId} {
+
+    allow read: if true;
+
+    allow create: if hasRealAccount()
+      && request.auth.uid == userId
+      && request.resource.data.userId == request.auth.uid;
+
+    allow delete: if isSuperAdmin()
+  || isGlobalAdmin()
+  || (
+    hasRealAccount()
+    && request.auth.uid == userId
+  );
+    allow update: if false;
+  }
+}
+// ============================================================
+// ADVERTISEMENT REQUESTS
+// ============================================================
+
+match /advertisementRequests/{requestId} {
+
+  // L'utilisateur peut créer uniquement sa propre demande.
+  // Une nouvelle demande doit toujours commencer en pending.
+  allow create: if hasRealAccount()
+    && request.resource.data.userId == request.auth.uid
+    && request.resource.data.status == 'pending';
+
+  // L'utilisateur peut consulter uniquement ses propres demandes.
+  // Les administrateurs peuvent toutes les consulter.
+  allow read: if hasRealAccount()
+    && (
+      resource.data.userId == request.auth.uid
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+
+  // L'approbation/refus reste sous contrôle administrateur.
+  allow update, delete: if isGlobalAdmin()
+    || isSuperAdmin();
+}
+    // ============================================================
+    // SPONSORED BANNERS
+    // ============================================================
 
     match /sponsoredBanners/{bannerId} {
+
       allow read: if true;
-      allow create, update, delete: if isSuperAdmin() || isGlobalAdmin();
+
+      allow create, update, delete: if isSuperAdmin()
+        || isGlobalAdmin();
     }
+
+    // ============================================================
+    // PUBLIC FEED
+    // ============================================================
 
     match /publicFeed/{feedId} {
-      allow read: if true;
-      allow create, update, delete: if signedIn();
-    }
 
-    match /{submissionCollection}/{submissionId} {
-      allow read: if true;
-      allow create: if signedIn()
-        && submissionCollection in ['businessSubmissions', 'eventSubmissions', 'communitySubmissions', 'jobSubmissions', 'verificationRequests', 'professionalSubmissions']
-        && request.resource.data.submittedBy == request.auth.uid;
-      allow update, delete: if isGlobalAdmin() || isSuperAdmin();
-    }
+  allow read: if true;
+
+  allow create: if
+    canManagePublicFeed(request.resource.data);
+
+  allow update: if
+    canManagePublicFeed(resource.data)
+    && canManagePublicFeed(request.resource.data);
+
+  allow delete: if
+    canManagePublicFeed(resource.data);
+}
+
+    // ============================================================
+// SUBMISSIONS
+// ============================================================
+
+match /{submissionCollection}/{submissionId} {
+
+  allow read: if true;
+
+  allow create: if signedIn()
+    && submissionCollection in [
+      'businessSubmissions',
+      'eventSubmissions',
+      'communitySubmissions',
+      'jobSubmissions',
+      'verificationRequests',
+      'professionalSubmissions',
+      'marketplaceSubmissions'
+    ]
+    && request.resource.data.submittedBy == request.auth.uid;
+
+  // Le propriétaire peut modifier son propre profil,
+  // mais il ne peut pas changer l'identité du propriétaire,
+  // le statut de modération ou le badge de vérification.
+  allow update: if
+  isGlobalAdmin()
+  || isSuperAdmin()
+
+  || (
+    submissionCollection == 'eventSubmissions'
+    && (
+      hasAdminPermission('manage_events')
+      || hasAdminPermission('review_events')
+    )
+  )
+
+  || (
+    submissionCollection == 'businessSubmissions'
+    && (
+      hasAdminPermission('manage_businesses')
+      || hasAdminPermission('review_businesses')
+    )
+  )
+
+  || (
+  submissionCollection == 'jobSubmissions'
+  && (
+    hasAdminPermission('manage_jobs')
+    || hasAdminPermission('review_jobs')
+    || (
+      resource.data.type == 'professional'
+      && request.resource.data.type == 'professional'
+      && (
+        hasAdminPermission('manage_professionals')
+        || hasAdminPermission('review_professionals')
+      )
+    )
+  )
+)
+
+  || (
+    submissionCollection == 'marketplaceSubmissions'
+    && (
+      hasAdminPermission('manage_marketplace')
+      || hasAdminPermission('review_marketplace')
+    )
+  )
+
+  || (
+    submissionCollection == 'professionalSubmissions'
+    && (
+      hasAdminPermission('manage_professionals')
+      || hasAdminPermission('review_professionals')
+    )
+  )
+  || (
+    submissionCollection == 'communitySubmissions'
+    && canManageCommunitySubmission(resource.data)
+    && request.resource.data.fields is map
+    && request.resource.data.fields.communityCategory is string
+    && request.resource.data.fields.communityCategory
+        == resource.data.fields.communityCategory
+  )
+  || (
+    hasRealAccount()
+    && resource.data.submittedBy == request.auth.uid
+    && request.resource.data.submittedBy
+        == resource.data.submittedBy
+    && request.resource.data.ownerId
+        == resource.data.ownerId
+    && request.resource.data.creatorId
+        == resource.data.creatorId
+    && request.resource.data.status
+        == resource.data.status
+    && request.resource.data.isVerified
+        == resource.data.isVerified
+  );
+
+  // Suppression autorisée selon le rôle administrateur attribué.
+allow delete: if
+  isGlobalAdmin()
+  || isSuperAdmin()
+
+  || (
+    submissionCollection == 'eventSubmissions'
+    && hasAdminPermission('manage_events')
+  )
+
+  || (
+    submissionCollection == 'businessSubmissions'
+    && hasAdminPermission('manage_businesses')
+  )
+
+  || (
+  submissionCollection == 'jobSubmissions'
+  && (
+    hasAdminPermission('manage_jobs')
+    || (
+      resource.data.type == 'professional'
+      && hasAdminPermission('manage_professionals')
+    )
+  )
+)
+
+  || (
+    submissionCollection == 'marketplaceSubmissions'
+    && hasAdminPermission('manage_marketplace')
+  )
+
+  || (
+    submissionCollection == 'professionalSubmissions'
+    && hasAdminPermission('manage_professionals')
+  )
+
+  || (
+    submissionCollection == 'communitySubmissions'
+    && hasAdminPermission('manage_habesha_connect_category')
+    && canManageCommunitySubmission(resource.data)
+  );
+}
+    // ============================================================
+    // BUSINESS MENU ITEMS
+    // ============================================================
+
+   match /businessSubmissions/{businessId}/menuItems/{itemId} {
+
+  allow read: if true;
+
+  allow create, update, delete: if isSuperAdmin()
+    || isGlobalAdmin()
+    || (
+      hasRealAccount()
+      && get(
+        /databases/$(database)/documents/businessSubmissions/$(businessId)
+      ).data.submittedBy == request.auth.uid
+    );
+}
+
+    // ============================================================
+    // ANCIEN SYSTÈME COMMUNITIES
+    // ============================================================
 
     match /communities/{communityId} {
+
       allow read: if true;
+
       allow create, update, delete: if signedIn();
 
       match /admins/{adminId} {
+
         allow read: if true;
+
         allow create, update, delete: if isGlobalAdmin();
       }
     }
 
+       // ============================================================
+    // TICKETS
+    // ============================================================
+
     match /tickets/{ticketId} {
-      allow read: if signedIn() && (resource.data.buyerId == request.auth.uid || isGlobalAdmin() || isSuperAdmin());
-      allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid;
-      allow update: if isGlobalAdmin() || isSuperAdmin()
-        || (signedIn() && resource.data.eventAdminIds != null && request.auth.uid in resource.data.eventAdminIds);
-      allow delete: if isGlobalAdmin() || isSuperAdmin();
-    }
+
+  // L'acheteur peut lire son propre billet.
+  // L'organisateur peut lire les billets de son propre événement.
+  // Les administrateurs globaux conservent leur accès.
+  allow read: if signedIn()
+    && (
+      resource.data.buyerId == request.auth.uid
+
+      || (
+        resource.data.eventId != null
+
+        && exists(
+          /databases/$(database)/documents/eventSubmissions/$(resource.data.eventId)
+        )
+
+        && get(
+          /databases/$(database)/documents/eventSubmissions/$(resource.data.eventId)
+        ).data.ownerId == request.auth.uid
+      )
+
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+
+  // L'utilisateur peut créer uniquement son propre billet.
+  allow create: if signedIn()
+    && request.resource.data.buyerId == request.auth.uid;
+
+  // Check-in :
+  // uniquement l'organisateur propriétaire de l'événement
+  // ou un administrateur global.
+  //
+  // L'organisateur ne peut modifier que :
+  // checkedIn, checkedInAt et checkedInBy.
+  allow update: if isGlobalAdmin()
+    || isSuperAdmin()
+    || (
+      signedIn()
+
+      && resource.data.eventId != null
+
+      && exists(
+        /databases/$(database)/documents/eventSubmissions/$(resource.data.eventId)
+      )
+
+      && get(
+        /databases/$(database)/documents/eventSubmissions/$(resource.data.eventId)
+      ).data.ownerId == request.auth.uid
+
+      && (
+        get(
+          /databases/$(database)/documents/eventSubmissions/$(resource.data.eventId)
+        ).data.status == 'approved'
+        ||
+        get(
+          /databases/$(database)/documents/eventSubmissions/$(resource.data.eventId)
+        ).data.status == 'published'
+      )
+
+      && request.resource.data.buyerId
+          == resource.data.buyerId
+
+      && request.resource.data.eventId
+          == resource.data.eventId
+
+      && request.resource.data.ticketId
+          == resource.data.ticketId
+
+      && request.resource.data.paymentStatus
+          == resource.data.paymentStatus
+
+      && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'checkedIn',
+            'checkedInAt',
+            'checkedInBy'
+          ])
+
+      && request.resource.data.checkedIn == true
+
+      && request.resource.data.checkedInBy
+          == request.auth.uid
+    );
+
+  allow delete: if isGlobalAdmin()
+    || isSuperAdmin();
+}
+    // ============================================================
+    // EVENTS
+    // ============================================================
 
     match /events/{eventId} {
+
+      // Les événements publics restent visibles.
       allow read: if true;
-      allow create, update, delete: if signedIn();
+
+      // La publication dans "events" reste sous contrôle admin.
+      allow create: if isGlobalAdmin()
+        || isSuperAdmin();
+
+      // L'organisateur peut modifier son propre événement,
+      // sans pouvoir changer son identité ou son statut
+      // de publication/modération.
+      allow update: if isGlobalAdmin()
+        || isSuperAdmin()
+        || (
+          signedIn()
+
+          && resource.data.ownerId == request.auth.uid
+
+          && request.resource.data.ownerId
+              == resource.data.ownerId
+
+          && request.resource.data.submittedBy
+              == resource.data.submittedBy
+
+          && request.resource.data.creatorId
+              == resource.data.creatorId
+
+          && request.resource.data.status
+              == resource.data.status
+
+          && request.resource.data.approvedBy
+              == resource.data.approvedBy
+
+          && request.resource.data.sourceCollection
+              == resource.data.sourceCollection
+
+          && request.resource.data.sourceId
+              == resource.data.sourceId
+        );
+
+      // Suppression définitive réservée aux administrateurs.
+      allow delete: if isGlobalAdmin()
+        || isSuperAdmin();
 
       match /admins/{adminId} {
+
         allow read: if true;
-        allow create, update, delete: if isGlobalAdmin();
+
+        allow create, update, delete:
+          if isGlobalAdmin() || isSuperAdmin();
       }
     }
 
     match /savedListings/{userId}/items/{itemId} {
-      allow read, write: if signedIn() && request.auth.uid == userId;
+
+      allow read, write: if signedIn()
+        && request.auth.uid == userId;
     }
+
+    // ============================================================
+    // SUBSCRIPTIONS
+    // ============================================================
 
     match /subscriptions/{subscriptionId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create, update, delete: if signedIn() && request.resource.data.userId == request.auth.uid;
+
+      allow read: if signedIn()
+        && resource.data.userId == request.auth.uid;
+
+      allow create, update, delete: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
     }
 
-    match /cashOnDeliveryOrders/{orderId} {
-      allow read: if signedIn() && (resource.data.buyerId == request.auth.uid || isSuperAdmin() || isGlobalAdmin());
-      allow create: if signedIn() && request.resource.data.paymentMethod == 'cashOnDelivery';
-      allow update, delete: if isSuperAdmin() || isGlobalAdmin();
-    }
+    // ============================================================
+    // CASH ON DELIVERY
+    // ============================================================
+
+   match /cashOnDeliveryOrders/{orderId} {
+
+  allow read: if signedIn()
+    && (
+      resource.data.buyerId == request.auth.uid
+      || resource.data.sellerId == request.auth.uid
+      || isSuperAdmin()
+      || isGlobalAdmin()
+    );
+
+  allow create: if signedIn()
+    && request.resource.data.paymentMethod == 'cashOnDelivery';
+
+  // ============================================================
+  // UPDATE
+  // ============================================================
+
+  allow update: if
+
+    // ADMIN
+    isSuperAdmin()
+    || isGlobalAdmin()
+
+    // ==========================================================
+    // BUYER - CANCEL ORDER
+    // ==========================================================
+    || (
+      signedIn()
+      && resource.data.buyerId == request.auth.uid
+      && resource.data.status == 'placed'
+      && request.resource.data.status == 'cancelled'
+      && request.resource.data.buyerId == resource.data.buyerId
+      && request.resource.data.sellerId == resource.data.sellerId
+      && request.resource.data.cancelledBy == 'buyer'
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'status',
+        'cancelReason',
+        'cancelledBy',
+        'cancelledAt',
+        'updatedAt'
+      ])
+    )
+
+    // ==========================================================
+    // SELLER - ORDER STATUS
+    // ==========================================================
+    || (
+      signedIn()
+      && resource.data.sellerId == request.auth.uid
+      && request.resource.data.sellerId == resource.data.sellerId
+      && request.resource.data.buyerId == resource.data.buyerId
+
+      && (
+        (
+          resource.data.status == 'placed'
+          && request.resource.data.status in [
+            'accepted',
+            'rejected'
+          ]
+        )
+        ||
+        (
+          resource.data.status == 'accepted'
+          && request.resource.data.status == 'preparing'
+        )
+        ||
+        (
+          resource.data.status == 'preparing'
+          && request.resource.data.status == 'ready'
+        )
+        ||
+        (
+          resource.data.status == 'ready'
+          && request.resource.data.status == 'completed'
+        )
+      )
+
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'status',
+        'preparingAt',
+        'readyAt',
+        'completedAt',
+        'updatedAt'
+      ])
+    )
+
+    // ==========================================================
+    // SELLER - MARK PAYMENT AS PAID
+    // ==========================================================
+    || (
+      signedIn()
+      && resource.data.sellerId == request.auth.uid
+
+      // Identity cannot be changed
+      && request.resource.data.sellerId == resource.data.sellerId
+      && request.resource.data.buyerId == resource.data.buyerId
+
+      // Payment can only become paid
+      && request.resource.data.paymentStatus == 'paid'
+
+      // Only these fields may change
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'paymentStatus',
+        'paidAt',
+        'updatedAt'
+      ])
+    );
+   
+  allow delete: if isSuperAdmin()
+    || isGlobalAdmin();
+}
+    // SELLER NOTIFICATIONS
+    // ============================================================
 
     match /sellerNotifications/{notificationId} {
-      allow read: if isSuperAdmin() || isGlobalAdmin();
-      allow create: if signedIn() && request.resource.data.type == 'cashOnDeliveryOrder';
-      allow update, delete: if isSuperAdmin() || isGlobalAdmin();
-    }
+
+  allow read: if signedIn()
+    && (
+      resource.data.sellerId == request.auth.uid
+      || isSuperAdmin()
+      || isGlobalAdmin()
+    );
+
+  allow create: if signedIn()
+    && request.resource.data.type == 'cashOnDeliveryOrder'
+    && request.resource.data.sellerId is string
+    && request.resource.data.sellerId != '';
+
+  allow update: if signedIn()
+    && (
+      resource.data.sellerId == request.auth.uid
+      || isSuperAdmin()
+      || isGlobalAdmin()
+    );
+
+  allow delete: if isSuperAdmin()
+    || isGlobalAdmin();
+}
+
+    // ============================================================
+    // ADMIN INVITES
+    // ============================================================
 
     match /adminInvites/{inviteId} {
-      allow read: if isSuperAdmin() || isGlobalAdmin() || (signedIn() && resource.data.email == request.auth.token.email);
-      allow create, update, delete: if isSuperAdmin() || isGlobalAdmin();
-    }
+
+  // Super Admin / Global Admin, ou personne réellement invitée.
+  allow read: if isSuperAdmin()
+    || isGlobalAdmin()
+    || (
+      hasRealAccount()
+      && request.auth.token.email != null
+      && resource.data.email
+          == request.auth.token.email.lower()
+    );
+
+  // Seuls les administrateurs peuvent créer une invitation.
+  allow create: if isSuperAdmin()
+    || isGlobalAdmin();
+
+  // Super Admin / Global Admin peuvent gérer l'invitation.
+  //
+  // La personne invitée peut uniquement répondre à SA propre
+  // invitation pending et choisir active ou rejected.
+  allow update: if isSuperAdmin()
+    || isGlobalAdmin()
+    || (
+      hasRealAccount()
+
+      && request.auth.token.email != null
+
+      && resource.data.email
+          == request.auth.token.email.lower()
+
+      && resource.data.status == 'pending'
+
+      && request.resource.data.status in [
+        'active',
+        'rejected'
+      ]
+
+      // L'identité et les privilèges ne peuvent pas être modifiés
+      // par la personne invitée.
+      && request.resource.data.email
+          == resource.data.email
+
+      && request.resource.data.invitedUserId
+          == resource.data.invitedUserId
+
+      && request.resource.data.role
+          == resource.data.role
+
+      && request.resource.data.scope
+          == resource.data.scope
+
+      && request.resource.data.accessCode
+          == resource.data.accessCode
+
+      && request.resource.data.permissions
+          == resource.data.permissions
+
+      && request.resource.data.invitedBy
+          == resource.data.invitedBy
+
+      && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'status',
+            'respondedAt',
+            'respondedByUid',
+            'updatedAt'
+          ])
+
+      && request.resource.data.respondedByUid
+          == request.auth.uid
+    );
+
+  // Suppression réservée aux administrateurs.
+  allow delete: if isSuperAdmin()
+    || isGlobalAdmin();
+}
+
+    // ============================================================
+    // QUOTE REQUESTS
+    // ============================================================
 
     match /quoteRequests/{requestId} {
-      allow create: if signedIn() && request.resource.data.customerId == request.auth.uid;
-      allow read, update: if signedIn() && (resource.data.customerId == request.auth.uid || resource.data.providerId == request.auth.uid || isGlobalAdmin() || isSuperAdmin());
-      allow delete: if signedIn() && resource.data.customerId == request.auth.uid;
+
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid;
+
+      allow read, update: if signedIn()
+        && (
+          resource.data.customerId == request.auth.uid
+          || resource.data.providerId == request.auth.uid
+          || isGlobalAdmin()
+          || isSuperAdmin()
+        );
+
+      allow delete: if signedIn()
+        && resource.data.customerId == request.auth.uid;
+    
+  match /users/{userId} {
+
+  allow read: if signedIn()
+    && (
+      request.auth.uid == userId
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+
+  allow create: if signedIn()
+    && request.auth.uid == userId;
+
+  allow update: if signedIn()
+    && (
+      request.auth.uid == userId
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+
+  allow delete: if signedIn()
+    && (
+      request.auth.uid == userId
+      || isGlobalAdmin()
+      || isSuperAdmin()
+    );
+
+  // FCM device tokens for push notifications
+  match /fcmTokens/{tokenId} {
+    allow read, create, update, delete: if signedIn()
+      && request.auth.uid == userId;
+  }
+}
     }
+
+// ============================================================
+// PUBLIC MARKETPLACE
+// ============================================================
+
+match /marketplace/{itemId} {
+
+  // Les annonces publiées peuvent être consultées dans Marketplace.
+  allow read: if resource.data.status == 'published'
+    || isGlobalAdmin()
+    || isSuperAdmin();
+
+  // La publication publique est gérée par les administrateurs.
+  allow create, update, delete: if isGlobalAdmin()
+    || isSuperAdmin()
+    || hasAdminPermission('manage_marketplace')
+    || hasAdminPermission('review_marketplace');
+}
+
+    // ============================================================
+    // CHATS
+    // ============================================================
 
     match /chats/{chatId} {
-      allow create: if signedIn() && request.auth.uid in request.resource.data.participants;
-      allow read, update, delete: if signedIn() && request.auth.uid in resource.data.participants;
+
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.participants;
+
+      allow read, update, delete: if signedIn()
+        && request.auth.uid in resource.data.participants;
 
       match /messages/{messageId} {
+
         allow read: if signedIn()
-          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+          && request.auth.uid in get(
+            /databases/$(database)/documents/chats/$(chatId)
+          ).data.participants;
+
         allow create: if signedIn()
           && request.resource.data.senderId == request.auth.uid
-          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow update, delete: if false;
+          && request.auth.uid in get(
+            /databases/$(database)/documents/chats/$(chatId)
+          ).data.participants;
+
+         allow update, delete: if false;
       }
     }
+
+    // ============================================================
+    // PLATFORM SETTINGS - FEES & COMMISSIONS
+    // ============================================================
+
+    match /platformSettings/{settingId} {
+      allow read: if true;
+
+      allow create, update, delete:
+        if isGlobalAdmin() || isSuperAdmin();
+    }
+
   }
 }

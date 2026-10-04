@@ -20,11 +20,11 @@ dependencies:
   firebase_core: ^4.12.1
   firebase_auth: ^6.5.6
   cloud_firestore: ^6.7.1
-  firebase_storage: ^13.4.5
+  firebase_storage: ^13.6.0
   google_sign_in: ^6.3.0
 
   # ── Notifications & Messaging (ኖቲፊኬሽን) ──
-  firebase_messaging: ^16.4.3
+  firebase_messaging: ^16.7.0
   flutter_local_notifications: ^17.2.4
 
   # ── Location & Maps (ጂፒኤስ እና ካርታ) ──
@@ -44,6 +44,12 @@ dependencies:
   mobile_scanner: ^7.4.0
   qr_flutter: ^4.1.0
   in_app_review: ^2.0.12
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  audioplayers: ^6.8.1
+  cloud_functions: ^6.5.0
+  flutter_stripe: ^14.1.0
+  geocoding: ^5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -59,8 +65,9 @@ flutter:
     - assets/lang/
     - assets/images/
     - assets/icons/
-
-# ── App Icon Configuration ──
+    - assets/translations/
+    - assets/sounds/
+# App Icon Configuration
 flutter_launcher_icons:
   android: true
   ios: true

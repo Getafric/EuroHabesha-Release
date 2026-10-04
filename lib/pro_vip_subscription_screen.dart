@@ -8,7 +8,8 @@ class ProVipSubscriptionScreen extends StatefulWidget {
   const ProVipSubscriptionScreen({super.key});
 
   @override
-  State<ProVipSubscriptionScreen> createState() => _ProVipSubscriptionScreenState();
+  State<ProVipSubscriptionScreen> createState() =>
+      _ProVipSubscriptionScreenState();
 }
 
 class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
@@ -55,7 +56,8 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
   @override
   void initState() {
     super.initState();
-    _purchaseSubscription = _inAppPurchase.purchaseStream.listen(_handlePurchaseUpdates);
+    _purchaseSubscription =
+        _inAppPurchase.purchaseStream.listen(_handlePurchaseUpdates);
   }
 
   @override
@@ -82,23 +84,29 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
       if (!available) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('In-app purchases are not available on this device right now.')),
+          const SnackBar(
+              content: Text(
+                  'In-app purchases are not available on this device right now.')),
         );
         return;
       }
 
-      final response = await _inAppPurchase.queryProductDetails({_selectedProductId!});
+      final response =
+          await _inAppPurchase.queryProductDetails({_selectedProductId!});
       if (response.productDetails.isEmpty) {
         // If store listing not live in test sandbox, activate for dev testing
-        await _activateSubscriptionInFirestore(_selectedProductId == 'vip_badge_yearly' ? 'vip' : 'pro');
+        await _activateSubscriptionInFirestore(
+            _selectedProductId == 'vip_badge_yearly' ? 'vip' : 'pro');
         return;
       }
 
-      final purchaseParam = PurchaseParam(productDetails: response.productDetails.first);
+      final purchaseParam =
+          PurchaseParam(productDetails: response.productDetails.first);
       await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Subscription failed: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Subscription failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isPurchasing = false);
@@ -107,7 +115,8 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
 
   Future<void> _handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
-      if (purchase.status == PurchaseStatus.purchased || purchase.status == PurchaseStatus.restored) {
+      if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
         final tier = purchase.productID.contains('vip') ? 'vip' : 'pro';
         await _activateSubscriptionInFirestore(tier);
         if (purchase.pendingCompletePurchase) {
@@ -116,7 +125,9 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
       } else if (purchase.status == PurchaseStatus.error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Store error: ${purchase.error?.message ?? 'Transaction cancelled'}')),
+            SnackBar(
+                content: Text(
+                    'Store error: ${purchase.error?.message ?? 'Transaction cancelled'}')),
           );
         }
       }
@@ -137,7 +148,10 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
     }, SetOptions(merge: true));
 
     // Update any published businesses or jobs owned by this user
-    final businesses = await FirebaseFirestore.instance.collection('businesses').where('submittedBy', isEqualTo: user.uid).get();
+    final businesses = await FirebaseFirestore.instance
+        .collection('businesses')
+        .where('submittedBy', isEqualTo: user.uid)
+        .get();
     for (final doc in businesses.docs) {
       await doc.reference.update({
         'subscriptionTier': tier,
@@ -145,7 +159,10 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
       });
     }
 
-    final jobs = await FirebaseFirestore.instance.collection('jobs').where('submittedBy', isEqualTo: user.uid).get();
+    final jobs = await FirebaseFirestore.instance
+        .collection('jobs')
+        .where('submittedBy', isEqualTo: user.uid)
+        .get();
     for (final doc in jobs.docs) {
       await doc.reference.update({
         'subscriptionTier': tier,
@@ -156,7 +173,8 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🎉 ${tier.toUpperCase()} Subscription activated successfully!'),
+          content: Text(
+              '🎉 ${tier.toUpperCase()} Subscription activated successfully!'),
           backgroundColor: cardGreen,
         ),
       );
@@ -169,19 +187,25 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text('PRO & VIP Subscriptions', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold)),
+        title: const Text('PRO & VIP Subscriptions',
+            style: TextStyle(
+                color: Color(0xFFFFD700), fontWeight: FontWeight.bold)),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: Color(0xFFFFD700)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Icon(Icons.workspace_premium, color: Color(0xFFFFD700), size: 56),
+          const Icon(Icons.workspace_premium,
+              color: Color(0xFFFFD700), size: 56),
           const SizedBox(height: 12),
           const Text(
             'Upgrade Your Profile & Visibility',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFFFFD700), fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Color(0xFFFFD700),
+                fontSize: 22,
+                fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -197,12 +221,15 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
               backgroundColor: primaryGold,
               foregroundColor: primaryDarkGreen,
               padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: _isPurchasing ? null : _startPurchase,
             icon: const Icon(Icons.credit_card),
             label: Text(
-              _isPurchasing ? 'Processing Store Subscription...' : 'Subscribe via App Store / Google Play',
+              _isPurchasing
+                  ? 'Processing Store Subscription...'
+                  : 'Subscribe via App Store / Google Play',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
@@ -244,18 +271,25 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                   Expanded(
                     child: Text(
                       plan.title,
-                      style: TextStyle(color: plan.color, fontWeight: FontWeight.bold, fontSize: 17),
+                      style: TextStyle(
+                          color: plan.color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17),
                     ),
                   ),
                   Text(
                     plan.price,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15),
                   ),
                   Radio<String>(
                     value: plan.id,
                     groupValue: _selectedProductId,
                     activeColor: plan.color,
-                    onChanged: (val) => setState(() => _selectedProductId = val),
+                    onChanged: (val) =>
+                        setState(() => _selectedProductId = val),
                   ),
                 ],
               ),
@@ -271,7 +305,9 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                       Icon(Icons.check, color: plan.color, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(benefit, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        child: Text(benefit,
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12)),
                       ),
                     ],
                   ),

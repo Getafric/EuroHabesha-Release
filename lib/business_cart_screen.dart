@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'business_checkout_screen.dart';
 
 class BusinessCartScreen extends StatefulWidget {
   final String businessId;
   final String businessName;
+  final String sourceCollection;
   final Map<String, Map<String, dynamic>> cart;
 
   const BusinessCartScreen({
     super.key,
     required this.businessId,
     required this.businessName,
+    this.sourceCollection = 'businessSubmissions',
     required this.cart,
   });
 
@@ -28,11 +31,50 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
     super.initState();
 
     _cart = widget.cart.map(
-      (key, value) => MapEntry(
-        key,
-        Map<String, dynamic>.from(value),
-      ),
+      (key, value) => MapEntry(key, Map<String, dynamic>.from(value)),
     );
+  }
+
+  String _itemType(Map<String, dynamic> item) {
+    final raw =
+        (item['productType'] ??
+                item['itemType'] ??
+                item['type'] ??
+                item['category'] ??
+                '')
+            .toString()
+            .toLowerCase();
+    if (raw.contains('ebook') ||
+        raw.contains('e-book') ||
+        raw.contains('numérique') ||
+        raw.contains('digital')) {
+      return 'Ebook numérique';
+    }
+    if (raw.contains('book') || raw.contains('livre')) {
+      return 'Livre papier';
+    }
+    if (raw.contains('service')) return 'Service';
+    if (raw.contains('food') ||
+        raw.contains('plat') ||
+        raw.contains('restaurant')) {
+      return 'Plat';
+    }
+    return 'Produit';
+  }
+
+  IconData _itemIcon(Map<String, dynamic> item) {
+    switch (_itemType(item)) {
+      case 'Ebook numérique':
+        return Icons.menu_book_outlined;
+      case 'Livre papier':
+        return Icons.auto_stories_outlined;
+      case 'Service':
+        return Icons.handyman_outlined;
+      case 'Plat':
+        return Icons.restaurant_outlined;
+      default:
+        return Icons.inventory_2_outlined;
+    }
   }
 
   double _priceOf(Map<String, dynamic> item) {
@@ -42,10 +84,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
       return value.toDouble();
     }
 
-    return double.tryParse(
-          value?.toString().replaceAll(',', '.') ?? '',
-        ) ??
-        0;
+    return double.tryParse(value?.toString().replaceAll(',', '.') ?? '') ?? 0;
   }
 
   double get _total {
@@ -101,10 +140,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
         foregroundColor: primaryGold,
         title: const Text(
           'Mon panier',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
       ),
       body: _cart.isEmpty
@@ -157,13 +193,22 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                           color: cardGreen,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: primaryGold.withValues(
-                              alpha: 0.25,
-                            ),
+                            color: primaryGold.withValues(alpha: 0.25),
                           ),
                         ),
                         child: Row(
                           children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: primaryGold.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(_itemIcon(item), color: primaryGold),
+                            ),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,6 +219,14 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                                       color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _itemType(item),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -223,12 +276,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    16,
-                    16,
-                    24,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   decoration: const BoxDecoration(
                     color: cardGreen,
                     borderRadius: BorderRadius.vertical(
@@ -260,15 +308,44 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Ce total est indicatif. Le serveur vérifiera le prix des '
+                          'articles physiques avant de payer sur Stripe. '
+                          'Les ebooks et prestations sur devis ne sont pas payés ici.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
                         const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Choix retrait / livraison — prochaine étape',
+                              if (widget.sourceCollection !=
+                                  'businessSubmissions') {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Le paiement des menus Services sera raccordé séparément.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+                              Navigator.push<void>(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) => BusinessCheckoutScreen(
+                                    businessId: widget.businessId,
+                                    businessName: widget.businessName,
+                                    items: _cart.entries
+                                        .map(
+                                          (entry) => <String, dynamic>{
+                                            'itemId': entry.key,
+                                            'quantity': entry.value['quantity'],
+                                          },
+                                        )
+                                        .toList(),
                                   ),
                                 ),
                               );
@@ -276,18 +353,12 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryGold,
                               foregroundColor: primaryDarkGreen,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
                             ),
-                            icon: const Icon(
-                              Icons.arrow_forward,
-                            ),
+                            icon: const Icon(Icons.arrow_forward),
                             label: const Text(
                               'Continuer la commande',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),

@@ -1,4 +1,4 @@
-import 'dart:io';
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -84,95 +84,104 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
     if (_uploading) return;
 
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vous devez être connecté.'),
-        ),
+        const SnackBar(content: Text('Vous devez être connecté.')),
       );
       return;
     }
 
-    final files = await _picker.pickMultiImage(
-      imageQuality: 85,
-      maxWidth: 1600,
-    );
-
-    if (files.isEmpty) return;
-
-    setState(() {
-      _uploading = true;
-    });
+    setState(() => _uploading = true);
+    final uploadedReferences = <Reference>[];
+    var savedToFirestore = false;
 
     try {
-      final newUrls = <String>[];
-
-      for (int index = 0; index < files.length; index++) {
-        final file = files[index];
-
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}_$index.jpg';
-
-        final storageReference = FirebaseStorage.instance.ref().child(
-              'professional_gallery/'
-              '${user.uid}/'
-              '${widget.businessId}/'
-              '$fileName',
-            );
-
-        await storageReference.putFile(
-          File(file.path),
-          SettableMetadata(
-            contentType: 'image/jpeg',
-          ),
-        );
-
-        final downloadUrl = await storageReference.getDownloadURL();
-
-        newUrls.add(downloadUrl);
+      if (!['businessSubmissions', 'jobSubmissions']
+          .contains(widget.sourceCollection)) {
+        throw Exception('Type de profil non autorisé.');
       }
 
-      final updatedGallery = [
-        ..._gallery,
-        ...newUrls,
-      ];
+      final business = await _documentReference.get();
+      if (!business.exists || business.data()?['ownerId'] != user.uid) {
+        throw Exception('Vous n’êtes pas propriétaire de ce profil.');
+      }
+
+      final files = await _picker.pickMultiImage(
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
+      if (files.isEmpty) return;
+
+      final newUrls = <String>[];
+      for (var index = 0; index < files.length; index++) {
+        final file = files[index];
+        final extension = file.name.split('.').last.toLowerCase();
+        final contentTypes = <String, String>{
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'webp': 'image/webp',
+        };
+        final contentType = contentTypes[extension];
+        if (contentType == null) {
+          throw Exception('Format non accepté : ${file.name}. Utilisez JPG, PNG ou WebP.');
+        }
+
+        final bytes = await file.readAsBytes();
+        if (bytes.isEmpty || bytes.length >= 8 * 1024 * 1024) {
+          throw Exception('Chaque photo doit faire moins de 8 Mo.');
+        }
+
+        final fileName =
+            '${DateTime.now().microsecondsSinceEpoch}_$index.$extension';
+        final reference = FirebaseStorage.instance.ref().child(
+          'professional_gallery/'
+          '${widget.sourceCollection}/'
+          '${widget.businessId}/'
+          '${user.uid}/'
+          '$fileName',
+        );
+
+        await reference.putData(
+          bytes,
+          SettableMetadata(contentType: contentType),
+        );
+        uploadedReferences.add(reference);
+        newUrls.add(await reference.getDownloadURL());
+      }
 
       await _documentReference.update({
-        'gallery': updatedGallery,
+        'gallery': FieldValue.arrayUnion(newUrls),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-
+      savedToFirestore = true;
+      await _loadGallery();
       if (!mounted) return;
-
-      setState(() {
-        _gallery = updatedGallery;
-      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            newUrls.length == 1
-                ? 'Photo ajoutée.'
-                : '${newUrls.length} photos ajoutées.',
-          ),
+          content: Text(newUrls.length == 1
+              ? 'Photo ajoutée.'
+              : '${newUrls.length} photos ajoutées.'),
         ),
       );
     } catch (e) {
+      // Ne pas laisser de nouveaux fichiers isolés si Firestore a échoué.
+      if (!savedToFirestore) {
+        for (final reference in uploadedReferences) {
+          try {
+            await reference.delete();
+          } catch (_) {
+            // Le nettoyage peut échouer si les règles ne sont pas déployées.
+          }
+        }
+      }
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible d’ajouter les photos : $e',
-          ),
-        ),
+        SnackBar(content: Text('Impossible d’ajouter les photos : $e')),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _uploading = false;
-        });
-      }
+      if (mounted) setState(() => _uploading = false);
     }
   }
 
@@ -223,42 +232,59 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
     );
 
     if (confirmed != true) return;
+    if (!mounted) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vous devez être connecté.')),
+      );
+      return;
+    }
 
     try {
-      final updatedGallery = List<String>.from(_gallery)..remove(imageUrl);
+      final business = await _documentReference.get();
+      if (!['businessSubmissions', 'jobSubmissions']
+              .contains(widget.sourceCollection) ||
+          !business.exists ||
+          business.data()?['ownerId'] != user.uid) {
+        throw Exception('Vous n’êtes pas propriétaire de ce profil.');
+      }
 
+      // Suppression atomique de l’URL : aucune autre photo n’est écrasée.
       await _documentReference.update({
-        'gallery': updatedGallery,
+        'gallery': FieldValue.arrayRemove([imageUrl]),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // Les anciennes photos restent dans la galerie tant qu'elles ne sont
+      // pas explicitement supprimées. Ne supprimer du Storage que nos fichiers.
+      var storageDeleted = true;
       try {
-        await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+        final reference = FirebaseStorage.instance.refFromURL(imageUrl);
+        final expectedPrefix =
+            'professional_gallery/${widget.sourceCollection}/'
+            '${widget.businessId}/${user.uid}/';
+        if (reference.fullPath.startsWith(expectedPrefix)) {
+          await reference.delete();
+        }
       } catch (_) {
-        // La référence Firestore est déjà supprimée.
-        // Une ancienne URL externe ne doit pas bloquer l'opération.
+        storageDeleted = false;
       }
 
+      await _loadGallery();
       if (!mounted) return;
-
-      setState(() {
-        _gallery = updatedGallery;
-      });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Photo supprimée.'),
+        SnackBar(
+          content: Text(storageDeleted
+              ? 'Photo retirée de la galerie.'
+              : 'Photo retirée, mais son fichier Storage n’a pas pu être supprimé.'),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible de supprimer la photo : $e',
-          ),
-        ),
+        SnackBar(content: Text('Impossible de supprimer la photo : $e')),
       );
     }
   }

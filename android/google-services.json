@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "218564066910-n9o8ieim4q43mo476am6ap9qqccveajn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.euro.habesha",
+            "certificate_hash": "9ae466a0abc20bd2464a0a063747caf8de9d571a"
+          }
+        },
+        {
           "client_id": "218564066910-qfsj4ruaf2ee9udip2qcaoqojjfr3rjv.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

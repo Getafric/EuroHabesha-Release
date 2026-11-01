@@ -1,8 +1,13 @@
+// EH_MODERATION_MATERIAL_V1
+import 'professional_moderation_surface.dart';
+import 'admin_professional_verification_review_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
-import 'status_badge_widget.dart';
+import 'services/nearby_sync_service.dart';
 
+/// Écran de modération des établissements et professionnels.
+/// IMPORTANT: les règles Firestore doivent valider les droits administrateur.
 class AdminProfessionalModerationScreen extends StatefulWidget {
   const AdminProfessionalModerationScreen({super.key});
 
@@ -13,292 +18,316 @@ class AdminProfessionalModerationScreen extends StatefulWidget {
 
 class _AdminProfessionalModerationScreenState
     extends State<AdminProfessionalModerationScreen> {
-  String _selectedCollection = 'businesses';
+  static const _dark = Color(0xFF061E12);
+  static const _green = Color(0xFF004D40);
+  static const _gold = Color(0xFFFFD700);
+  static const _collections = <String, String>{
+    'businessSubmissions': 'Établissements soumis',
+    'jobSubmissions': 'Services soumis',
+    'businesses': 'Établissements publiés',
+    'jobs': 'Professionnels publiés',
+  };
+  String _selectedCollection = 'businessSubmissions';
+  bool _busy = false;
+
+  Future<void> _message(String message) async {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(backgroundColor: _green, content: Text(message)));
+    }
+  }
+
+  Future<bool> _confirm(String title, String message) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: _green,
+            title: Text(title, style: const TextStyle(color: _gold)),
+            content: Text(message, style: const TextStyle(color: Colors.white)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text(
+                  'Annuler',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: _gold,
+                  foregroundColor: _dark,
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Confirmer'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _moderate(
+    DocumentReference<Map<String, dynamic>> ref,
+    String action,
+  ) async {
+    if (_busy || !['published', 'suspended'].contains(action)) {
+      return;
+    }
+    final sourceCollection = ref.parent.id;
+    final isPublicCollection =
+        sourceCollection == 'businesses' || sourceCollection == 'jobs';
+    if (!await _confirm(
+      action == 'published'
+          ? 'Publier cette fiche ?'
+          : 'Suspendre cette fiche ?',
+      'Cette action modifie la publication. La vérification du dossier est gérée séparément.',
+    )) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      final changes = <String, dynamic>{
+        'status': action,
+        'moderatedAt': FieldValue.serverTimestamp(),
+        'moderatedBy': AppSession.email,
+      };
+      batch.update(ref, changes);
+      // Keep publication/Nearby handling separate from the private dossier.
+      if (isPublicCollection) {
+        final snapshot = await ref.get();
+        if (!snapshot.exists) {
+          await _message('La fiche publique est introuvable.');
+          return;
+        }
+        NearbySyncService(FirebaseFirestore.instance).stageUpsert(
+          batch,
+          sourceCollection: sourceCollection,
+          sourceId: ref.id,
+          publicData: <String, dynamic>{...?snapshot.data(), ...changes},
+        );
+      }
+      await batch.commit();
+      await _message('Publication enregistrée : $action');
+    } catch (error) {
+      await _message('Échec de la modification : $error');
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     if (!AppSession.isSuperAdmin) {
-      return const Center(
-          child: Text('Super Admin access required.',
-              style: TextStyle(color: Colors.white70)));
-    }
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(
-            children: [
-              ChoiceChip(
-                label: const Text('Businesses & Restaurants'),
-                selected: _selectedCollection == 'businesses',
-                selectedColor: const Color(0xFFFFD700),
-                backgroundColor: const Color(0xFF004D40),
-                labelStyle: TextStyle(
-                  color: _selectedCollection == 'businesses'
-                      ? const Color(0xFF061E12)
-                      : Colors.white70,
-                  fontWeight: FontWeight.bold,
-                ),
-                onSelected: (selected) {
-                  if (selected)
-                    setState(() => _selectedCollection = 'businesses');
-                },
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Jobs & Professionals'),
-                selected: _selectedCollection == 'jobs',
-                selectedColor: const Color(0xFFFFD700),
-                backgroundColor: const Color(0xFF004D40),
-                labelStyle: TextStyle(
-                  color: _selectedCollection == 'jobs'
-                      ? const Color(0xFF061E12)
-                      : Colors.white70,
-                  fontWeight: FontWeight.bold,
-                ),
-                onSelected: (selected) {
-                  if (selected) setState(() => _selectedCollection = 'jobs');
-                },
-              ),
-            ],
+      return const ColoredBox(
+        color: _dark,
+        child: Center(
+          child: Text(
+            'Accès administrateur requis',
+            style: TextStyle(color: Colors.white70),
           ),
         ),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance
-                .collection(_selectedCollection)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFFFD700)));
-              }
-
-              final docs = snapshot.data?.docs ?? [];
-              if (docs.isEmpty) {
-                return Center(
-                  child: Text(
-                      'No active listings found in $_selectedCollection.',
-                      style: const TextStyle(color: Colors.white70)),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: docs.length,
-                itemBuilder: (context, index) {
-                  final doc = docs[index];
-                  final data = doc.data();
-                  final name = data['name']?.toString() ??
-                      data['title']?.toString() ??
-                      'Listing';
-                  final status = data['status']?.toString() ?? 'published';
-                  final category = data['businessCategory']?.toString() ??
-                      data['category']?.toString() ??
-                      '';
-                  final location = data['location']?.toString() ??
-                      data['address']?.toString() ??
-                      '';
-                  final isVerified = data['isVerified'] == true ||
-                      data['verificationStatus'] == 'approved';
-                  final subTier = data['subscriptionTier']?.toString();
-
-                  return Card(
-                    color: const Color(0xFF004D40),
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(name,
-                                    style: const TextStyle(
-                                        color: Color(0xFFFFD700),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16)),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: status == 'published' ||
-                                          status == 'approved'
-                                      ? Colors.greenAccent
-                                          .withValues(alpha: 0.2)
-                                      : Colors.redAccent.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  status.toUpperCase(),
-                                  style: TextStyle(
-                                    color: status == 'published' ||
-                                            status == 'approved'
-                                        ? Colors.greenAccent
-                                        : Colors.redAccent,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          StatusBadgeWidget(
-                              isVerified: isVerified,
-                              subscriptionTier: subTier),
-                          if (category.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text('Category: $category',
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                          ],
-                          if (location.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text('Location: $location',
-                                style: const TextStyle(
-                                    color: Colors.white54, fontSize: 12)),
-                          ],
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isVerified
-                                      ? Colors.grey.shade700
-                                      : const Color(0xFF00E676),
-                                  foregroundColor: isVerified
-                                      ? Colors.white
-                                      : const Color(0xFF061E12),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                ),
-                                onPressed: () =>
-                                    _toggleVerification(doc, isVerified),
-                                icon: Icon(
-                                    isVerified ? Icons.close : Icons.verified,
-                                    size: 14),
-                                label: Text(
-                                    isVerified ? 'Unverify' : 'Verify ✓',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11)),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4)),
-                                onPressed: () => _setStatus(doc, 'published'),
-                                child: const Text('Approve / Publish',
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 11)),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4)),
-                                onPressed: () => _setStatus(doc, 'suspended'),
-                                child: const Text('Suspend',
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 11)),
-                              ),
-                              OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(
-                                        color: Colors.redAccent),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4)),
-                                onPressed: () => _delete(doc),
-                                child: const Text('Delete',
-                                    style: TextStyle(
-                                        color: Colors.redAccent, fontSize: 11)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+      );
+    }
+    return ProfessionalModerationSurface(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Modération professionnelle',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: _gold,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: DropdownButtonFormField<String>(
+              initialValue: _selectedCollection,
+              dropdownColor: _green,
+              decoration: const InputDecoration(
+                labelText: 'Afficher',
+                labelStyle: TextStyle(color: _gold),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: _gold),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: _gold),
+                ),
+              ),
+              style: const TextStyle(color: Colors.white),
+              items: _collections.entries
+                  .map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedCollection = value);
+                }
+              },
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection(_selectedCollection)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Erreur de lecture : ${snapshot.error}',
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   );
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _toggleVerification(
-      DocumentSnapshot<Map<String, dynamic>> doc, bool currentVerified) async {
-    final nextVerified = !currentVerified;
-    await doc.reference.update({
-      'isVerified': nextVerified,
-      'verificationStatus': nextVerified ? 'approved' : 'unverified',
-      'verifiedAt': nextVerified ? FieldValue.serverTimestamp() : null,
-      'verifiedBy': AppSession.email,
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(nextVerified
-            ? '✓ Profile marked as Verified by Admin'
-            : 'Profile verification removed'),
-        backgroundColor: const Color(0xFF004D40),
-      ));
-    }
-  }
-
-  Future<void> _setStatus(
-      DocumentSnapshot<Map<String, dynamic>> doc, String status) async {
-    await doc.reference.update({
-      'status': status,
-      'moderatedAt': FieldValue.serverTimestamp(),
-      'moderatedBy': AppSession.email,
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Status updated to $status.')));
-    }
-  }
-
-  Future<void> _delete(DocumentSnapshot<Map<String, dynamic>> doc) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF004D40),
-        title: const Text('Delete Listing?',
-            style: TextStyle(
-                color: Colors.redAccent, fontWeight: FontWeight.bold)),
-        content: const Text(
-            'This will permanently delete this listing from the database.',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                }
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: _gold),
+                  );
+                }
+                final docs = snapshot.data!.docs;
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'Aucune fiche pour cette catégorie',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = doc.data();
+                    final fields = data['fields'] is Map
+                        ? data['fields'] as Map
+                        : const {};
+                    final name =
+                        (data['name'] ??
+                                data['title'] ??
+                                data['businessName'] ??
+                                fields['title'] ??
+                                'Sans nom')
+                            .toString();
+                    final status = (data['status'] ?? 'pending').toString();
+                    final verified = data['isVerified'] == true;
+                    return Card(
+                      color: _green,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                color: _gold,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Publication : $status  •  Vérifié : ${verified ? "Oui" : "Non"}',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Le dossier professionnel est consulté sur la fiche d’origine.',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: _gold,
+                                  foregroundColor: _dark,
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed: _busy
+                                    ? null
+                                    : () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (_) =>
+                                              AdminProfessionalVerificationReviewScreen(
+                                                sourceCollection:
+                                                    doc.reference.parent.id,
+                                                businessId: doc.id,
+                                              ),
+                                        ),
+                                      ),
+                                icon: const Icon(Icons.folder_open_outlined),
+                                label: const Text(
+                                  'Examiner le dossier professionnel',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                OutlinedButton(
+                                  onPressed: _busy
+                                      ? null
+                                      : () => _moderate(
+                                          doc.reference,
+                                          'published',
+                                        ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: _gold,
+                                    side: const BorderSide(color: _gold),
+                                  ),
+                                  child: const Text('Publier'),
+                                ),
+                                OutlinedButton(
+                                  onPressed: _busy
+                                      ? null
+                                      : () => _moderate(
+                                          doc.reference,
+                                          'suspended',
+                                        ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: const BorderSide(
+                                      color: Colors.white54,
+                                    ),
+                                  ),
+                                  child: const Text('Suspendre'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
     );
-    if (confirm == true) {
-      await doc.reference.delete();
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Listing deleted.')));
-      }
-    }
   }
 }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'app_session.dart';
 import 'business_screen.dart';
+import 'business_public_media.dart';
 import 'jobs_screen.dart';
 import 'events_screen.dart';
 import 'community_screen.dart';
@@ -23,16 +24,20 @@ class PublicFeedSection extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
-              height: 64,
-              child:
-                  Center(child: CircularProgressIndicator(color: primaryGold)));
+            height: 64,
+            child: Center(child: CircularProgressIndicator(color: primaryGold)),
+          );
         }
 
-        final docs = (snapshot.data?.docs ?? [])
-            .where((doc) => doc.data()['status'] == 'published')
-            .toList()
-          ..sort((left, right) => _priorityScore(right.data())
-              .compareTo(_priorityScore(left.data())));
+        final docs =
+            (snapshot.data?.docs ?? [])
+                .where((doc) => doc.data()['status'] == 'published')
+                .toList()
+              ..sort(
+                (left, right) => _priorityScore(
+                  right.data(),
+                ).compareTo(_priorityScore(left.data())),
+              );
         if (docs.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -42,11 +47,14 @@ class PublicFeedSection extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Approved Community Feed',
-                  style: TextStyle(
-                      color: primaryGold,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
+              child: Text(
+                'Approved Community Feed',
+                style: TextStyle(
+                  color: primaryGold,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             ...docs.map((doc) => _PublicFeedCard(doc: doc)),
@@ -83,6 +91,69 @@ class PublicFeedSection extends StatelessWidget {
   }
 }
 
+/// Shows the same complete profile as the directory when an exact link exists.
+/// The already visible public photos remain available during loading/offline.
+class _BusinessFeedDetail extends StatefulWidget {
+  final DocumentReference<Map<String, dynamic>>? reference;
+  final Map<String, dynamic> initialData;
+  const _BusinessFeedDetail({
+    required this.reference,
+    required this.initialData,
+  });
+
+  @override
+  State<_BusinessFeedDetail> createState() => _BusinessFeedDetailState();
+}
+
+class _BusinessFeedDetailState extends State<_BusinessFeedDetail> {
+  late final Future<DocumentSnapshot<Map<String, dynamic>>>? _profile = widget
+      .reference
+      ?.get()
+      .timeout(const Duration(seconds: 6));
+
+  @override
+  Widget build(BuildContext context) {
+    if (_profile == null) {
+      return BusinessDetailScreen(businessData: widget.initialData);
+    }
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: _profile,
+      builder: (context, snapshot) {
+        final document = snapshot.data;
+        final raw = document?.data();
+        if (document != null &&
+            ((!document.exists && !document.metadata.isFromCache) ||
+                (raw != null &&
+                    raw.containsKey('status') &&
+                    !const [
+                      'approved',
+                      'published',
+                    ].contains(raw['status'])))) {
+          return Scaffold(
+            backgroundColor: const Color(0xFF061E12),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF061E12),
+              foregroundColor: const Color(0xFFFFD700),
+              title: const Text('Établissement'),
+            ),
+            body: const Center(
+              child: Text(
+                'Cette fiche n’est plus disponible.',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        }
+        return BusinessDetailScreen(
+          businessData: document != null && document.exists
+              ? normalizeBusinessForDetail(document)
+              : widget.initialData,
+        );
+      },
+    );
+  }
+}
+
 class _PublicFeedCard extends StatelessWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> doc;
 
@@ -96,12 +167,19 @@ class _PublicFeedCard extends StatelessWidget {
     final sourceCol = (data['sourceCollection'] ?? '').toString().toLowerCase();
 
     if (cat.contains('business') || sourceCol.contains('business')) {
+      final media = BusinessPublicMedia.resolve([data]);
+      final source = BusinessPhotoSource.linked(data);
+      final reference = source == null
+          ? null
+          : FirebaseFirestore.instance.doc(source.path);
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => BusinessDetailScreen(
-            businessData: {
-              'id': doc.id,
+          builder: (_) => _BusinessFeedDetail(
+            reference: reference,
+            initialData: {
+              ...data,
+              'id': source?.id ?? doc.id,
               'name': data['title'] ?? 'Business',
               'title': data['category'] ?? 'Business Profile',
               'location': data['subtitle'] ?? 'Europe',
@@ -117,17 +195,16 @@ class _PublicFeedCard extends StatelessWidget {
               'openingHours': 'Mon - Sun: Open',
               'description': data['description'] ?? '',
               'icon': Icons.storefront,
-              'logoUrl': data['logoUrl'] ?? data['imageUrl'] ?? '',
-              'imageUrl': data['imageUrl'] ?? data['logoUrl'] ?? '',
-              'gallery': data['gallery'] ??
-                  ((data['imageUrl'] ?? data['logoUrl'] ?? '')
-                          .toString()
-                          .trim()
-                          .isNotEmpty
-                      ? [data['imageUrl'] ?? data['logoUrl']]
-                      : <dynamic>[]),
+              'logoUrl': media.logo,
+              'coverUrl': media.cover,
+              'gallery': media.gallery,
               'reviews': const [],
-              'docRef': doc.reference,
+              // Feed documents are summaries, not business documents.
+              'docRef': reference,
+              if (source != null) ...{
+                'sourceCollection': source.collection,
+                'sourceId': source.id,
+              },
             },
           ),
         ),
@@ -152,7 +229,8 @@ class _PublicFeedCard extends StatelessWidget {
               'icon': Icons.work,
               'logoUrl': data['logoUrl'] ?? data['imageUrl'] ?? '',
               'imageUrl': data['imageUrl'] ?? data['logoUrl'] ?? '',
-              'gallery': data['gallery'] ??
+              'gallery':
+                  data['gallery'] ??
                   ((data['imageUrl'] ?? data['logoUrl'] ?? '')
                           .toString()
                           .trim()
@@ -242,62 +320,84 @@ class _PublicFeedCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                        color: primaryGold.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Text(category,
-                        style: const TextStyle(
-                            color: primaryGold,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold)),
+                      color: primaryGold.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      category,
+                      style: const TextStyle(
+                        color: primaryGold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   StatusBadgeWidget(
-                      isVerified: isVerified,
-                      subscriptionTier: subTier,
-                      compact: true),
+                    isVerified: isVerified,
+                    subscriptionTier: subTier,
+                    compact: true,
+                  ),
                   const Spacer(),
                   if (AppSession.isSuperAdmin)
                     IconButton(
                       tooltip: 'Delete post',
                       visualDensity: VisualDensity.compact,
                       onPressed: () => _confirmDelete(context),
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.redAccent, size: 20),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
                     ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(title,
-                  style: const TextStyle(
-                      color: primaryGold,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: primaryGold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               if (subtitle.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(subtitle,
-                    style:
-                        const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
               ],
               if (description.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(description,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 13, height: 1.35),
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
               const SizedBox(height: 8),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text('View Full Profile',
-                      style: TextStyle(
-                          color: primaryGold,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    'View Full Profile',
+                    style: TextStyle(
+                      color: primaryGold,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   SizedBox(width: 4),
                   Icon(Icons.arrow_forward_ios, color: primaryGold, size: 10),
                 ],
@@ -314,29 +414,39 @@ class _PublicFeedCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardGreen,
-        title: const Text('Delete feed item?',
-            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Delete feed item?',
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
+        ),
         content: const Text(
-            'This will remove the approved post from the public feed immediately.',
-            style: TextStyle(color: Colors.white70)),
+          'This will remove the approved post from the public feed immediately.',
+          style: TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
 
     if (shouldDelete == true) {
-      await doc.reference.update(
-          {'status': 'deleted', 'deletedAt': FieldValue.serverTimestamp()});
+      await doc.reference.update({
+        'status': 'deleted',
+        'deletedAt': FieldValue.serverTimestamp(),
+      });
     }
   }
 }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'notification_service.dart';
 import 'firebase_options.dart';
 import 'package:euro_habesha/home_screen.dart';
@@ -9,14 +12,12 @@ import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
 import 'app_session.dart';
-import 'admin_announcement_screen.dart';
 import 'advertisement_request_screen.dart';
 import 'admin_passcode_screen.dart';
 import 'review_prompt_service.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
+import 'qr_scanner_entry_screen.dart';
+import 'public_event_route_screen.dart';
+import 'euro_habesha_video_intro.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,13 +25,11 @@ void main() async {
   const stripePublishableKey = String.fromEnvironment(
     'STRIPE_PUBLISHABLE_KEY',
   );
-
   if (stripePublishableKey.isNotEmpty) {
     Stripe.publishableKey = stripePublishableKey;
     await Stripe.instance.applySettings();
   }
   var firebaseReady = false;
-
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -39,20 +38,21 @@ void main() async {
   } catch (_) {
     firebaseReady = false;
   }
-
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
   };
-
-  await EasyLocalization.ensureInitialized();
-
   runApp(
     EasyLocalization(
       supportedLocales: const [
-        Locale('en'),
-        Locale('am'),
-        Locale('fr'),
-        Locale('ti'),
+        Locale('en'), // English
+        Locale('fr'), // Français
+        Locale('de'), // Deutsch
+        Locale('it'), // Italiano
+        Locale('es'), // Español
+        Locale('nl'), // Nederlands
+        Locale('sv'), // Svenska
+        Locale('da'), // Dansk
+        Locale('no'), // Norsk
       ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
@@ -61,18 +61,21 @@ void main() async {
     ),
   );
 }
-
 class EuroHabeshaApp extends StatelessWidget {
   final bool firebaseReady;
-
-  const EuroHabeshaApp({super.key, this.firebaseReady = true});
-
+  const EuroHabeshaApp({
+    super.key,
+    this.firebaseReady = true,
+  });
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Euro Habesha',
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => EuroHabeshaVideoIntro(
+        child: child ?? const SizedBox.shrink(),
+      ),
       locale: context.locale,
       supportedLocales: context.supportedLocales,
       localizationsDelegates: context.localizationDelegates,
@@ -97,6 +100,16 @@ class EuroHabeshaApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF061E12),
       ),
       themeMode: ThemeMode.system,
+      onGenerateRoute: (settings) {
+        final route = Uri.tryParse(settings.name ?? '');
+        if (route?.path != '/event') return null;
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => firebaseReady
+              ? PublicEventRouteScreen(eventId: route!.queryParameters['id'] ?? '')
+              : const SafeHomeScreen(),
+        );
+      },
       routes: {
         '/app': (context) => const MainNavigationScreen(),
         '/login': (context) => const LoginScreen(),
@@ -105,15 +118,13 @@ class EuroHabeshaApp extends StatelessWidget {
             const AdvertisementRequestScreen(),
       },
       home:
-          firebaseReady ? const MainNavigationScreen() : const SafeHomeScreen(),
+          firebaseReady ? const LoginScreen(resumeSession: true) : const SafeHomeScreen(),
     );
   }
 }
-
-// Safe home screen with error handling
+// Safe home screen with error handling.
 class SafeHomeScreen extends StatelessWidget {
   const SafeHomeScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -127,8 +138,11 @@ class SafeHomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 50),
-                  const Icon(Icons.check_circle,
-                      color: Color(0xFFFFD700), size: 60),
+                  const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFFFFD700),
+                    size: 60,
+                  ),
                   const SizedBox(height: 20),
                   const Text(
                     'Euro Habesha',
@@ -140,7 +154,7 @@ class SafeHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'App Initialized Successfully! âœ…',
+                    'App Initialized Successfully! ✅',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white70,
@@ -160,19 +174,32 @@ class SafeHomeScreen extends StatelessWidget {
                         Text(
                           'System Status:',
                           style: TextStyle(
-                              color: Color(0xFFFFD700),
-                              fontWeight: FontWeight.bold),
+                            color: Color(0xFFFFD700),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         SizedBox(height: 10),
-                        Text('Firebase: Connected âœ…',
-                            style: TextStyle(
-                                color: Colors.greenAccent, fontSize: 12)),
-                        Text('UI Framework: Loaded âœ…',
-                            style: TextStyle(
-                                color: Colors.greenAccent, fontSize: 12)),
-                        Text('Plugins: Initialized âœ…',
-                            style: TextStyle(
-                                color: Colors.greenAccent, fontSize: 12)),
+                        Text(
+                          'Firebase: Connected ✅',
+                          style: TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          'UI Framework: Loaded ✅',
+                          style: TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          'Plugins: Initialized ✅',
+                          style: TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -181,21 +208,26 @@ class SafeHomeScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFFD700),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 15),
+                        horizontal: 40,
+                        vertical: 15,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () {
                       try {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                              builder: (context) =>
-                                  const MainNavigationScreen()),
+                            builder: (context) => const MainNavigationScreen(),
+                          ),
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Navigation error: $e')),
+                          SnackBar(
+                            content: Text('Navigation error: $e'),
+                          ),
                         );
                       }
                     },
@@ -218,19 +250,16 @@ class SafeHomeScreen extends StatelessWidget {
     );
   }
 }
-
 // ==========================================
-// â”€â”€ 1. áˆ˜áŒ€áˆ˜áˆªá‹« áˆ²áŠ¨áˆá‰µ á‹¨áˆšáˆ˜áŒ£á‹ á‹¨ Welcome / Sign-Up áŒˆáŒ½ â”€â”€
+// 1. Welcome / Sign-Up
 // ==========================================
 class WelcomeAuthScreen extends StatelessWidget {
   const WelcomeAuthScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     const Color primaryDarkGreen = Color(0xFF061E12);
     const Color primaryGold = Color(0xFFFFD700);
     const Color cardGreen = Color(0xFF004D40);
-
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       body: Center(
@@ -241,7 +270,9 @@ class WelcomeAuthScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: cardGreen,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: primaryGold.withValues(alpha: 0.4)),
+              border: Border.all(
+                color: primaryGold.withValues(alpha: 0.4),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -251,25 +282,31 @@ class WelcomeAuthScreen extends StatelessWidget {
                   width: 65,
                   height: 65,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.hub, color: primaryGold, size: 50),
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.hub,
+                    color: primaryGold,
+                    size: 50,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'Join Euro Habesha',
                   style: TextStyle(
-                      color: primaryGold,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold),
+                    color: primaryGold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Create an account to post, message, and connect with the community.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 25),
-
                 // Google Sign-In
                 SizedBox(
                   width: double.infinity,
@@ -279,23 +316,28 @@ class WelcomeAuthScreen extends StatelessWidget {
                       foregroundColor: Colors.black87,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const MainNavigationScreen()),
+                          builder: (context) => const MainNavigationScreen(),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.g_mobiledata, size: 26),
-                    label: const Text('Continue with Google',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    label: const Text(
+                      'Continue with Google',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
-
                 // Apple Sign-In
                 SizedBox(
                   width: double.infinity,
@@ -305,23 +347,28 @@ class WelcomeAuthScreen extends StatelessWidget {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const MainNavigationScreen()),
+                          builder: (context) => const MainNavigationScreen(),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.apple, size: 20),
-                    label: const Text('Continue with Apple',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    label: const Text(
+                      'Continue with Apple',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
-
                 // Email Sign-Up
                 SizedBox(
                   width: double.infinity,
@@ -331,34 +378,45 @@ class WelcomeAuthScreen extends StatelessWidget {
                       foregroundColor: primaryDarkGreen,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const MainNavigationScreen()),
+                          builder: (context) => const MainNavigationScreen(),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.email, size: 18),
-                    label: const Text('Sign Up with Email',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    label: const Text(
+                      'Sign Up with Email',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 15),
-
                 // Maybe Later (Skip)
                 TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const MainNavigationScreen()),
+                        builder: (context) => const MainNavigationScreen(),
+                      ),
                     );
                   },
-                  child: const Text('Maybe Later',
-                      style: TextStyle(color: Colors.white60, fontSize: 13)),
+                  child: const Text(
+                    'Maybe Later',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -368,102 +426,127 @@ class WelcomeAuthScreen extends StatelessWidget {
     );
   }
 }
-
 // ==========================================
-// â”€â”€ 2. á‹‹áŠ“á‹ á‹¨áˆ›áˆ°áˆ³á‹« áˆµáŠ­áˆªáŠ• (Main Navigation) â”€â”€
+// 2. Main Navigation
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
-
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
-
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
-
+  bool _sessionReady = false;
+  bool _sessionFailed = false;
   final Color primaryDarkGreen = const Color(0xFF061E12);
   final Color primaryGold = const Color(0xFFFFD700);
   final Color cardGreen = const Color(0xFF004D40);
-
   @override
   void initState() {
     super.initState();
-
     _initializeSession();
-
     Future.delayed(const Duration(seconds: 35), () {
       if (mounted) {
         ReviewPromptService.maybeShowReviewPrompt(context);
       }
     });
   }
-
   Future<void> _initializeSession() async {
-    await AppSession.restoreFromFirebase();
-
-    if (!mounted) {
+    try {
+      await AppSession.restoreFromFirebase();
+      if (!mounted) return;
+      // ProfileScreen reads AppSession in initState: build it only when ready.
+      setState(() => _sessionReady = true);
+    } catch (error) {
+      debugPrint('Chargement de la session : $error');
+      if (mounted) setState(() => _sessionFailed = true);
       return;
     }
-
-    await NotificationService.instance.initialize(
-      navigatorKey: navigatorKey,
-    );
-
-    if (mounted) {
-      setState(() {});
+    // A notification error must not hide a successfully restored profile.
+    try {
+      await NotificationService.instance.initialize(navigatorKey: navigatorKey);
+    } catch (error) {
+      debugPrint('Initialisation des notifications : $error');
     }
   }
-
   void _selectTab(int index) {
-    if (_selectedIndex == index) {
-      return;
-    }
+    if (index < 0 || index > 3 || _selectedIndex == index) return;
     setState(() => _selectedIndex = index);
   }
 
-  void _openPostComposer() {
-    if (AppSession.isSuperAdmin) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => const AdminAnnouncementScreen()),
-      );
-      return;
-    }
-
+  // Navigation horizontale entre les 4 onglets principaux.
+  // Le bouton + reste une action distincte.
+  void _handleTabSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < 250) return;
+    _selectTab(_selectedIndex + (velocity < 0 ? 1 : -1));
+  }
+  void _openQrScanner() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SubmissionMenuScreen()),
+      MaterialPageRoute(
+        builder: (_) => const QrScannerEntryScreen(),
+      ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
+    if (!_sessionReady) {
+      return Scaffold(
+        backgroundColor: primaryDarkGreen,
+        body: Center(
+          child: _sessionFailed
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Impossible de charger votre session.',
+                        style: TextStyle(color: Colors.white)),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _sessionFailed = false);
+                        _initializeSession();
+                      },
+                      child: Text('Réessayer', style: TextStyle(color: primaryGold)),
+                    ),
+                  ],
+                )
+              : CircularProgressIndicator(color: primaryGold),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       body: SafeArea(
         bottom: false,
-        child: IndexedStack(
-          index: _selectedIndex,
+        child: Column(
           children: [
-            HomeScreen(),
-            BusinessDirectoryScreen(),
-            ChatScreen(),
-            ProfileScreen(),
+
+Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragEnd: _handleTabSwipe,
+                child: IndexedStack(
+                index: _selectedIndex,
+                children: [
+                  HomeScreen(),
+                  BusinessDirectoryScreen(),
+                  ChatScreen(),
+                  ProfileScreen(),
+                ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
-      floatingActionButton: _selectedIndex == 3
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: FloatingActionButton(
               elevation: 8,
               shape: const CircleBorder(),
               backgroundColor: primaryGold,
               foregroundColor: Colors.black,
-              tooltip: 'Create post',
-              onPressed: _openPostComposer,
-              child: const Icon(Icons.add, size: 34),
+              tooltip: 'Scanner un QR code',
+              onPressed: _openQrScanner,
+              child: const Icon(Icons.qr_code_scanner_rounded, size: 31),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: SafeArea(
@@ -478,11 +561,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home, 'Home', 0),
-                _buildNavItem(Icons.storefront, 'Business', 1),
+                _buildNavItem(Icons.home, 'navigation.home'.tr(), 0),
+                _buildNavItem(Icons.explore, 'Découvrir', 1),
                 const SizedBox(width: 56),
                 _buildMessagesNavItem(),
-                _buildNavItem(Icons.person, 'Profile', 3),
+                _buildNavItem(Icons.person, 'navigation.profile'.tr(), 3),
               ],
             ),
           ),
@@ -490,14 +573,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
     );
   }
-
   Widget _buildMessagesNavItem() {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) {
-      return _buildNavItem(Icons.chat, 'Messages', 2);
+      return _buildNavItem(Icons.chat, 'navigation.messages'.tr(), 2);
     }
-
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('chats')
@@ -505,33 +585,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           .snapshots(),
       builder: (context, snapshot) {
         final chats = snapshot.data?.docs ?? [];
-
         var unreadCount = 0;
-
         for (final chatDoc in chats) {
           final data = chatDoc.data();
-
           final unreadCounts = Map<String, dynamic>.from(
             data['unreadCounts'] ?? const <String, dynamic>{},
           );
-
           final value = unreadCounts[user.uid];
-
           if (value is num) {
             unreadCount += value.toInt();
           }
         }
-
         return _buildNavItem(
           Icons.chat,
-          'Messages',
+          'navigation.messages'.tr(),
           2,
           badgeCount: unreadCount,
         );
       },
     );
   }
-
   Widget _buildNavItem(
     IconData icon,
     String label,
@@ -540,7 +613,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }) {
     final isSelected = _selectedIndex == index;
     final color = isSelected ? primaryGold : Colors.white54;
-
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -564,7 +636,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           minWidth: 18,
                           minHeight: 18,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: primaryGold,
                           shape: BoxShape.circle,
@@ -583,12 +657,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ],
               ),
               const SizedBox(height: 3),
-              Text(label,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 11,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w500)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),

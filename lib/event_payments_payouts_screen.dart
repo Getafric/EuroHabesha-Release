@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'event_financial_summary.dart';
 
 class EventPaymentsPayoutsScreen extends StatelessWidget {
   const EventPaymentsPayoutsScreen({
@@ -15,23 +16,7 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
   static const Color cardGreen = Color(0xFF0F5257);
   static const Color gold = Color(0xFFFFB800);
 
-  // Euro Habesha fee per paid ticket.
-  static const double platformFeePerPaidTicket = 0.50;
-
-  double _toDouble(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-
-    return double.tryParse(
-          value?.toString().replaceAll(',', '.') ?? '',
-        ) ??
-        0;
-  }
-
-  String _money(double value) {
-    return '${value.toStringAsFixed(2)} €';
-  }
+  // EH_EVENT_RECORDED_FEES_V1: saved facts, no hard-coded commission.
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +27,7 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Payments & Payouts',
+          'Paiements et versements',
           style: TextStyle(
             fontWeight: FontWeight.w800,
           ),
@@ -68,24 +53,8 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
             );
           }
 
-          final purchasedTickets = snapshot.data!.docs.where((doc) {
-            return doc.data()['paymentStatus'] == 'purchased';
-          }).toList();
-
-          final grossRevenue = purchasedTickets.fold<double>(
-            0,
-            (total, doc) {
-              return total + _toDouble(doc.data()['price']);
-            },
-          );
-
-          final paidTickets = purchasedTickets.where((doc) {
-            return _toDouble(doc.data()['price']) > 0;
-          }).toList();
-
-          final platformFees = paidTickets.length * platformFeePerPaidTicket;
-
-          final netRevenue = grossRevenue - platformFees;
+          final finance = EventFinancialSummary.fromTickets(
+            snapshot.data!.docs.map((doc) => doc.data()), eventId);
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -100,7 +69,7 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Financial overview for this event',
+                'Montants enregistrés pour cet événement',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -109,27 +78,32 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
               const SizedBox(height: 22),
               _PaymentSummaryCard(
                 icon: Icons.account_balance_wallet_outlined,
-                title: 'Gross Revenue',
-                amount: _money(grossRevenue),
-                subtitle: '${purchasedTickets.length} purchased tickets',
+                title: 'Ventes de billets enregistrées',
+                amount: eventSavedMoney(finance.grossCents),
+                subtitle: '${finance.count} billets enregistrés ; ${finance.unknownMode} sans mode de paiement confirmé',
               ),
               const SizedBox(height: 12),
               _PaymentSummaryCard(
                 icon: Icons.receipt_long_outlined,
-                title: 'Euro Habesha Fees',
-                amount: _money(platformFees),
-                subtitle:
-                    '${paidTickets.length} paid tickets × ${_money(platformFeePerPaidTicket)}',
+                title: 'Commission Euro Habesha',
+                amount: eventSavedMoney(finance.merchantCommissionCents),
+                subtitle: 'Commission professionnelle enregistrée, hors frais Stripe',
               ),
               const SizedBox(height: 12),
               _PaymentSummaryCard(
                 icon: Icons.payments_outlined,
-                title: 'Net Revenue',
-                amount: _money(netRevenue),
-                subtitle: 'Gross revenue minus Euro Habesha fees',
+                title: 'Net calculable avec les frais connus',
+                amount: eventSavedMoney(finance.merchantNetCents),
+                subtitle: 'Après frais enregistrés. Aucun virement bancaire confirmé ici.',
                 highlighted: true,
               ),
               const SizedBox(height: 24),
+              Text('Frais clients enregistrés : ${eventSavedMoney(finance.customerFeesCents)}',
+                style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 8),
+              Text('Frais Stripe enregistrés : ${eventSavedMoney(finance.stripeFeesCents)}',
+                style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 12),
               const _PaymentInfoCard(),
             ],
           );
@@ -246,10 +220,10 @@ class _PaymentInfoCard extends StatelessWidget {
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Euro Habesha charges 0.50 € for each paid ticket. '
-              'Free tickets have no platform fee. '
-              'Real payouts will be enabled after the payment provider '
-              'is connected.',
+              'Les frais proviennent des données sauvegardées au paiement. '
+              'Un montant absent reste non renseigné. Les frais clients ne '
+              'sont pas une commission professionnelle. Aucun forfait de '
+              '0,50 € n’est déduit automatiquement par cet écran.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 13,

@@ -9,6 +9,7 @@ import 'event_sales_screen.dart';
 import 'event_statistics_screen.dart';
 import 'event_ticketing_management_screen.dart';
 import 'events_screen.dart';
+import 'public_event_route_screen.dart';
 
 class EventOrganizerDashboardScreen extends StatelessWidget {
   const EventOrganizerDashboardScreen({super.key});
@@ -661,6 +662,18 @@ class _EventCard extends StatelessWidget {
                     ),
                   ),
                 );
+              },
+            ),
+            _ActionTile(
+              width: itemWidth,
+              icon: Icons.qr_code_2,
+              label: 'Affiche QR / partager',
+              enabled: isPublished,
+              onTap: () {
+                if (!isPublished) return;
+                // Build the poster from the published event, never from a draft.
+                Navigator.push(context, MaterialPageRoute<void>(
+                  builder: (_) => PublicEventRouteScreen(eventId: eventId, showPoster: true)));
               },
             ),
             _ActionTile(

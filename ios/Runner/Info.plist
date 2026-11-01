@@ -24,7 +24,6 @@
 		<string>Euro Habesha uses the camera to scan event ticket QR codes and add listing photos.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Euro Habesha uses your photo library when you attach photos or short videos to posts and listings.</string>
-
 		<key>GADApplicationIdentifier</key>
 		<string>ca-app-pub-3940256099942544~1458002511</string>
 		<key>SKAdNetworkItems</key>

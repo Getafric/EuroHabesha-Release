@@ -1,13 +1,19 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'professional_photo_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 
 import 'app_session.dart';
+import 'service_profession.dart';
+import 'professional_photo_requirement.dart';
+import 'service_profession_form.dart';
+import 'service_profession_card.dart';
 
 class DynamicSubmissionScreen extends StatefulWidget {
   final SubmissionType type;
@@ -64,9 +70,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   bool _foodAvailable = false;
 
   final List<XFile> _eventPhotos = [];
-  final List<_EventArtistInput> _eventArtists = [
-    _EventArtistInput(),
-  ];
+  final List<_EventArtistInput> _eventArtists = [_EventArtistInput()];
   final List<_EventTicketInput> _eventTicketTypes = [
     _EventTicketInput(
       id: 'general',
@@ -78,7 +82,200 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   ];
   String _selectedCountry = 'France';
   String _selectedJobCategory = 'Cleaning';
-  String _translatorServiceType = 'In-person';
+  // EH_PHOTO_PRESENTATION_V1
+  XFile? _presentationPhoto;
+  bool get _requiresPresentationPhoto => ['job','business','professional'].contains(widget.type.name);
+  // EH_CADRAGE_AVIS_V1
+  Future<void> _pickPresentationPhoto() async {
+    try {
+      final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+      if (file == null) { return; }
+      final bytes = await file.readAsBytes();
+      if (!mounted) { return; }
+      final framed = await frameProfessionalPhoto(context, bytes: bytes,
+        use: ProfessionalPhotoUse.presentation);
+      if (!mounted || framed == null) { return; }
+      setState(() => _presentationPhoto = XFile.fromData(framed,
+        name: 'presentation.png', mimeType: 'image/png'));
+    } catch (_) {
+      if (mounted) { _showMessage('Impossible d’ouvrir cette photo. Réessayez.', isError: true); }
+    }
+  }
+  Widget _buildPresentationPhoto({bool readOnly = false}) {
+    final photo = _presentationPhoto;
+    return Container(margin: const EdgeInsets.only(bottom: 18),padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: cardGreen,borderRadius: BorderRadius.circular(16)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,children: [
+        const Text('Photo de présentation *',style: TextStyle(color: primaryGold,fontSize: 18,fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        SizedBox(height: 170,child: photo == null
+          ? const Center(child: Icon(Icons.add_photo_alternate_outlined,color: primaryGold,size: 52))
+          : FutureBuilder<Uint8List>(future: photo.readAsBytes(),builder: (context,snapshot) => snapshot.hasData
+            ? Image.memory(snapshot.data!,fit: BoxFit.contain,cacheWidth: 600,
+              errorBuilder: (_,error,stack) => const Icon(Icons.broken_image_outlined,color: Colors.white70))
+            : const Center(child: CircularProgressIndicator(color: primaryGold)))),
+        const SizedBox(height: 10),
+        const Text('Une photo publique de votre activité est obligatoire. Personne, véhicule, local, logo ou réalisation : choisissez une image adaptée. Aucun document de vérification ici.',style: TextStyle(color: Colors.white70)),
+        if (!readOnly) ...[
+          const SizedBox(height: 10),FilledButton.icon(onPressed: _isSubmitting ? null : _pickPresentationPhoto,
+            style: FilledButton.styleFrom(backgroundColor: primaryGold,foregroundColor: primaryDarkGreen),
+            icon: const Icon(Icons.add_a_photo_outlined),label: Text(photo == null ? 'Ajouter une photo' : 'Changer la photo')),
+          if (photo != null) TextButton(onPressed: _isSubmitting ? null : () => setState(() => _presentationPhoto = null),
+            child: const Text('Retirer la photo',style: TextStyle(color: Colors.white70))),
+        ],
+      ]));
+  }
+  int _jobStep = 0;
+  final _jobScroll = ScrollController();
+  final Map<String, Map<String, dynamic>> _serviceDrafts = {};
+  final Map<String, List<XFile>> _servicePhotos = {};
+  final Map<XFile, String> _uploadedServicePhotos = {};
+  String? _uploadOwner;
+  ServiceDefinition get _jobDefinition =>
+      serviceDefinition(_selectedJobCategory);
+  Map<String, dynamic> get _jobDraft => _serviceDrafts.putIfAbsent(
+    _selectedJobCategory,
+    () => serviceDefaults(_jobDefinition),
+  );
+  List<XFile> get _jobPhotos =>
+      _servicePhotos.putIfAbsent(_selectedJobCategory, () => []);
+  void _setJobStep(int step) {
+    FocusScope.of(context).unfocus();
+    setState(() => _jobStep = step);
+    if (_jobScroll.hasClients) _jobScroll.jumpTo(0);
+  }
+
+  void _nextJobStep() {
+    final photoError = requiredProfessionalPhotoError(widget.type.name,hasPhoto: _presentationPhoto != null);
+    if (photoError != null) { _showMessage(photoError,isError: true); return; }
+
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_jobStep == 1) {
+      final error = validateServiceDetails(_jobDefinition, _jobDraft);
+      if (error != null) {
+        _showMessage(error, isError: true);
+        return;
+      }
+    }
+    _setJobStep(_jobStep + 1);
+  }
+
+  Widget _buildJobProgress() => Padding(
+    padding: const EdgeInsets.only(bottom: 18),
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (var i = 0; i < 3; i++)
+          Chip(
+            backgroundColor: _jobStep == i ? primaryGold : cardGreen,
+            labelStyle: TextStyle(
+              color: _jobStep == i ? primaryDarkGreen : Colors.white,
+            ),
+            label: Text(
+              '${i + 1} · ${['Présentation', 'Services', 'Aperçu'][i]}',
+            ),
+          ),
+      ],
+    ),
+  );
+  Widget _buildJobPreview() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text(
+        _controller('title').text.trim(),
+        style: const TextStyle(
+          color: primaryGold,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        '${_controller('cityAddress').text.trim()} · $_selectedCountry',
+        style: const TextStyle(color: Colors.white70),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        _controller('description').text.trim(),
+        style: const TextStyle(color: Colors.white),
+      ),
+      const SizedBox(height: 16),
+      ServiceProfessionCard(
+        data: {
+          'jobCategory': _selectedJobCategory,
+          'serviceDetails': cleanServiceDetails(_jobDefinition, _jobDraft),
+          'serviceArea': _controller('serviceArea').text.trim(),
+          'availability': _controller('availability').text.trim(),
+        },
+      ),
+      _buildPresentationPhoto(readOnly: true),
+      _buildServicePhotos(readOnly: true),
+      const SizedBox(height: 16),
+      const Text(
+        'Votre fiche sera envoyée pour validation par l’admin. La vérification professionnelle reste un dossier séparé.',
+        style: TextStyle(color: Colors.white70),
+      ),
+    ],
+  );
+  Future<List<String>> _uploadServicePhotos(String uid) async {
+    if (_uploadOwner != uid) {
+      _uploadedServicePhotos.clear();
+      _uploadOwner = uid;
+    }
+    final photos = <XFile>[if (_presentationPhoto != null) _presentationPhoto!,..._jobPhotos].take(10).toList();
+    for (final file in photos) {
+      if (await file.length() > 8 * 1024 * 1024) {
+        throw Exception('Maximum 8 Mo par photo.');
+      }
+      if (serviceImageExtension(await file.readAsBytes()) == null) {
+        throw Exception('Utilisez JPEG, PNG ou WebP.');
+      }
+    }
+    final urls = <String>[];
+    for (var i = 0; i < photos.length; i++) {
+      if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        throw Exception('Le compte connecté a changé. Reconnectez-vous.');
+      }
+      final file = photos[i];
+      var url = _uploadedServicePhotos[file];
+      if (url == null) {
+        final bytes = await file.readAsBytes();
+        final ext = serviceImageExtension(bytes)!;
+        final ref = FirebaseStorage.instance.ref().child(
+          'businesses/$uid/service_${DateTime.now().microsecondsSinceEpoch}_$i.$ext',
+        );
+        await ref.putData(
+          bytes,
+          SettableMetadata(contentType: 'image/${ext == 'jpg' ? 'jpeg' : ext}'),
+        );
+        url = await ref.getDownloadURL();
+        _uploadedServicePhotos[file] = url;
+      }
+      urls.add(url);
+    }
+    return urls;
+  }
+
+  // Business opening hours: a separate toggle and time range for each day.
+  static const _businessDays = <String>[
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  final Map<String, bool> _businessOpen = {
+    for (final day in _businessDays) day: day != 'Sunday',
+  };
+  final Map<String, String> _businessOpens = {
+    for (final day in _businessDays) day: '09:00',
+  };
+  final Map<String, String> _businessCloses = {
+    for (final day in _businessDays) day: '18:00',
+  };
 
   // Marketplace
   String _marketplaceType = 'For sale';
@@ -86,33 +283,52 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   String _marketplaceDelivery = 'Both';
   final List<XFile> _marketplacePhotos = [];
 
-  final List<XFile> _portfolioPhotos = [];
-  final List<XFile> _workPhotos = [];
-  final List<XFile> _cateringPhotos = [];
   final List<_MenuItemInput> _menuItems = [];
 
   final Map<String, String> _countryDialCodes = const {
     'France': '+33',
     'Belgium': '+32',
-    'UK': '+44',
+    'United Kingdom': '+44',
     'Netherlands': '+31',
     'Portugal': '+351',
     'Spain': '+34',
     'Italy': '+39',
     'Switzerland': '+41',
-    'Finland': '+358',
+    'Germany': '+49',
+    'Austria': '+43',
+    'Luxembourg': '+352',
+    'Denmark': '+45',
     'Norway': '+47',
     'Sweden': '+46',
-    'Denmark': '+45',
-    'Germany': '+49',
+    'Finland': '+358',
+    'Iceland': '+354',
+    'Ireland': '+353',
     'Greece': '+30',
     'Poland': '+48',
     'Hungary': '+36',
-    'Austria': '+43',
-    'Bulgaria': '+359',
     'Romania': '+40',
-    'Luxembourg': '+352',
+    'Bulgaria': '+359',
+    'Albania': '+355',
+    'Serbia': '+381',
+    'Estonia': '+372',
+    'Lithuania': '+370',
+    'Malta': '+356',
+    'Liechtenstein': '+423',
+    'Monaco': '+377',
+    'Ukraine': '+380',
     'Turkey': '+90',
+    'Ethiopia': '+251',
+    'Eritrea': '+291',
+    'Kenya': '+254',
+    'South Africa': '+27',
+    'Morocco': '+212',
+    'Saudi Arabia': '+966',
+    'Kuwait': '+965',
+    'Qatar': '+974',
+    'United Arab Emirates': '+971',
+    'United States': '+1',
+    'Canada': '+1',
+    'Australia': '+61',
   };
 
   final List<String> _jobCategories = const [
@@ -137,6 +353,11 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     'Gardener',
     'Car Wash',
     'Tutoring/Language Teacher (e.g., Amharic, Tigrinya)',
+    'IT / Computer Support',
+    'Event Decoration',
+    'DJ / Music Services',
+    'Home Cooking',
+    'Other Service',
   ];
 
   @override
@@ -144,6 +365,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     super.initState();
 
     _controller('phoneNumber').text = '${_countryDialCodes[_selectedCountry]} ';
+    if (widget.type == SubmissionType.business) _syncBusinessHours();
 
     if (widget.isEditing && widget.type == SubmissionType.event) {
       _loadExistingEvent();
@@ -310,9 +532,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         }
 
         if (_eventArtists.isEmpty) {
-          _eventArtists.add(
-            _EventArtistInput(),
-          );
+          _eventArtists.add(_EventArtistInput());
         }
       }
 
@@ -328,15 +548,13 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         _isLoadingExisting = false;
       });
 
-      _showMessage(
-        'Unable to load event: $error',
-        isError: true,
-      );
+      _showMessage('Unable to load event: $error', isError: true);
     }
   }
 
   @override
   void dispose() {
+    _jobScroll.dispose();
     for (final controller in _controllers.values) {
       controller.dispose();
     }
@@ -351,10 +569,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   }
 
   TextEditingController _controller(String key) {
-    return _controllers.putIfAbsent(
-      key,
-      () => TextEditingController(),
-    );
+    return _controllers.putIfAbsent(key, () => TextEditingController());
   }
 
   String get _title {
@@ -364,7 +579,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       SubmissionType.event =>
         widget.isEditing ? 'Edit Event' : 'Submit an Event',
       SubmissionType.community => 'Register a Community',
-      SubmissionType.job => 'Submit a Job or Service',
+      SubmissionType.job => 'Créer ma fiche de services',
       SubmissionType.verification => 'Request Verification',
       SubmissionType.marketplace => 'Post Marketplace Item',
       SubmissionType.employer => 'Créer un profil Employeur',
@@ -404,9 +619,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
 
       final geocoder = geocoding.Geocoding();
 
-      final locations = await geocoder.locationFromAddress(
-        searchAddress,
-      );
+      final locations = await geocoder.locationFromAddress(searchAddress);
 
       if (locations.isEmpty) {
         return null;
@@ -417,10 +630,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       return {
         'latitude': location.latitude,
         'longitude': location.longitude,
-        'geoPoint': GeoPoint(
-          location.latitude,
-          location.longitude,
-        ),
+        'geoPoint': GeoPoint(location.latitude, location.longitude),
         'geocodedAddress': searchAddress,
       };
     } catch (_) {
@@ -430,6 +640,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
@@ -453,27 +664,52 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
 
     if (widget.type == SubmissionType.marketplace &&
         _marketplacePhotos.isEmpty) {
-      _showMessage(
-        'Please add at least one photo.',
-        isError: true,
-      );
+      _showMessage('Please add at least one photo.', isError: true);
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    if (widget.type == SubmissionType.job) {
+      if ([
+        'title',
+        'phoneNumber',
+        'cityAddress',
+        'description',
+      ].any((k) => _controller(k).text.trim().isEmpty)) {
+        _setJobStep(0);
+        _showMessage(
+          'Complétez la présentation de votre activité.',
+          isError: true,
+        );
+        return;
+      }
+      final error = validateServiceDetails(_jobDefinition, _jobDraft);
+      if (error != null) {
+        _setJobStep(1);
+        _showMessage(error, isError: true);
+        return;
+      }
+    }
+        final requiredPhotoError = requiredProfessionalPhotoError(widget.type.name,hasPhoto: _presentationPhoto != null);
+    if (requiredPhotoError != null) {
+      if (widget.type == SubmissionType.job) { _setJobStep(0); }
+      _showMessage(requiredPhotoError,isError: true);
+      return;
+    }
+setState(() => _isSubmitting = true);
 
     try {
       final geoLocation = await _geocodeSubmissionLocation();
 
+      final servicePhotos = _requiresPresentationPhoto
+          ? await _uploadServicePhotos(user.uid)
+          : <String>[];
       List<String> marketplacePhotoUrls = [];
 
       if (widget.type == SubmissionType.marketplace) {
         marketplacePhotoUrls = await _uploadMarketplacePhotos(user.uid);
       }
 
-      List<String> eventPhotoUrls = [
-        ..._existingEventPhotoUrls,
-      ];
+      List<String> eventPhotoUrls = [..._existingEventPhotoUrls];
 
       if (widget.type == SubmissionType.event && _eventPhotos.isNotEmpty) {
         final newPhotoUrls = await _uploadEventPhotos(user.uid);
@@ -499,20 +735,14 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
             ticket.priceController.text.trim().replaceAll(',', '.'),
           );
 
-          final capacity = int.tryParse(
-            ticket.capacityController.text.trim(),
-          );
+          final capacity = int.tryParse(ticket.capacityController.text.trim());
 
           if (name.isEmpty) {
-            throw Exception(
-              'Ticket ${index + 1}: please enter a ticket name.',
-            );
+            throw Exception('Ticket ${index + 1}: please enter a ticket name.');
           }
 
           if (price == null || price < 0) {
-            throw Exception(
-              'Ticket ${index + 1}: please enter a valid price.',
-            );
+            throw Exception('Ticket ${index + 1}: please enter a valid price.');
           }
 
           if (capacity == null || capacity <= 0) {
@@ -536,8 +766,9 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                 .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
                 .replaceAll(RegExp(r'^-+|-+$'), '');
 
-            ticketId =
-                normalizedName.isEmpty ? 'ticket-${index + 1}' : normalizedName;
+            ticketId = normalizedName.isEmpty
+                ? 'ticket-${index + 1}'
+                : normalizedName;
           }
 
           eventTicketTypes.add({
@@ -562,10 +793,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         'createdAt': FieldValue.serverTimestamp(),
         'fields': {
           ..._controllers.map(
-            (key, controller) => MapEntry(
-              key,
-              controller.text.trim(),
-            ),
+            (key, controller) => MapEntry(key, controller.text.trim()),
           ),
           'country': _selectedCountry,
           'showExactAddress': _showExactAddress,
@@ -577,7 +805,13 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           },
           if (widget.type == SubmissionType.job) ...{
             'jobCategory': _selectedJobCategory,
-            'translatorServiceType': _translatorServiceType,
+            'serviceDetails': cleanServiceDetails(_jobDefinition, _jobDraft),
+            'cityOnlyLocation': _controller('cityAddress').text.trim(),
+            'showExactAddress': false,
+            if (servicePhotos.isNotEmpty) ...{
+              'logoUrl': servicePhotos.first,
+              'coverUrl': servicePhotos.first,
+            },
           },
         },
         if (geoLocation != null) ...{
@@ -588,16 +822,21 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           'geocodedAt': FieldValue.serverTimestamp(),
         },
       };
+      if (_requiresPresentationPhoto) {
+        data['media'] = {'photoUrls': servicePhotos};
+        data['gallery'] = servicePhotos;
+        final photoFields = data['fields'] as Map<String,dynamic>;
+        photoFields['logoUrl'] = servicePhotos.first;
+        photoFields['coverUrl'] = servicePhotos.first;
+        data['logoUrl'] = servicePhotos.first;
+        data['coverUrl'] = servicePhotos.first;
+      }
       if (widget.type == SubmissionType.marketplace) {
-        data['media'] = {
-          'photoUrls': marketplacePhotoUrls,
-        };
+        data['media'] = {'photoUrls': marketplacePhotoUrls};
       }
 
       if (widget.type == SubmissionType.event) {
-        data['media'] = {
-          'photoUrls': eventPhotoUrls,
-        };
+        data['media'] = {'photoUrls': eventPhotoUrls};
       }
 
       if (widget.type == SubmissionType.business) {
@@ -615,27 +854,26 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           'whatsappEnabled': _whatsappEnabled,
         };
 
-        data['media'] = {
-          'portfolioPhotoPaths':
-              _portfolioPhotos.map((file) => file.path).toList(),
-          'workPhotoPaths': _workPhotos.map((file) => file.path).toList(),
-          'cateringPhotoPaths':
-              _cateringPhotos.map((file) => file.path).toList(),
-        };
-
-        data['menuItems'] = _menuItems.map((item) => item.toMap()).toList();
+        data['media'] = {'photoUrls': servicePhotos};
+        data['gallery'] = servicePhotos;
+        if (servicePhotos.isNotEmpty) {
+          data['logoUrl'] = servicePhotos.first;
+          data['coverUrl'] = servicePhotos.first;
+        }
+        data['menuItems'] = _jobDefinition.id == 'catering'
+            ? _menuItems
+                  .where((item) => item.nameController.text.trim().isNotEmpty)
+                  .map((item) => item.toMap())
+                  .toList()
+            : <Map<String, String>>[];
 
         data['orderingModel'] = {
           'cashOnDeliveryOnly':
               _selectedJobCategory == 'Fashion/Clothes Designer',
-          'depositPercentage': double.tryParse(
-                _controller('depositPercentage').text.trim(),
-              ) ??
+          'depositPercentage':
+              double.tryParse(_controller('depositPercentage').text.trim()) ??
               0,
-          'paymentMethods': [
-            'cashOnDelivery',
-            'appDeposit',
-          ],
+          'paymentMethods': ['cashOnDelivery', 'appDeposit'],
         };
       }
 
@@ -673,9 +911,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         data['artists'] = eventArtists;
 
         final artistNames = eventArtists
-            .map(
-              (artist) => artist['name']?.toString().trim() ?? '',
-            )
+            .map((artist) => artist['name']?.toString().trim() ?? '')
             .where((name) => name.isNotEmpty)
             .toList();
 
@@ -683,8 +919,9 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
 
         fields['performerDj'] = artistNames.join(', ');
 
-        data['imageUrl'] =
-            eventPhotoUrls.isNotEmpty ? eventPhotoUrls.first : null;
+        data['imageUrl'] = eventPhotoUrls.isNotEmpty
+            ? eventPhotoUrls.first
+            : null;
         data['image'] = eventPhotoUrls.isNotEmpty ? eventPhotoUrls.first : null;
       }
 
@@ -701,6 +938,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         };
       }
 
+      if (widget.type == SubmissionType.job &&
+          FirebaseAuth.instance.currentUser?.uid != user.uid) {
+        throw Exception('Le compte connecté a changé. Reconnectez-vous.');
+      }
       if (widget.isEditing && widget.type == SubmissionType.event) {
         final documentId = widget.editDocumentId!;
 
@@ -711,16 +952,15 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         final existingSubmission = await submissionRef.get();
 
         if (!existingSubmission.exists) {
-          throw Exception(
-            'Event submission not found.',
-          );
+          throw Exception('Event submission not found.');
         }
 
         final existingData = existingSubmission.data() ?? <String, dynamic>{};
         data['ownerId'] = existingData['ownerId'] ?? user.uid;
 
-        final publicEventRef =
-            FirebaseFirestore.instance.collection('events').doc(documentId);
+        final publicEventRef = FirebaseFirestore.instance
+            .collection('events')
+            .doc(documentId);
 
         final latestPublicEvent = await publicEventRef.get();
 
@@ -777,24 +1017,18 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
 
         data['updatedBy'] = user.uid;
 
-        await submissionRef.set(
-          data,
-          SetOptions(merge: true),
-        );
+        await submissionRef.set(data, SetOptions(merge: true));
 
         // Si l'événement est déjà publié, on synchronise
         // également sa version publique.
         final publicEvent = await publicEventRef.get();
         if (publicEvent.exists) {
-          await publicEventRef.set(
-            {
-              ...data,
-              'status': 'published',
-              'updatedAt': FieldValue.serverTimestamp(),
-              'updatedBy': user.uid,
-            },
-            SetOptions(merge: true),
-          );
+          await publicEventRef.set({
+            ...data,
+            'status': 'published',
+            'updatedAt': FieldValue.serverTimestamp(),
+            'updatedBy': user.uid,
+          }, SetOptions(merge: true));
         }
       } else {
         await FirebaseFirestore.instance.collection(_collectionName).add(data);
@@ -804,9 +1038,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         return;
       }
 
+      final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             widget.isEditing
@@ -817,10 +1052,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       );
     } catch (e) {
       if (mounted) {
-        _showMessage(
-          'Submission failed: $e',
-          isError: true,
-        );
+        _showMessage('Submission failed: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -848,10 +1080,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         contentType: _contentTypeForExtension(extension),
       );
 
-      await reference.putFile(
-        File(file.path),
-        metadata,
-      );
+      await reference.putFile(File(file.path), metadata);
 
       final downloadUrl = await reference.getDownloadURL();
       urls.add(downloadUrl);
@@ -880,10 +1109,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         contentType: _contentTypeForExtension(extension),
       );
 
-      await reference.putFile(
-        File(file.path),
-        metadata,
-      );
+      await reference.putFile(File(file.path), metadata);
 
       final downloadUrl = await reference.getDownloadURL();
       urls.add(downloadUrl);
@@ -892,9 +1118,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     return urls;
   }
 
-  Future<List<Map<String, dynamic>>> _uploadEventArtists(
-    String uid,
-  ) async {
+  Future<List<Map<String, dynamic>>> _uploadEventArtists(String uid) async {
     final artists = <Map<String, dynamic>>[];
 
     for (var index = 0; index < _eventArtists.length; index++) {
@@ -928,18 +1152,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           contentType: _contentTypeForExtension(extension),
         );
 
-        await reference.putFile(
-          File(file.path),
-          metadata,
-        );
+        await reference.putFile(File(file.path), metadata);
 
         photoUrl = await reference.getDownloadURL();
       }
 
-      artists.add({
-        'name': name,
-        'photoUrl': photoUrl,
-      });
+      artists.add({'name': name, 'photoUrl': photoUrl});
     }
 
     return artists;
@@ -967,24 +1185,16 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         backgroundColor: cardGreen,
         title: const Text(
           'Account Required',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white70),
-        ),
+        content: Text(message, style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGold,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: primaryGold),
             onPressed: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/login');
@@ -1002,10 +1212,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     );
   }
 
-  void _showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void _showMessage(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: isError ? Colors.redAccent : primaryGold,
@@ -1025,11 +1232,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     if (_isLoadingExisting) {
       return const Scaffold(
         backgroundColor: primaryDarkGreen,
-        body: Center(
-          child: CircularProgressIndicator(
-            color: primaryGold,
-          ),
-        ),
+        body: Center(child: CircularProgressIndicator(color: primaryGold)),
       );
     }
 
@@ -1044,13 +1247,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           ),
         ),
         backgroundColor: primaryDarkGreen,
-        iconTheme: const IconThemeData(
-          color: primaryGold,
-        ),
+        iconTheme: const IconThemeData(color: primaryGold),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
+          controller: widget.type == SubmissionType.job ? _jobScroll : null,
           padding: EdgeInsets.fromLTRB(
             16,
             16,
@@ -1060,33 +1262,49 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           children: [
             if (widget.type == SubmissionType.marketplace)
               _buildMarketplaceHeader(),
-            _buildCommonFields(),
-            const SizedBox(height: 12),
-            ..._buildTypeFields(),
+            if (widget.type == SubmissionType.job) ...[
+              _buildJobProgress(),
+              if (_jobStep == 0) _buildPresentationPhoto(),
+              if (_jobStep == 0) _buildCommonFields(),
+              if (_jobStep == 1) ..._buildTypeFields(),
+              if (_jobStep == 2) _buildJobPreview(),
+              if (_jobStep > 0 && !_isSubmitting)
+                TextButton.icon(
+                  onPressed: () => _setJobStep(_jobStep - 1),
+                  style: TextButton.styleFrom(foregroundColor: primaryGold),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Retour'),
+                ),
+            ] else ...[
+              if (_requiresPresentationPhoto) _buildPresentationPhoto(),
+              _buildCommonFields(),
+              const SizedBox(height: 12),
+              ..._buildTypeFields(),
+            ],
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryGold,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 15,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
               onPressed: _isSubmitting
                   ? null
+                  : widget.type == SubmissionType.job && _jobStep < 2
+                  ? _nextJobStep
                   : widget.type == SubmissionType.event
-                      ? _openEventPreview
-                      : _submit,
+                  ? _openEventPreview
+                  : _submit,
               child: Text(
                 _isSubmitting
                     ? (widget.isEditing ? 'Saving...' : 'Submitting...')
+                    : widget.type == SubmissionType.job
+                    ? (_jobStep < 2 ? 'Continuer' : 'Envoyer pour validation')
                     : widget.type == SubmissionType.event
-                        ? (widget.isEditing
-                            ? 'Preview Changes'
-                            : 'Preview Event')
-                        : 'Submit for Admin Approval',
+                    ? (widget.isEditing ? 'Preview Changes' : 'Preview Event')
+                    : 'Submit for Admin Approval',
                 style: const TextStyle(
                   color: primaryDarkGreen,
                   fontWeight: FontWeight.bold,
@@ -1105,21 +1323,14 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF004D40),
-            Color(0xFF00695C),
-          ],
+          colors: [Color(0xFF004D40), Color(0xFF00695C)],
         ),
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.storefront_rounded,
-            color: primaryGold,
-            size: 34,
-          ),
+          Icon(Icons.storefront_rounded, color: primaryGold, size: 34),
           SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1188,20 +1399,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    12,
-                    8,
-                    8,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
                   child: Row(
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(previewContext),
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                        ),
+                        icon: const Icon(Icons.close, color: Colors.white),
                       ),
                       const Expanded(
                         child: Text(
@@ -1220,12 +1423,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                 ),
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                      16,
-                      8,
-                      16,
-                      24,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     children: [
                       if (_eventPhotos.isNotEmpty)
                         ClipRRect(
@@ -1298,9 +1496,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                       ),
                       if (artists.isNotEmpty) ...[
                         const SizedBox(height: 24),
-                        _buildEventPreviewTitle(
-                          'Artists & Performers',
-                        ),
+                        _buildEventPreviewTitle('Artists & Performers'),
                         const SizedBox(height: 10),
                         for (final artist in artists)
                           Container(
@@ -1316,9 +1512,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   child: artist.photo != null
                                       ? Image.file(
-                                          File(
-                                            artist.photo!.path,
-                                          ),
+                                          File(artist.photo!.path),
                                           width: 64,
                                           height: 64,
                                           fit: BoxFit.cover,
@@ -1350,9 +1544,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                           ),
                       ],
                       const SizedBox(height: 24),
-                      _buildEventPreviewTitle(
-                        'Event Information',
-                      ),
+                      _buildEventPreviewTitle('Event Information'),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -1412,37 +1604,24 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                       if (_nonRefundable)
                         const Text(
                           '• Tickets are non-refundable.',
-                          style: TextStyle(
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(color: Colors.white70),
                         ),
                       if (_nonTransferable)
                         const Padding(
                           padding: EdgeInsets.only(top: 5),
                           child: Text(
                             '• Tickets are non-transferable.',
-                            style: TextStyle(
-                              color: Colors.white70,
-                            ),
+                            style: TextStyle(color: Colors.white70),
                           ),
                         ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    10,
-                    16,
-                    16,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                   decoration: const BoxDecoration(
                     color: primaryDarkGreen,
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.white12,
-                      ),
-                    ),
+                    border: Border(top: BorderSide(color: Colors.white12)),
                   ),
                   child: Row(
                     children: [
@@ -1451,12 +1630,8 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                           onPressed: () => Navigator.pop(previewContext),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: const BorderSide(
-                              color: Colors.white38,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            side: const BorderSide(color: Colors.white38),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text('Back to Edit'),
                         ),
@@ -1471,18 +1646,14 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryGold,
                             foregroundColor: primaryDarkGreen,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: Text(
                             widget.isEditing
                                 ? 'Save Changes'
                                 : 'Submit for Approval',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -1508,11 +1679,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     );
   }
 
-  Widget _buildEventPreviewInfo(
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _buildEventPreviewInfo(IconData icon, String label, String value) {
     if (value.trim().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -1522,19 +1689,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: primaryGold,
-            size: 20,
-          ),
+          Icon(icon, color: primaryGold, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               '$label: $value',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
           ),
         ],
@@ -1542,37 +1702,22 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     );
   }
 
-  Widget _buildEventPreviewBadge(
-    IconData icon,
-    String label,
-  ) {
+  Widget _buildEventPreviewBadge(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: primaryGold,
-          ),
+          Icon(icon, size: 16, color: primaryGold),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
         ],
       ),
@@ -1580,12 +1725,47 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   }
 
   Widget _buildCommonFields() {
+    if (widget.type == SubmissionType.job) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Présentez votre activité',
+            style: TextStyle(
+              color: primaryGold,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildField('title', 'Nom professionnel *'),
+          const SizedBox(height: 12),
+          _buildCountryDropdown(),
+          const SizedBox(height: 12),
+          _buildField(
+            'phoneNumber',
+            'Téléphone de contact *',
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 12),
+          _buildField('cityAddress', 'Ville affichée publiquement *'),
+          const SizedBox(height: 8),
+          const Text(
+            'Indiquez uniquement la ville. Aucun local ni adresse de domicile n’est obligatoire.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 12),
+          _buildField(
+            'description',
+            'Présentation de votre activité *',
+            maxLines: 4,
+          ),
+        ],
+      );
+    }
     return Column(
       children: [
-        _buildField(
-          'title',
-          'Title / Name *',
-        ),
+        _buildField('title', 'Title / Name *'),
         const SizedBox(height: 12),
         _buildCountryDropdown(),
         const SizedBox(height: 12),
@@ -1595,16 +1775,9 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           keyboardType: TextInputType.phone,
         ),
         const SizedBox(height: 12),
-        _buildField(
-          'cityAddress',
-          'City & Address *',
-        ),
+        _buildField('cityAddress', 'City & Address *'),
         const SizedBox(height: 12),
-        _buildField(
-          'description',
-          'Description *',
-          maxLines: 5,
-        ),
+        _buildField('description', 'Description *', maxLines: 5),
       ],
     );
   }
@@ -1612,435 +1785,352 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   List<Widget> _buildTypeFields() {
     return switch (widget.type) {
       SubmissionType.employer => [
-          _buildField(
-            'companyName',
-            'Nom de l’entreprise / organisation *',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'businessSector',
-            'Secteur d’activité *',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'contactPerson',
-            'Nom du responsable / recruteur *',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'address',
-            'Adresse',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'websiteUrl',
-            'Site internet (optionnel)',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'companyDescription',
-            'Présentation de l’entreprise / organisation',
-            maxLines: 3,
-          ),
-        ],
+        _buildField('companyName', 'Nom de l’entreprise / organisation *'),
+        const SizedBox(height: 12),
+        _buildField('businessSector', 'Secteur d’activité *'),
+        const SizedBox(height: 12),
+        _buildField('contactPerson', 'Nom du responsable / recruteur *'),
+        const SizedBox(height: 12),
+        _buildField('address', 'Adresse'),
+        const SizedBox(height: 12),
+        _buildField('websiteUrl', 'Site internet (optionnel)'),
+        const SizedBox(height: 12),
+        _buildField(
+          'companyDescription',
+          'Présentation de l’entreprise / organisation',
+          maxLines: 3,
+        ),
+      ],
       SubmissionType.event => [
-          const Text(
-            'Event Details',
-            style: TextStyle(
-              color: primaryGold,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+        const Text(
+          'Event Details',
+          style: TextStyle(
+            color: primaryGold,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tell people everything they need to know about your event.',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Tell people everything they need to know about your event.',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+        const SizedBox(height: 18),
+        _buildField(
+          'eventCategory',
+          'Event category, e.g. Music, Party, Festival, Cultural',
+        ),
+        const SizedBox(height: 12),
+        _buildEventDateField(),
+        const SizedBox(height: 12),
+        _buildEventTimeField(key: 'startTime', label: 'Start time *'),
+        const SizedBox(height: 12),
+        _buildEventTimeField(key: 'endTime', label: 'End time *'),
+        const SizedBox(height: 20),
+        const Text(
+          'Organizer Information',
+          style: TextStyle(
+            color: primaryGold,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 18),
-          _buildField(
-            'eventCategory',
-            'Event category, e.g. Music, Party, Festival, Cultural',
+        ),
+        const SizedBox(height: 12),
+        _buildField('organizerName', 'Organizer / Company name'),
+        const SizedBox(height: 12),
+        _buildField('sirenNumber', 'SIREN number (optional)'),
+        const SizedBox(height: 12),
+        _buildField('organizerEmail', 'Organizer email'),
+        const SizedBox(height: 20),
+        const Text(
+          'Artists & Performers',
+          style: TextStyle(
+            color: primaryGold,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 12),
-          _buildEventDateField(),
-          const SizedBox(height: 12),
-          _buildEventTimeField(
-            key: 'startTime',
-            label: 'Start time *',
+        ),
+        const SizedBox(height: 12),
+        _buildEventArtistsBuilder(),
+        const SizedBox(height: 24),
+        const Text(
+          'Tickets & Prices',
+          style: TextStyle(
+            color: primaryGold,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 12),
-          _buildEventTimeField(
-            key: 'endTime',
-            label: 'End time *',
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Add your ticket types, prices and available places.',
+          style: TextStyle(color: Colors.white60, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        _buildEventTicketTypes(),
+        const SizedBox(height: 24),
+        const Text(
+          'Event Photos',
+          style: TextStyle(
+            color: primaryGold,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Organizer Information',
-            style: TextStyle(
-              color: primaryGold,
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Add up to 5 photos. The first photo will be used as the event cover.',
+          style: TextStyle(color: Colors.white60, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        _buildEventPhotoPicker(),
+        const SizedBox(height: 22),
+        const Text(
+          'Event Options & Policies',
+          style: TextStyle(
+            color: primaryGold,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 12),
-          _buildField(
-            'organizerName',
-            'Organizer / Company name',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'sirenNumber',
-            'SIREN number (optional)',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'organizerEmail',
-            'Organizer email',
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Artists & Performers',
-            style: TextStyle(
-              color: primaryGold,
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildEventArtistsBuilder(),
-          const SizedBox(height: 24),
-          const Text(
-            'Tickets & Prices',
-            style: TextStyle(
-              color: primaryGold,
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Add your ticket types, prices and available places.',
-            style: TextStyle(
-              color: Colors.white60,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildEventTicketTypes(),
-          const SizedBox(height: 24),
-          const Text(
-            'Event Photos',
-            style: TextStyle(
-              color: primaryGold,
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Add up to 5 photos. The first photo will be used as the event cover.',
-            style: TextStyle(
-              color: Colors.white60,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildEventPhotoPicker(),
-          const SizedBox(height: 22),
-          const Text(
-            'Event Options & Policies',
-            style: TextStyle(
-              color: primaryGold,
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildSwitch(
-            '18+ only',
-            _age18Only,
-            (value) {
-              setState(() {
-                _age18Only = value;
+        ),
+        const SizedBox(height: 8),
+        _buildSwitch('18+ only', _age18Only, (value) {
+          setState(() {
+            _age18Only = value;
 
-                if (value) {
-                  _kidsAllowed = false;
-                }
-              });
-            },
-          ),
-          _buildSwitch(
-            'Kids allowed',
-            _kidsAllowed,
-            (value) {
-              setState(() {
-                _kidsAllowed = value;
+            if (value) {
+              _kidsAllowed = false;
+            }
+          });
+        }),
+        _buildSwitch('Kids allowed', _kidsAllowed, (value) {
+          setState(() {
+            _kidsAllowed = value;
 
-                if (value) {
-                  _age18Only = false;
-                }
-              });
-            },
-          ),
-          _buildSwitch(
-            'Shisha / Hookah available',
-            _shishaAvailable,
-            (value) {
-              setState(() {
-                _shishaAvailable = value;
-              });
-            },
-          ),
-          _buildSwitch(
-            'Alcohol served',
-            _alcoholAvailable,
-            (value) {
-              setState(() {
-                _alcoholAvailable = value;
-              });
-            },
-          ),
-          _buildSwitch(
-            'Food / Buffet available',
-            _foodAvailable,
-            (value) {
-              setState(() {
-                _foodAvailable = value;
-              });
-            },
-          ),
-          _buildSwitch(
-            'Tickets are non-refundable',
-            _nonRefundable,
-            (value) {
-              setState(() {
-                _nonRefundable = value;
-              });
-            },
-          ),
-          _buildSwitch(
-            'Tickets are non-transferable',
-            _nonTransferable,
-            (value) {
-              setState(() {
-                _nonTransferable = value;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'amenities',
-            'Other amenities, e.g. parking, VIP area, cloakroom',
-            maxLines: 3,
-          ),
-        ],
+            if (value) {
+              _age18Only = false;
+            }
+          });
+        }),
+        _buildSwitch('Shisha / Hookah available', _shishaAvailable, (value) {
+          setState(() {
+            _shishaAvailable = value;
+          });
+        }),
+        _buildSwitch('Alcohol served', _alcoholAvailable, (value) {
+          setState(() {
+            _alcoholAvailable = value;
+          });
+        }),
+        _buildSwitch('Food / Buffet available', _foodAvailable, (value) {
+          setState(() {
+            _foodAvailable = value;
+          });
+        }),
+        _buildSwitch('Tickets are non-refundable', _nonRefundable, (value) {
+          setState(() {
+            _nonRefundable = value;
+          });
+        }),
+        _buildSwitch('Tickets are non-transferable', _nonTransferable, (value) {
+          setState(() {
+            _nonTransferable = value;
+          });
+        }),
+        const SizedBox(height: 12),
+        _buildField(
+          'amenities',
+          'Other amenities, e.g. parking, VIP area, cloakroom',
+          maxLines: 3,
+        ),
+      ],
       SubmissionType.community => [
-          _buildDropdown(
-            label: 'Community category *',
-            value: _controller('communityCategory').text.isEmpty
-                ? 'Groupes & Associations'
-                : _controller('communityCategory').text,
-            values: const [
-              'Groupes & Associations',
-              'Habesha par ville',
-              'Entraide',
-              'Logement',
-              'Transport & déplacement',
-              'Aide administrative',
-              'Langues & traduction',
-              'Études & formation',
-              'Familles & parents',
-              'Carrière & mentorat',
-              'Culture & rencontres',
-              'Bénévolat & solidarité',
-            ],
-            onChanged: (value) {
-              setState(() {
-                _controller('communityCategory').text = value;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'communityType',
-            'Community type, e.g. Orthodox Church, Mosque',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'meetingSchedule',
-            'Service / gathering schedule',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'leaderName',
-            'Leader or contact person',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'address',
-            'Full address',
-          ),
-        ],
+        _buildDropdown(
+          label: 'Community category *',
+          value: _controller('communityCategory').text.isEmpty
+              ? 'Groupes & Associations'
+              : _controller('communityCategory').text,
+          values: const [
+            'Groupes & Associations',
+            'Habesha par ville',
+            'Entraide',
+            'Logement',
+            'Transport & déplacement',
+            'Aide administrative',
+            'Langues & traduction',
+            'Études & formation',
+            'Familles & parents',
+            'Carrière & mentorat',
+            'Culture & rencontres',
+            'Bénévolat & solidarité',
+          ],
+          onChanged: (value) {
+            setState(() {
+              _controller('communityCategory').text = value;
+            });
+          },
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          'communityType',
+          'Community type, e.g. Orthodox Church, Mosque',
+        ),
+        const SizedBox(height: 12),
+        _buildField('meetingSchedule', 'Service / gathering schedule'),
+        const SizedBox(height: 12),
+        _buildField('leaderName', 'Leader or contact person'),
+        const SizedBox(height: 12),
+        _buildField('address', 'Full address'),
+      ],
       SubmissionType.job => [
-          _buildJobCategoryDropdown(),
-          const SizedBox(height: 12),
-          ..._buildJobSpecificFields(),
-          const SizedBox(height: 12),
-          _buildSwitch(
-            'Allow WhatsApp contact using this phone number',
-            _whatsappEnabled,
-            (value) => setState(
-              () => _whatsappEnabled = value,
-            ),
-          ),
-          _buildSwitch(
-            'Show exact address publicly',
-            _showExactAddress,
-            (value) => setState(
-              () => _showExactAddress = value,
-            ),
-          ),
-          _buildField(
-            'cityOnlyLocation',
-            'City shown publicly, e.g. Lyon',
-            maxLines: 1,
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'requirements',
-            'Requirements / service details',
-            maxLines: 3,
-          ),
-        ],
+        _buildJobCategoryDropdown(),
+        const SizedBox(height: 18),
+        ..._buildJobSpecificFields(),
+        const SizedBox(height: 18),
+        _buildField('serviceArea', 'Zone de déplacement (villes et environs)'),
+        const SizedBox(height: 12),
+        _buildField('availability', 'Disponibilités et délais', maxLines: 2),
+        const SizedBox(height: 12),
+        _buildField(
+          'websiteUrl',
+          'Site internet (facultatif)',
+          keyboardType: TextInputType.url,
+        ),
+        const SizedBox(height: 12),
+        _buildSwitch(
+          'Autoriser le contact WhatsApp',
+          _whatsappEnabled,
+          (v) => setState(() => _whatsappEnabled = v),
+        ),
+      ],
+
       SubmissionType.professional => [
-          _buildField(
-            'professionTitle',
-            'Professional Title (Doctor, Lawyer, Translator, Caterer, etc.) *',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'registrationNumber',
-            'SIRET / Professional License / Registration ID',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'servicesOffered',
-            'Services Offered (list services, one per line) *',
-            maxLines: 3,
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'pricingDetails',
-            'Pricing & Rates (e.g. €25/hour, from €30/doc, menu prices) *',
-            maxLines: 3,
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'qualifications',
-            'Qualifications, Diplomas & Experience',
-            maxLines: 3,
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'websiteUrl',
-            'Website, LinkedIn or Portfolio URL (optional)',
-          ),
-          const SizedBox(height: 12),
-          _buildSwitch(
-            'Allow WhatsApp contact using this phone number',
-            _whatsappEnabled,
-            (value) => setState(
-              () => _whatsappEnabled = value,
-            ),
-          ),
-          _buildSwitch(
-            'Show exact address publicly',
-            _showExactAddress,
-            (value) => setState(
-              () => _showExactAddress = value,
-            ),
-          ),
-        ],
+        _buildField(
+          'professionTitle',
+          'Professional Title (Doctor, Lawyer, Translator, Caterer, etc.) *',
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          'registrationNumber',
+          'SIRET / Professional License / Registration ID',
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          'servicesOffered',
+          'Services Offered (list services, one per line) *',
+          maxLines: 3,
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          'pricingDetails',
+          'Pricing & Rates (e.g. €25/hour, from €30/doc, menu prices) *',
+          maxLines: 3,
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          'qualifications',
+          'Qualifications, Diplomas & Experience',
+          maxLines: 3,
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          'websiteUrl',
+          'Website, LinkedIn or Portfolio URL (optional)',
+        ),
+        const SizedBox(height: 12),
+        _buildSwitch(
+          'Allow WhatsApp contact using this phone number',
+          _whatsappEnabled,
+          (value) => setState(() => _whatsappEnabled = value),
+        ),
+        _buildSwitch(
+          'Show exact address publicly',
+          _showExactAddress,
+          (value) => setState(() => _showExactAddress = value),
+        ),
+      ],
       SubmissionType.business => [
-          _buildField(
-            'businessCategory',
-            'Business category',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'openingHours',
-            'Opening hours',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'address',
-            'Full address',
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Business profiles use Call for Reservation only. '
-            'In-app messaging is disabled. Reserve Plus and Live Zone '
-            'fields are reserved for future release.',
-            style: TextStyle(
-              color: Colors.white60,
-              fontSize: 12,
-              height: 1.4,
-            ),
-          ),
-        ],
+        _buildBusinessCategoryDropdown(),
+        const SizedBox(height: 12),
+        _buildBusinessHoursPicker(),
+        const SizedBox(height: 16),
+        _businessSectionHeading(
+          Icons.place_outlined,
+          'Business address',
+          'Enter the address customers can use for directions.',
+        ),
+        const SizedBox(height: 10),
+        _buildField('address', 'Street address and number *'),
+        const SizedBox(height: 10),
+        _buildField(
+          'postalCode',
+          'Postal / ZIP code',
+          keyboardType: TextInputType.streetAddress,
+        ),
+        const SizedBox(height: 10),
+        _buildField(
+          'websiteUrl',
+          'Website (optional)',
+          keyboardType: TextInputType.url,
+        ),
+        const SizedBox(height: 16),
+        _businessSectionHeading(
+          Icons.verified_outlined,
+          'Registration',
+          'Business registration is checked separately during verification.',
+        ),
+        const SizedBox(height: 10),
+        _buildBusinessRegistrationField(),
+        const SizedBox(height: 8),
+        const Text(
+          'The address can be used for map directions after admin approval. '
+          'Professional identity and supporting documents are handled '
+          'separately in professional verification.',
+          style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Business profiles use Call for Reservation only. '
+          'In-app messaging is disabled. Reserve Plus and Live Zone '
+          'fields are reserved for future release.',
+          style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+        ),
+      ],
       SubmissionType.verification => [
-          _buildField(
-            'verificationType',
-            'Verification type',
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'documentSummary',
-            'Document or proof summary',
-            maxLines: 3,
-          ),
-          const SizedBox(height: 12),
-          _buildField(
-            'publicProfileLink',
-            'Website or profile link',
-          ),
-        ],
+        _buildField('verificationType', 'Verification type'),
+        const SizedBox(height: 12),
+        _buildField(
+          'documentSummary',
+          'Document or proof summary',
+          maxLines: 3,
+        ),
+        const SizedBox(height: 12),
+        _buildField('publicProfileLink', 'Website or profile link'),
+      ],
       SubmissionType.marketplace => [
-          _buildMarketplacePhotoPicker(),
-          const SizedBox(height: 16),
-          _buildMarketplaceTypeDropdown(),
-          const SizedBox(height: 12),
-          _buildMarketplaceCategoryDropdown(),
-          const SizedBox(height: 12),
-          _buildField(
-            'price',
-            'Price (€) *',
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 12),
-          _buildMarketplaceConditionDropdown(),
-          const SizedBox(height: 12),
-          _buildMarketplaceDeliveryDropdown(),
-          const SizedBox(height: 12),
-          _buildSwitch(
-            'Allow WhatsApp contact using this phone number',
-            _whatsappEnabled,
-            (value) => setState(
-              () => _whatsappEnabled = value,
-            ),
-          ),
-          _buildSwitch(
-            'Show exact address publicly',
-            _showExactAddress,
-            (value) => setState(
-              () => _showExactAddress = value,
-            ),
-          ),
-        ],
+        _buildMarketplacePhotoPicker(),
+        const SizedBox(height: 16),
+        _buildMarketplaceTypeDropdown(),
+        const SizedBox(height: 12),
+        _buildMarketplaceCategoryDropdown(),
+        const SizedBox(height: 12),
+        _buildField('price', 'Price (€) *', keyboardType: TextInputType.number),
+        const SizedBox(height: 12),
+        _buildMarketplaceConditionDropdown(),
+        const SizedBox(height: 12),
+        _buildMarketplaceDeliveryDropdown(),
+        const SizedBox(height: 12),
+        _buildSwitch(
+          'Allow WhatsApp contact using this phone number',
+          _whatsappEnabled,
+          (value) => setState(() => _whatsappEnabled = value),
+        ),
+        _buildSwitch(
+          'Show exact address publicly',
+          _showExactAddress,
+          (value) => setState(() => _showExactAddress = value),
+        ),
+      ],
     };
   }
 
@@ -2050,19 +2140,14 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.25),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.photo_library_outlined,
-                color: primaryGold,
-              ),
+              const Icon(Icons.photo_library_outlined, color: primaryGold),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
@@ -2087,10 +2172,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           const Text(
             'Add clear photos of your product. '
             'The first photo will be used as the main image.',
-            style: TextStyle(
-              color: Colors.white60,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.white60, fontSize: 12),
           ),
           const SizedBox(height: 14),
           if (_marketplacePhotos.isNotEmpty)
@@ -2111,10 +2193,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        File(photo.path),
-                        fit: BoxFit.cover,
-                      ),
+                      child: Image.file(File(photo.path), fit: BoxFit.cover),
                     ),
                     if (index == 0)
                       Positioned(
@@ -2172,20 +2251,14 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: _pickMarketplacePhotos,
-                icon: const Icon(
-                  Icons.add_a_photo_outlined,
-                ),
+                icon: const Icon(Icons.add_a_photo_outlined),
                 label: Text(
                   _marketplacePhotos.isEmpty ? 'Add photos' : 'Add more photos',
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: primaryGold,
-                  side: const BorderSide(
-                    color: primaryGold,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 13,
-                  ),
+                  side: const BorderSide(color: primaryGold),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -2217,15 +2290,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       }
 
       setState(() {
-        _marketplacePhotos.addAll(
-          picked.take(remaining),
-        );
+        _marketplacePhotos.addAll(picked.take(remaining));
       });
     } catch (e) {
-      _showMessage(
-        'Could not select photos: $e',
-        isError: true,
-      );
+      _showMessage('Could not select photos: $e', isError: true);
     }
   }
 
@@ -2233,11 +2301,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     return _buildDropdown(
       label: 'Listing Type *',
       value: _marketplaceType,
-      values: const [
-        'For sale',
-        'For rent',
-        'Service',
-      ],
+      values: const ['For sale', 'For rent', 'Service'],
       onChanged: (value) {
         setState(() {
           _marketplaceType = value;
@@ -2293,13 +2357,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     return _buildDropdown(
       label: 'Condition *',
       value: _marketplaceCondition,
-      values: const [
-        'New',
-        'Like new',
-        'Good',
-        'Used',
-        'For parts',
-      ],
+      values: const ['New', 'Like new', 'Good', 'Used', 'For parts'],
       onChanged: (value) {
         setState(() {
           _marketplaceCondition = value;
@@ -2312,11 +2370,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     return _buildDropdown(
       label: 'Delivery / Collection',
       value: _marketplaceDelivery,
-      values: const [
-        'Both',
-        'Pickup only',
-        'Delivery only',
-      ],
+      values: const ['Both', 'Pickup only', 'Delivery only'],
       onChanged: (value) {
         setState(() {
           _marketplaceDelivery = value;
@@ -2325,19 +2379,278 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     );
   }
 
+  Widget _businessSectionHeading(IconData icon, String title, String subtitle) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: primaryGold, size: 23),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickBusinessHour(String day, {required bool opening}) async {
+    final existing = opening ? _businessOpens[day]! : _businessCloses[day]!;
+    final parts = existing.split(':');
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: int.parse(parts[0]),
+        minute: int.parse(parts[1]),
+      ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: primaryGold,
+            onPrimary: primaryDarkGreen,
+            surface: cardGreen,
+            onSurface: Colors.white,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final value =
+        '${picked.hour.toString().padLeft(2, '0')}:'
+        '${picked.minute.toString().padLeft(2, '0')}';
+    setState(() {
+      if (opening) {
+        _businessOpens[day] = value;
+      } else {
+        _businessCloses[day] = value;
+      }
+      _syncBusinessHours();
+    });
+  }
+
+  void _syncBusinessHours() {
+    final rows = <String>[];
+    for (final day in _businessDays) {
+      final hours = _businessOpen[day]!
+          ? '${_businessOpens[day]}-${_businessCloses[day]}'
+          : 'Closed';
+      _controller('businessHours_$day').text = hours;
+      rows.add('$day: $hours');
+    }
+    // Keep legacy summary fields for existing screens and Firestore readers.
+    _controller('openingHours').text = rows.join(' | ');
+    _controller('weekdayHours').text = _businessDays
+        .take(5)
+        .map((day) => '$day: ${_controller('businessHours_$day').text}')
+        .join(' | ');
+    _controller('saturdayHours').text = _controller(
+      'businessHours_Saturday',
+    ).text;
+    _controller('sundayHours').text = _controller('businessHours_Sunday').text;
+  }
+
+  Widget _buildBusinessHoursPicker() {
+    Widget timeChip(String day, bool opening) {
+      final hour = opening ? _businessOpens[day]! : _businessCloses[day]!;
+      return SizedBox(
+        height: 34,
+        child: OutlinedButton(
+          onPressed: () => _pickBusinessHour(day, opening: opening),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 7),
+            minimumSize: const Size(58, 34),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            foregroundColor: primaryGold,
+            side: BorderSide(color: primaryGold.withValues(alpha: 0.45)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            hour,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: cardGreen,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _businessSectionHeading(
+            Icons.schedule,
+            'Opening hours',
+            'Enable a day and tap a time to edit.',
+          ),
+          const SizedBox(height: 8),
+          ..._businessDays.map((day) {
+            final isOpen = _businessOpen[day]!;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 82,
+                    child: Text(
+                      day,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 42,
+                    height: 34,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Switch(
+                        value: isOpen,
+                        activeThumbColor: primaryGold,
+                        onChanged: (value) => setState(() {
+                          _businessOpen[day] = value;
+                          _syncBusinessHours();
+                        }),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: isOpen
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              timeChip(day, true),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  '–',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                              timeChip(day, false),
+                            ],
+                          )
+                        : const Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'Closed',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBusinessRegistrationField() {
+    final isFrance = _selectedCountry == 'France';
+    return TextFormField(
+      controller: _controller('businessRegistrationNumber'),
+      keyboardType: isFrance ? TextInputType.number : TextInputType.text,
+      style: const TextStyle(color: Colors.white),
+      maxLength: isFrance ? 14 : null,
+      validator: (value) {
+        final number = (value ?? '').trim();
+        if (number.isEmpty) return null;
+        if (isFrance && !RegExp(r'^\d{14}$').hasMatch(number)) {
+          return 'Enter a 14-digit SIRET number';
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.badge_outlined, color: primaryGold),
+        labelText: isFrance
+            ? 'SIRET (14 digits, if applicable)'
+            : 'Business registration number (if applicable)',
+        helperText: isFrance
+            ? 'Numbers only · Verified separately'
+            : 'Use your country’s official registration identifier',
+        helperStyle: const TextStyle(color: Colors.white60),
+        labelStyle: const TextStyle(color: Colors.white70),
+        filled: true,
+        fillColor: cardGreen,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBusinessCategoryDropdown() {
+    const categories = <String>[
+      'Restaurant / Café',
+      'Grocery / Food Shop',
+      'Retail / Clothing Shop',
+      'Hair Salon / Barber',
+      'Beauty / Nails',
+      'Catering / Bakery',
+      'Hotel / Guesthouse',
+      'Event Venue',
+      'Travel / Transport',
+      'Photography / Media Studio',
+      'Professional Office / Agency',
+      'Other Establishment',
+    ];
+    final current = _controller('businessCategory').text.trim();
+    final selected = categories.contains(current) ? current : categories.first;
+    // Keep the selected category in the existing Firestore `fields` map.
+    if (current.isEmpty) {
+      _controller('businessCategory').text = selected;
+    }
+    return _buildDropdown(
+      label: 'Business category *',
+      value: selected,
+      values: categories,
+      onChanged: (value) => setState(() {
+        _controller('businessCategory').text = value;
+      }),
+    );
+  }
+
   Widget _buildCountryDropdown() {
     return DropdownButtonFormField<String>(
       initialValue: _selectedCountry,
       isExpanded: true,
       dropdownColor: cardGreen,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: 'Country *',
-        labelStyle: const TextStyle(
-          color: Colors.white54,
-        ),
+        labelStyle: const TextStyle(color: Colors.white54),
         filled: true,
         fillColor: cardGreen,
         border: OutlineInputBorder(
@@ -2346,21 +2659,13 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         ),
       ),
       selectedItemBuilder: (context) => _countryDialCodes.keys
-          .map(
-            (country) => Text(
-              country,
-              overflow: TextOverflow.ellipsis,
-            ),
-          )
+          .map((country) => Text(country, overflow: TextOverflow.ellipsis))
           .toList(),
       items: _countryDialCodes.keys
           .map(
             (country) => DropdownMenuItem<String>(
               value: country,
-              child: Text(
-                country,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(country, overflow: TextOverflow.ellipsis),
             ),
           )
           .toList(),
@@ -2382,14 +2687,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       initialValue: _selectedJobCategory,
       isExpanded: true,
       dropdownColor: cardGreen,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        labelText: 'Job Category / Profession *',
-        labelStyle: const TextStyle(
-          color: Colors.white54,
-        ),
+        labelText: 'Métier / Service *',
+        labelStyle: const TextStyle(color: Colors.white54),
         filled: true,
         fillColor: cardGreen,
         border: OutlineInputBorder(
@@ -2400,7 +2701,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       selectedItemBuilder: (context) => _jobCategories
           .map(
             (category) => Text(
-              category,
+              serviceDefinition(category).label,
               overflow: TextOverflow.ellipsis,
             ),
           )
@@ -2410,7 +2711,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
             (category) => DropdownMenuItem<String>(
               value: category,
               child: Text(
-                category,
+                serviceDefinition(category).label,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -2426,122 +2727,45 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
 
           if (_selectedJobCategory == 'Catering / Food Seller (Injera & Wot)' &&
               _menuItems.isEmpty) {
-            _menuItems.add(
-              _MenuItemInput(),
-            );
+            _menuItems.add(_MenuItemInput());
           }
         });
       },
     );
   }
 
-  List<Widget> _buildJobSpecificFields() {
-    if (_selectedJobCategory == 'Translator') {
-      return [
-        _buildDropdown(
-          label: 'Service Type *',
-          value: _translatorServiceType,
-          values: const [
-            'In-person',
-            'Phone',
-          ],
-          onChanged: (value) {
-            setState(() {
-              _translatorServiceType = value;
-            });
-          },
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'ratePerHour',
-          'Rate per hour',
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'ratePerDocument',
-          'Rate per document / paper',
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'websiteUrl',
-          'Website URL (optional)',
-        ),
-      ];
-    }
-
-    if (_selectedJobCategory == 'Fashion/Clothes Designer') {
-      return [
-        _buildPhotoPicker(
-          'Portfolio photos',
-          _portfolioPhotos,
-          5,
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'designerSpecialty',
-          'Designer specialty',
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'orderMeasurements',
-          'Order/Command Form: height, size, chest, waist, hips, sleeve, notes',
-          maxLines: 5,
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Client orders for designer clothes are cash on delivery / pay on arrival only.',
-          style: TextStyle(
-            color: Colors.white60,
-            fontSize: 12,
-          ),
-        ),
-      ];
-    }
-
-    if (_selectedJobCategory == 'Catering / Food Seller (Injera & Wot)') {
-      return [
-        _buildPhotoPicker(
-          'Catering photos',
-          _cateringPhotos,
-          10,
-        ),
-        const SizedBox(height: 12),
-        _buildMenuBuilder(),
-        const SizedBox(height: 12),
-        _buildField(
-          'depositPercentage',
-          'Deposit percentage (0-100, optional)',
-          keyboardType: TextInputType.number,
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Customers can contact you directly or request an in-app deposit. The deposit is calculated from the order total.',
-          style: TextStyle(
-            color: Colors.white60,
-            fontSize: 12,
-          ),
-        ),
-      ];
-    }
-
-    return [
-      _buildField(
-        'payRange',
-        'Pay range',
-      ),
+  List<Widget> _buildJobSpecificFields() => [
+    ServiceProfessionForm(
+      key: ValueKey(_selectedJobCategory),
+      definition: _jobDefinition,
+      initialValue: _jobDraft,
+      onChanged: (v) => _serviceDrafts[_selectedJobCategory] = v,
+    ),
+    const SizedBox(height: 18),
+    _buildServicePhotos(),
+    if (_jobDefinition.id == 'catering') ...[
       const SizedBox(height: 12),
-      _buildPhotoPicker(
-        'Previous work photos',
-        _workPhotos,
-        3,
+      ExpansionTile(
+        iconColor: primaryGold,
+        collapsedIconColor: primaryGold,
+        title: const Text(
+          'Menu et produits (facultatif)',
+          style: TextStyle(color: primaryGold),
+        ),
+        children: [_buildMenuBuilder()],
       ),
+    ],
+    if (_selectedJobCategory == 'Fashion/Clothes Designer') ...[
+      const SizedBox(height: 12),
+      _buildField('designerSpecialty', 'Spécialités de couture'),
       const SizedBox(height: 12),
       _buildField(
-        'exactAddressOptional',
-        'Exact address (optional)',
+        'orderMeasurements',
+        'Informations utiles pour une commande',
+        maxLines: 3,
       ),
-    ];
-  }
+    ],
+  ];
 
   Widget _buildDropdown({
     required String label,
@@ -2555,14 +2779,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       initialValue: safeValue,
       isExpanded: true,
       dropdownColor: cardGreen,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: Colors.white54,
-        ),
+        labelStyle: const TextStyle(color: Colors.white54),
         filled: true,
         fillColor: cardGreen,
         border: OutlineInputBorder(
@@ -2571,21 +2791,13 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         ),
       ),
       selectedItemBuilder: (context) => values
-          .map(
-            (item) => Text(
-              item,
-              overflow: TextOverflow.ellipsis,
-            ),
-          )
+          .map((item) => Text(item, overflow: TextOverflow.ellipsis))
           .toList(),
       items: values
           .map(
             (item) => DropdownMenuItem<String>(
               value: item,
-              child: Text(
-                item,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(item, overflow: TextOverflow.ellipsis),
             ),
           )
           .toList(),
@@ -2607,9 +2819,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
             decoration: BoxDecoration(
               color: cardGreen,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: primaryGold.withValues(alpha: 0.25),
-              ),
+              border: Border.all(color: primaryGold.withValues(alpha: 0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2657,18 +2867,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _eventTicketTypes[index].nameController,
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Ticket name *',
                     hintText: 'Standard, VIP, Early Bird...',
-                    hintStyle: const TextStyle(
-                      color: Colors.white38,
-                    ),
-                    labelStyle: const TextStyle(
-                      color: Colors.white54,
-                    ),
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    labelStyle: const TextStyle(color: Colors.white54),
                     filled: true,
                     fillColor: primaryDarkGreen,
                     border: OutlineInputBorder(
@@ -2693,18 +2897,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: 'Price (€) *',
                           hintText: '0 = Free',
-                          hintStyle: const TextStyle(
-                            color: Colors.white38,
-                          ),
-                          labelStyle: const TextStyle(
-                            color: Colors.white54,
-                          ),
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          labelStyle: const TextStyle(color: Colors.white54),
                           prefixIcon: const Icon(
                             Icons.euro,
                             color: primaryGold,
@@ -2734,18 +2932,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                       child: TextFormField(
                         controller: _eventTicketTypes[index].capacityController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: 'Places *',
                           hintText: '100',
-                          hintStyle: const TextStyle(
-                            color: Colors.white38,
-                          ),
-                          labelStyle: const TextStyle(
-                            color: Colors.white54,
-                          ),
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          labelStyle: const TextStyle(color: Colors.white54),
                           prefixIcon: const Icon(
                             Icons.people_outline,
                             color: primaryGold,
@@ -2779,10 +2971,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                   Text(
                     '${_eventTicketTypes[index].sold} ticket(s) already sold. '
                     'Capacity cannot be lower than this number.',
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: Colors.white60, fontSize: 11),
                   ),
                 ],
                 const SizedBox(height: 4),
@@ -2792,18 +2981,13 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                   activeThumbColor: primaryGold,
                   title: const Text(
                     'Ticket available for sale',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(color: Colors.white),
                   ),
                   subtitle: Text(
                     _eventTicketTypes[index].active
                         ? 'Customers can purchase this ticket.'
                         : 'This ticket is currently hidden from sales.',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -2830,24 +3014,14 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                 );
               });
             },
-            icon: const Icon(
-              Icons.add_circle_outline,
-              color: primaryGold,
-            ),
+            icon: const Icon(Icons.add_circle_outline, color: primaryGold),
             label: const Text(
               'Add ticket type',
-              style: TextStyle(
-                color: primaryGold,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
             ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(
-                color: primaryGold,
-              ),
-              padding: const EdgeInsets.symmetric(
-                vertical: 14,
-              ),
+              side: const BorderSide(color: primaryGold),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -2901,14 +3075,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _eventArtists[index].nameController,
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Artist / Performer / DJ name',
-                    labelStyle: const TextStyle(
-                      color: Colors.white54,
-                    ),
+                    labelStyle: const TextStyle(color: Colors.white54),
                     filled: true,
                     fillColor: primaryDarkGreen,
                     border: OutlineInputBorder(
@@ -2924,9 +3094,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.file(
-                          File(
-                            _eventArtists[index].photo!.path,
-                          ),
+                          File(_eventArtists[index].photo!.path),
                           height: 150,
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -2944,10 +3112,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.black54,
                           ),
-                          icon: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                          ),
+                          icon: const Icon(Icons.close, color: Colors.white),
                         ),
                       ),
                     ],
@@ -2990,10 +3155,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.black54,
                           ),
-                          icon: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                          ),
+                          icon: const Icon(Icons.close, color: Colors.white),
                         ),
                       ),
                     ],
@@ -3017,17 +3179,11 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                           _eventArtists[index].photo = photo;
                         });
                       },
-                      icon: const Icon(
-                        Icons.add_a_photo_outlined,
-                      ),
-                      label: const Text(
-                        'Add artist photo',
-                      ),
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('Add artist photo'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryGold,
-                        side: const BorderSide(
-                          color: primaryGold,
-                        ),
+                        side: const BorderSide(color: primaryGold),
                       ),
                     ),
                   ),
@@ -3039,22 +3195,14 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           child: OutlinedButton.icon(
             onPressed: () {
               setState(() {
-                _eventArtists.add(
-                  _EventArtistInput(),
-                );
+                _eventArtists.add(_EventArtistInput());
               });
             },
-            icon: const Icon(
-              Icons.person_add_alt_1,
-            ),
-            label: const Text(
-              'Add another artist',
-            ),
+            icon: const Icon(Icons.person_add_alt_1),
+            label: const Text('Add another artist'),
             style: OutlinedButton.styleFrom(
               foregroundColor: primaryGold,
-              side: const BorderSide(
-                color: primaryGold,
-              ),
+              side: const BorderSide(color: primaryGold),
             ),
           ),
         ),
@@ -3090,9 +3238,11 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
               children: [
-                for (var index = 0;
-                    index < _existingEventPhotoUrls.length;
-                    index++)
+                for (
+                  var index = 0;
+                  index < _existingEventPhotoUrls.length;
+                  index++
+                )
                   Stack(
                     fit: StackFit.expand,
                     children: [
@@ -3248,118 +3398,146 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                     }
 
                     setState(() {
-                      _eventPhotos.addAll(
-                        picked.take(remaining),
-                      );
+                      _eventPhotos.addAll(picked.take(remaining));
                     });
                   } catch (e) {
                     if (!mounted) {
                       return;
                     }
 
-                    _showMessage(
-                      'Could not select photos: $e',
-                      isError: true,
-                    );
+                    _showMessage('Could not select photos: $e', isError: true);
                   }
                 },
-                icon: const Icon(
-                  Icons.add_a_photo_outlined,
-                ),
+                icon: const Icon(Icons.add_a_photo_outlined),
                 label: Text(
                   totalPhotos == 0 ? 'Add photos' : 'Add more photos',
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: primaryGold,
-                  side: const BorderSide(
-                    color: primaryGold,
-                  ),
+                  side: const BorderSide(color: primaryGold),
                 ),
               ),
             ),
           if (totalPhotos >= 5)
             const Text(
               'Maximum 5 photos reached.',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 12),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildPhotoPicker(
-    String label,
-    List<XFile> files,
-    int maxCount,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cardGreen,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label (${files.length}/$maxCount)',
-            style: const TextStyle(
-              color: primaryGold,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildServicePhotos({bool readOnly = false}) {
+    final files = _jobPhotos;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Galerie supplémentaire (${files.length}/9)',
+          style: const TextStyle(
+            color: primaryGold,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final file in files)
-                Chip(
-                  label: SizedBox(
-                    width: 150,
-                    child: Text(
-                      file.name,
-                      overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Photos publiques de vos réalisations uniquement. Aucun document de vérification. JPEG, PNG ou WebP, 8 Mo maximum par photo.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final file in files)
+              SizedBox(
+                width: 118,
+                height: 130,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: FutureBuilder<Uint8List>(
+                        future: file.readAsBytes(),
+                        builder: (context, snapshot) => snapshot.hasData
+                            ? Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.contain,
+                                cacheWidth: 360,
+                                errorBuilder: (_, error, stack) => const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: Colors.white70,
+                                ),
+                              )
+                            : const Center(
+                                child: Icon(
+                                  Icons.photo_outlined,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                      ),
                     ),
-                  ),
-                  onDeleted: () {
-                    setState(() {
-                      files.remove(file);
-                    });
-                  },
-                ),
-              if (files.length < maxCount)
-                ActionChip(
-                  avatar: const Icon(
-                    Icons.add_a_photo,
-                    size: 18,
-                  ),
-                  label: const Text('Add photo'),
-                  onPressed: () async {
-                    final picked = await _picker.pickMultiImage(
-                      limit: maxCount - files.length,
-                    );
-
-                    if (picked.isEmpty) {
-                      return;
-                    }
-
-                    setState(() {
-                      files.addAll(
-                        picked.take(
-                          maxCount - files.length,
+                    if (!readOnly)
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton.filled(
+                          tooltip: 'Retirer cette photo',
+                          onPressed: () => setState(() => files.remove(file)),
+                          icon: const Icon(Icons.close),
+                          style: IconButton.styleFrom(
+                            backgroundColor: cardGreen,
+                            foregroundColor: primaryGold,
+                          ),
                         ),
-                      );
-                    });
-                  },
+                      ),
+                  ],
                 ),
-            ],
+              ),
+          ],
+        ),
+        if (!readOnly && files.length < 9)
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(foregroundColor: primaryGold),
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: const Text('Ajouter mes photos'),
+            onPressed: () async {
+              try {
+                final picked = await _picker.pickMultiImage(imageQuality: 90);
+                if (!mounted || picked.isEmpty) return;
+                final valid = <XFile>[];
+                for (final file in picked.take(9 - files.length)) {
+                  if (await file.length() > 8 * 1024 * 1024 ||
+                      serviceImageExtension(await file.readAsBytes()) == null) {
+                    if (mounted) {
+                      _showMessage(
+                        'Photo ignorée : JPEG, PNG ou WebP, 8 Mo maximum.',
+                        isError: true,
+                      );
+                    }
+                    continue;
+                  }
+                  final originalBytes = await file.readAsBytes();
+                  if (!mounted) { return; }
+                  final framed = await frameProfessionalPhoto(context,
+                    bytes: originalBytes, use: ProfessionalPhotoUse.gallery);
+                  if (framed != null) {
+                    valid.add(XFile.fromData(framed, name: 'galerie.png', mimeType: 'image/png'));
+                  }
+                }
+                if (!mounted) return;
+                setState(() => files.addAll(valid.take(9 - files.length)));
+              } catch (_) {
+                if (mounted) {
+                  _showMessage(
+                    'Impossible d’ouvrir ces photos. Réessayez.',
+                    isError: true,
+                  );
+                }
+              }
+            },
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -3387,15 +3565,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
               IconButton(
                 onPressed: () {
                   setState(() {
-                    _menuItems.add(
-                      _MenuItemInput(),
-                    );
+                    _menuItems.add(_MenuItemInput());
                   });
                 },
-                icon: const Icon(
-                  Icons.add_circle,
-                  color: primaryGold,
-                ),
+                icon: const Icon(Icons.add_circle, color: primaryGold),
               ),
             ],
           ),
@@ -3408,16 +3581,11 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
               final item = _menuItems[index];
 
               return Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 10,
-                ),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildInlineField(
-                        'Item',
-                        item.nameController,
-                      ),
+                      child: _buildInlineField('Item', item.nameController),
                     ),
                     const SizedBox(width: 8),
                     SizedBox(
@@ -3460,16 +3628,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 13,
-      ),
+      style: const TextStyle(color: Colors.white, fontSize: 13),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: Colors.white54,
-          fontSize: 12,
-        ),
+        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
         filled: true,
         fillColor: primaryDarkGreen,
         border: OutlineInputBorder(
@@ -3508,38 +3670,32 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
                 color: Colors.white70,
                 fontWeight: FontWeight.bold,
               ),
-              dayForegroundColor: WidgetStateProperty.resolveWith<Color?>(
-                (states) {
-                  if (states.contains(WidgetState.disabled)) {
-                    return Colors.white30;
-                  }
-                  if (states.contains(WidgetState.selected)) {
-                    return primaryDarkGreen;
-                  }
-                  return Colors.white;
-                },
-              ),
-              dayBackgroundColor: WidgetStateProperty.resolveWith<Color?>(
-                (states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return primaryGold;
-                  }
-                  return Colors.transparent;
-                },
-              ),
-              todayForegroundColor: const WidgetStatePropertyAll(
-                primaryGold,
-              ),
-              todayBorder: const BorderSide(
-                color: primaryGold,
-              ),
+              dayForegroundColor: WidgetStateProperty.resolveWith<Color?>((
+                states,
+              ) {
+                if (states.contains(WidgetState.disabled)) {
+                  return Colors.white30;
+                }
+                if (states.contains(WidgetState.selected)) {
+                  return primaryDarkGreen;
+                }
+                return Colors.white;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith<Color?>((
+                states,
+              ) {
+                if (states.contains(WidgetState.selected)) {
+                  return primaryGold;
+                }
+                return Colors.transparent;
+              }),
+              todayForegroundColor: const WidgetStatePropertyAll(primaryGold),
+              todayBorder: const BorderSide(color: primaryGold),
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: primaryGold,
-                textStyle: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -3579,10 +3735,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
             hour <= 23 &&
             minute >= 0 &&
             minute <= 59) {
-          initialTime = TimeOfDay(
-            hour: hour,
-            minute: minute,
-          );
+          initialTime = TimeOfDay(hour: hour, minute: minute);
         }
       }
     }
@@ -3618,9 +3771,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: primaryGold,
-                textStyle: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -3645,27 +3796,18 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     return TextFormField(
       controller: _controller('eventDate'),
       readOnly: true,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
+      style: const TextStyle(color: Colors.white),
       onTap: () => _pickEventDate('eventDate'),
       decoration: InputDecoration(
         labelText: 'Event date *',
         hintText: 'Choose a date',
-        hintStyle: const TextStyle(
-          color: Colors.white38,
-        ),
-        labelStyle: const TextStyle(
-          color: Colors.white54,
-        ),
+        hintStyle: const TextStyle(color: Colors.white38),
+        labelStyle: const TextStyle(color: Colors.white54),
         prefixIcon: const Icon(
           Icons.calendar_month_rounded,
           color: primaryGold,
         ),
-        suffixIcon: const Icon(
-          Icons.arrow_drop_down,
-          color: primaryGold,
-        ),
+        suffixIcon: const Icon(Icons.arrow_drop_down, color: primaryGold),
         filled: true,
         fillColor: cardGreen,
         border: OutlineInputBorder(
@@ -3682,34 +3824,19 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     );
   }
 
-  Widget _buildEventTimeField({
-    required String key,
-    required String label,
-  }) {
+  Widget _buildEventTimeField({required String key, required String label}) {
     return TextFormField(
       controller: _controller(key),
       readOnly: true,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
+      style: const TextStyle(color: Colors.white),
       onTap: () => _pickEventTime(key),
       decoration: InputDecoration(
         labelText: label,
         hintText: 'Choose a time',
-        hintStyle: const TextStyle(
-          color: Colors.white38,
-        ),
-        labelStyle: const TextStyle(
-          color: Colors.white54,
-        ),
-        prefixIcon: const Icon(
-          Icons.schedule_rounded,
-          color: primaryGold,
-        ),
-        suffixIcon: const Icon(
-          Icons.arrow_drop_down,
-          color: primaryGold,
-        ),
+        hintStyle: const TextStyle(color: Colors.white38),
+        labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: const Icon(Icons.schedule_rounded, color: primaryGold),
+        suffixIcon: const Icon(Icons.arrow_drop_down, color: primaryGold),
         filled: true,
         fillColor: cardGreen,
         border: OutlineInputBorder(
@@ -3736,9 +3863,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       controller: _controller(key),
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
+      style: const TextStyle(color: Colors.white),
       validator: label.endsWith('*')
           ? (value) {
               if (value == null || value.trim().isEmpty) {
@@ -3749,9 +3874,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
           : null,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: Colors.white54,
-        ),
+        labelStyle: const TextStyle(color: Colors.white54),
         filled: true,
         fillColor: cardGreen,
         border: OutlineInputBorder(
@@ -3762,21 +3885,12 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     );
   }
 
-  Widget _buildSwitch(
-    String title,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
+  Widget _buildSwitch(String title, bool value, ValueChanged<bool> onChanged) {
     return SwitchListTile(
       value: value,
       onChanged: onChanged,
       activeThumbColor: primaryGold,
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-        ),
-      ),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
     );
   }
 }
@@ -3789,15 +3903,13 @@ class _EventTicketInput {
     required int capacity,
     required this.sold,
     this.active = true,
-  })  : nameController = TextEditingController(text: name),
-        priceController = TextEditingController(
-          text: price == price.roundToDouble()
-              ? price.toInt().toString()
-              : price.toStringAsFixed(2),
-        ),
-        capacityController = TextEditingController(
-          text: capacity.toString(),
-        );
+  }) : nameController = TextEditingController(text: name),
+       priceController = TextEditingController(
+         text: price == price.roundToDouble()
+             ? price.toInt().toString()
+             : price.toStringAsFixed(2),
+       ),
+       capacityController = TextEditingController(text: capacity.toString());
 
   String id;
   final TextEditingController nameController;

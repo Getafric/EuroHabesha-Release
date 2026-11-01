@@ -1,3 +1,8 @@
+import 'admin_professional_subscriptions_screen.dart';
+import 'notifications_screen.dart';
+import 'promotion_request_service.dart';
+import 'promotion_settings.dart';
+import 'admin_local_campaigns_screen.dart';
 import 'dart:io';
 import 'admin_fees_settings_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,7 +13,14 @@ import 'package:image_picker/image_picker.dart';
 import 'advertisement_request_screen.dart';
 import 'app_session.dart';
 import 'admin_banner_screen.dart';
+import 'admin_welcome_screen.dart';
+import 'admin_startup_presentation_screen.dart';
 import 'admin_universal_content_manager_screen.dart';
+import 'admin_professional_review_data.dart';
+import 'admin_professional_review_sheet.dart';
+import 'admin_professional_moderation_screen.dart';
+import 'admin_nearby_backfill_screen.dart';
+import 'country_phone_codes.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -24,6 +36,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   final Color cardGreen = const Color(0xFF004D40);
 
   late TabController _tabController;
+  final Set<String> _reviewingPromotions = {};
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -31,30 +44,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   // ===========================================================================
   // QUICK POST & REGIONS CONFIGURATION
   // ===========================================================================
-
-  final Map<String, String> countryPhoneCodes = {
-    'France': '+33',
-    'Belgium': '+32',
-    'UK': '+44',
-    'Netherlands': '+31',
-    'Portugal': '+351',
-    'Spain': '+34',
-    'Italy': '+39',
-    'Switzerland': '+41',
-    'Finland': '+358',
-    'Norway': '+47',
-    'Sweden': '+46',
-    'Denmark': '+45',
-    'Germany': '+49',
-    'Greece': '+30',
-    'Poland': '+48',
-    'Hungary': '+36',
-    'Austria': '+43',
-    'Bulgaria': '+359',
-    'Romania': '+40',
-    'Luxembourg': '+352',
-    'Turkey': '+90',
-  };
 
   late String selectedCountry;
   String phonePrefix = '+33';
@@ -85,8 +74,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
   final TextEditingController _inviteEmailController = TextEditingController();
 
-  final TextEditingController _accessCodeController =
-      TextEditingController(text: '7124');
+  final TextEditingController _accessCodeController = TextEditingController(
+    text: '7124',
+  );
 
   String selectedInviteRole = 'Habesha Connect Admin';
 
@@ -133,7 +123,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     super.initState();
 
     _tabController = TabController(
-      length: AppSession.isSuperAdmin ? 8 : 1,
+      length: AppSession.isSuperAdmin ? 11 : 1,
       vsync: this,
     );
 
@@ -165,65 +155,33 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   // HELPER METHODS & SYSTEM UTILITIES
   // ===========================================================================
 
-  void _showMessage(
-    String message, {
-    Color? backgroundColor,
-  }) {
-    if (!mounted) return;
+  void _showMessage(String message, {Color? backgroundColor}) {
+    if (!mounted) {
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-      ),
+      SnackBar(content: Text(message), backgroundColor: backgroundColor),
     );
   }
 
   List<String> _permissionsForRole(String role) {
     return switch (role) {
       'Habesha Connect Admin' => [
-          'manage_habesha_connect_category',
-          'review_habesha_connect_requests',
-          'publish_habesha_connect',
-          'moderate_habesha_connect',
-        ],
-      'Jobs Admin' => [
-          'manage_jobs',
-          'review_jobs',
-        ],
-      'Businesses Admin' => [
-          'manage_businesses',
-          'review_businesses',
-        ],
-      'Marketplace Admin' => [
-          'manage_marketplace',
-          'review_marketplace',
-        ],
-      'Events Admin' => [
-          'manage_events',
-          'review_events',
-          'scan_tickets',
-        ],
-      'Professionals Admin' => [
-          'manage_professionals',
-          'review_professionals',
-        ],
-      'Moderator' => [
-          'review_comments',
-          'hide_content',
-          'moderate_content',
-        ],
-      'Editor' => [
-          'review_submissions',
-          'edit_content',
-        ],
-      'Helper' => [
-          'view_dashboard',
-          'respond_support',
-        ],
-      _ => [
-          'view_dashboard',
-        ],
+        'manage_habesha_connect_category',
+        'review_habesha_connect_requests',
+        'publish_habesha_connect',
+        'moderate_habesha_connect',
+      ],
+      'Jobs Admin' => ['manage_jobs', 'review_jobs'],
+      'Businesses Admin' => ['manage_businesses', 'review_businesses'],
+      'Marketplace Admin' => ['manage_marketplace', 'review_marketplace'],
+      'Events Admin' => ['manage_events', 'review_events', 'scan_tickets'],
+      'Professionals Admin' => ['manage_professionals', 'review_professionals'],
+      'Moderator' => ['review_comments', 'hide_content', 'moderate_content'],
+      'Editor' => ['review_submissions', 'edit_content'],
+      'Helper' => ['view_dashboard', 'respond_support'],
+      _ => ['view_dashboard'],
     };
   }
 
@@ -335,10 +293,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       _inviteEmailController.clear();
       _accessCodeController.clear();
 
-      _showMessage(
-        'Invitation envoyée à $email.',
-        backgroundColor: cardGreen,
-      );
+      _showMessage('Invitation envoyée à $email.', backgroundColor: cardGreen);
     } catch (error) {
       _showMessage(
         'Erreur lors de l’envoi de l’invitation : $error',
@@ -361,11 +316,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Padding(
             padding: const EdgeInsets.all(20),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
-            ),
+            child: Center(child: CircularProgressIndicator(color: primaryGold)),
           );
         }
 
@@ -391,9 +342,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ),
             const SizedBox(height: 10),
             if (docs.isEmpty)
-              _buildAdminMessage(
-                'Aucun administrateur secondaire actif.',
-              )
+              _buildAdminMessage('Aucun administrateur secondaire actif.')
             else
               ...docs.map(_buildAdminCard),
           ],
@@ -402,9 +351,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _buildAdminCard(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  Widget _buildAdminCard(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
 
     final email = data['email']?.toString() ?? doc.id;
@@ -414,9 +361,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     return Card(
       color: cardGreen,
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -424,10 +369,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.admin_panel_settings,
-                  color: primaryGold,
-                ),
+                Icon(Icons.admin_panel_settings, color: primaryGold),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -443,10 +385,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 ),
                 IconButton(
                   tooltip: 'Désactiver',
-                  icon: const Icon(
-                    Icons.person_off,
-                    color: Colors.redAccent,
-                  ),
+                  icon: const Icon(Icons.person_off, color: Colors.redAccent),
                   onPressed: () => _disableAdmin(doc),
                 ),
               ],
@@ -456,9 +395,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               email,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white70,
-              ),
+              style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 5),
             Text(
@@ -474,9 +411,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Future<void> _disableAdmin(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) async {
+  Future<void> _disableAdmin(DocumentSnapshot<Map<String, dynamic>> doc) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -484,16 +419,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           backgroundColor: cardGreen,
           title: const Text(
             'Désactiver cet administrateur ?',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           content: Text(
             doc.data()?['email']?.toString() ?? doc.id,
-            style: const TextStyle(
-              color: Colors.white70,
-            ),
+            style: const TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
@@ -515,7 +445,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       },
     );
 
-    if (confirm != true) return;
+    if (confirm != true) {
+      return;
+    }
 
     try {
       await doc.reference.update({
@@ -524,15 +456,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         'disabledBy': AppSession.email,
       });
 
-      _showMessage(
-        'Administrateur désactivé.',
-        backgroundColor: cardGreen,
-      );
+      _showMessage('Administrateur désactivé.', backgroundColor: cardGreen);
     } catch (error) {
-      _showMessage(
-        'Erreur : $error',
-        backgroundColor: Colors.redAccent,
-      );
+      _showMessage('Erreur : $error', backgroundColor: Colors.redAccent);
     }
   }
 
@@ -551,11 +477,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Padding(
             padding: const EdgeInsets.all(20),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
-            ),
+            child: Center(child: CircularProgressIndicator(color: primaryGold)),
           );
         }
 
@@ -577,8 +499,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             return bTime.compareTo(aTime);
           }
 
-          if (aTime is Timestamp) return -1;
-          if (bTime is Timestamp) return 1;
+          if (aTime is Timestamp) {
+            return -1;
+          }
+          if (bTime is Timestamp) {
+            return 1;
+          }
 
           return 0;
         });
@@ -597,16 +523,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             const SizedBox(height: 8),
             const Text(
               'Les demandes restent invisibles au public jusqu’à leur approbation.',
-              style: TextStyle(
-                color: Colors.white70,
-                height: 1.4,
-              ),
+              style: TextStyle(color: Colors.white70, height: 1.4),
             ),
             const SizedBox(height: 15),
             if (docs.isEmpty)
-              _buildAdminMessage(
-                'Aucune demande Habesha Connect en attente.',
-              )
+              _buildAdminMessage('Aucune demande Habesha Connect en attente.')
             else
               ...docs.map(_buildConnectRequestCard),
           ],
@@ -634,9 +555,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: primaryGold.withValues(alpha: 0.25),
-        ),
+        side: BorderSide(color: primaryGold.withValues(alpha: 0.25)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(15),
@@ -648,10 +567,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               children: [
                 CircleAvatar(
                   backgroundColor: primaryGold,
-                  child: Icon(
-                    Icons.groups,
-                    color: primaryDarkGreen,
-                  ),
+                  child: Icon(Icons.groups, color: primaryDarkGreen),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -714,9 +630,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         if (city.isNotEmpty) city,
                         if (country.isNotEmpty) country,
                       ].join(', '),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                      ),
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   ),
                 ],
@@ -725,31 +639,21 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             const SizedBox(height: 6),
             Text(
               'Demandé par : $authorName',
-              style: const TextStyle(
-                color: Colors.white60,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white60, fontSize: 12),
             ),
             if (authorEmail.isNotEmpty)
               Text(
                 authorEmail,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 11,
-                ),
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
               ),
             const SizedBox(height: 15),
             Row(
               children: [
-                Expanded(
-                  child: _approveButton(doc),
-                ),
+                Expanded(child: _approveButton(doc)),
                 const SizedBox(width: 9),
-                Expanded(
-                  child: _rejectButton(doc),
-                ),
+                Expanded(child: _rejectButton(doc)),
               ],
             ),
             const SizedBox(height: 8),
@@ -757,15 +661,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               width: double.infinity,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(
-                    color: Colors.redAccent,
-                  ),
+                  side: const BorderSide(color: Colors.redAccent),
                 ),
                 onPressed: () => _deleteConnectRequest(doc),
-                icon: const Icon(
-                  Icons.delete_forever,
-                  color: Colors.redAccent,
-                ),
+                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
                 label: const Text(
                   'Supprimer',
                   style: TextStyle(
@@ -781,52 +680,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _approveButton(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  Widget _approveButton(DocumentSnapshot<Map<String, dynamic>> doc) {
     return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.greenAccent,
-      ),
-      onPressed: () => _reviewConnectRequest(
-        doc,
-        approved: true,
-      ),
-      icon: Icon(
-        Icons.check_circle,
-        color: primaryDarkGreen,
-      ),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
+      onPressed: () => _reviewConnectRequest(doc, approved: true),
+      icon: Icon(Icons.check_circle, color: primaryDarkGreen),
       label: Text(
         'APPROUVER',
-        style: TextStyle(
-          color: primaryDarkGreen,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  Widget _rejectButton(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  Widget _rejectButton(DocumentSnapshot<Map<String, dynamic>> doc) {
     return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.redAccent,
-      ),
-      onPressed: () => _reviewConnectRequest(
-        doc,
-        approved: false,
-      ),
-      icon: const Icon(
-        Icons.cancel,
-        color: Colors.white,
-      ),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+      onPressed: () => _reviewConnectRequest(doc, approved: false),
+      icon: const Icon(Icons.cancel, color: Colors.white),
       label: const Text(
         'REFUSER',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -857,11 +730,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       });
 
       if (approved) {
-        await _publishApprovedConnectRequest(
-          doc.id,
-          data,
-          reviewer.uid,
-        );
+        await _publishApprovedConnectRequest(doc.id, data, reviewer.uid);
       }
 
       _showMessage(
@@ -920,32 +789,31 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         .collection('publicFeed')
         .doc('habeshaConnect_$requestId')
         .set({
-      'sourceCollection': 'habeshaConnectRequests',
-      'sourceId': requestId,
-      'type': data['type'],
-      'postId': postRef.id,
-      'source': 'habeshaConnect',
-      'status': 'published',
-      'category': category,
-      'title': category,
-      'subtitle': city,
-      'description': question,
-      'submittedBy': authorId,
-      'authorName': authorName,
-      'authorEmail': authorEmail,
-      'country': country,
-      'isDemo': false,
-      'publishedAt': FieldValue.serverTimestamp(),
-      'approvedBy': reviewerUid,
-    }, SetOptions(merge: true));
+          'sourceCollection': 'habeshaConnectRequests',
+          'sourceId': requestId,
+          'type': data['type'],
+          'postId': postRef.id,
+          'source': 'habeshaConnect',
+          'status': 'published',
+          'category': category,
+          'title': category,
+          'subtitle': city,
+          'description': question,
+          'submittedBy': authorId,
+          'authorName': authorName,
+          'authorEmail': authorEmail,
+          'country': country,
+          'isDemo': false,
+          'publishedAt': FieldValue.serverTimestamp(),
+          'approvedBy': reviewerUid,
+        }, SetOptions(merge: true));
 
-    await _firestore
-        .collection('habeshaConnectRequests')
-        .doc(requestId)
-        .update({
-      'publishedPostId': postRef.id,
-      'publishedAt': FieldValue.serverTimestamp(),
-    });
+    await _firestore.collection('habeshaConnectRequests').doc(requestId).update(
+      {
+        'publishedPostId': postRef.id,
+        'publishedAt': FieldValue.serverTimestamp(),
+      },
+    );
   }
 
   Future<void> _deleteConnectRequest(
@@ -965,9 +833,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           ),
           content: const Text(
             'La demande sera supprimée définitivement.',
-            style: TextStyle(
-              color: Colors.white70,
-            ),
+            style: TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
@@ -981,9 +847,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text(
                 'Supprimer',
-                style: TextStyle(
-                  color: Colors.white,
-                ),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -991,19 +855,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       },
     );
 
-    if (confirm != true) return;
+    if (confirm != true) {
+      return;
+    }
 
     try {
       await doc.reference.delete();
-      _showMessage(
-        'Demande supprimée.',
-        backgroundColor: cardGreen,
-      );
+      _showMessage('Demande supprimée.', backgroundColor: cardGreen);
     } catch (error) {
-      _showMessage(
-        'Erreur : $error',
-        backgroundColor: Colors.redAccent,
-      );
+      _showMessage('Erreur : $error', backgroundColor: Colors.redAccent);
     }
   }
 
@@ -1017,9 +877,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       isScrollControlled: true,
       backgroundColor: primaryDarkGreen,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
         return SafeArea(
@@ -1041,11 +899,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.groups,
-                        color: primaryGold,
-                        size: 30,
-                      ),
+                      Icon(Icons.groups, color: primaryGold, size: 30),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -1061,25 +915,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
                         },
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.white70,
-                        ),
+                        icon: const Icon(Icons.close, color: Colors.white70),
                       ),
                     ],
                   ),
                 ),
-                const Divider(
-                  color: Colors.white12,
-                ),
+                const Divider(color: Colors.white12),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      16,
-                      16,
-                      16,
-                      30,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
                     child: _buildHabeshaConnectRequests(),
                   ),
                 ),
@@ -1099,297 +943,599 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   // ADVERTISEMENT REQUESTS MANAGEMENT SECTION
   // ===========================================================================
 
-  Widget _buildAdvertisementRequests() {
-    return Column(
+  Widget _promotionAction({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool filled = false,
+    bool danger = false,
+  }) {
+    final enabled = onPressed != null;
+    final foreground = !enabled
+        ? Colors.white54
+        : filled
+        ? primaryDarkGreen
+        : danger
+        ? const Color(0xFFFFB4AB)
+        : primaryGold;
+    final background = !enabled
+        ? const Color(0xFF244037)
+        : filled
+        ? primaryGold
+        : const Color(0xFF004D40);
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, color: foreground, size: 22),
+        label: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: foreground,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          disabledBackgroundColor: background,
+          disabledForegroundColor: foreground,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          minimumSize: const Size(0, 52),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          side: BorderSide(color: enabled ? foreground : Colors.white24),
+        ),
+      ),
+    );
+  }
+
+  Widget _promotionInfo(IconData icon, String text) => Padding(
+    padding: const EdgeInsets.only(top: 9),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.add_business),
-              label: const Text(
-                'Créer une publicité pour une entreprise',
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdvertisementRequestScreen(
-                      isAdminCreated: true,
-                    ),
-                  ),
-                );
-              },
+        Icon(icon, color: primaryGold, size: 19),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              height: 1.45,
             ),
           ),
         ),
-        const Divider(),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance
-                .collection('advertisementRequests')
-                .where('status', isEqualTo: 'pending')
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
+      ],
+    ),
+  );
 
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text('Erreur : ${snapshot.error}'),
-                );
-              }
-
-              final requests = snapshot.data?.docs ?? [];
-
-              if (requests.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'Aucune demande de publicité en attente.',
+  Widget _buildAdminNotificationButton() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return const SizedBox.shrink();
+    }
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('recipientId', isEqualTo: uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final count =
+            snapshot.data?.docs
+                .where((doc) => doc.data()['read'] != true)
+                .length ??
+            0;
+        final failed = snapshot.hasError;
+        return Semantics(
+          label: failed
+              ? 'Notifications, chargement indisponible'
+              : 'Notifications, $count non lues',
+          child: IconButton(
+            tooltip: failed
+                ? 'Ouvrir les notifications · chargement indisponible'
+                : 'Notifications${count > 0 ? ' ($count non lues)' : ''}',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const NotificationScreen(),
+              ),
+            ),
+            icon: SizedBox(
+              width: 30,
+              height: 30,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_outlined,
+                    color: primaryGold,
+                    size: 27,
                   ),
-                );
-              }
+                  if (count > 0)
+                    Positioned(
+                      top: -5,
+                      right: -6,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFB3261E),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          count > 99 ? '99+' : '$count',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (failed)
+                    const Positioned(
+                      bottom: -2,
+                      right: -3,
+                      child: Icon(
+                        Icons.error_outline,
+                        size: 13,
+                        color: Color(0xFFFFB4AB),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: requests.length,
-                itemBuilder: (context, index) {
-                  final doc = requests[index];
-                  final data = doc.data();
+  Widget _buildAdvertisementRequests() {
+    return SafeArea(
+      top: false,
+      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('advertisementRequests')
+            .where('status', isEqualTo: 'pending')
+            .snapshots(),
+        builder: (context, snapshot) {
+          final requests =
+              snapshot.data?.docs.toList() ??
+              <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+          requests.sort((a, b) {
+            final x = a.data()['createdAt'];
+            final y = b.data()['createdAt'];
+            return (y is Timestamp ? y.millisecondsSinceEpoch : 0).compareTo(
+              x is Timestamp ? x.millisecondsSinceEpoch : 0,
+            );
+          });
+          String date(dynamic value) {
+            if (value is! Timestamp) {
+              return 'À vérifier';
+            }
+            final d = value.toDate().toLocal();
+            return '${d.day.toString().padLeft(2, '0')}/'
+                '${d.month.toString().padLeft(2, '0')}/${d.year}';
+          }
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            data['businessName'] ?? 'Sans nom',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+          return CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Publicités des professionnels',
+                        style: TextStyle(
+                          color: primaryGold,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      const Text(
+                        'Vérifiez la photo, l’offre et les dates avant de publier.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      _promotionAction(
+                        label: 'Créer une publicité',
+                        icon: Icons.add_business_outlined,
+                        filled: true,
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AdvertisementRequestScreen(
+                              isAdminCreated: true,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Type : ${data['advertisementType'] ?? '-'}',
+                        ),
+                      ),
+                      if (AppSession.isSuperAdmin) ...[
+                        const SizedBox(height: 10),
+                        _promotionAction(
+                          label: 'Réglages promotions et paiements',
+                          icon: Icons.tune,
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const PromotionSettingsScreen(),
+                            ),
                           ),
-                          Text(
-                            'Durée : ${data['duration'] ?? '-'}',
+                        ),
+                        const SizedBox(height: 10),
+                        _promotionAction(
+                          label: 'Abonnements Silver · Gold · VIP',
+                          icon: Icons.workspace_premium_outlined,
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const AdminProfessionalSubscriptionsScreen(),
+                            ),
                           ),
-                          Text(
-                            'Budget : ${data['budget'] ?? '-'}',
-                          ),
-                          Text(
-                            'Email : ${data['userEmail'] ?? '-'}',
-                          ),
-                          const SizedBox(height: 8),
-                          Text(data['description'] ?? ''),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              OutlinedButton(
-                                onPressed: () => _reviewAdvertisementRequest(
-                                  doc.id,
-                                  approved: false,
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      _promotionAction(
+                        label: 'Historique de toutes les demandes',
+                        icon: Icons.history,
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                const AdvertisementRequestHistoryScreen(
+                                  allRequests: true,
                                 ),
-                                child: const Text('Refuser'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      if (snapshot.hasData && !snapshot.hasError)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.pending_actions,
+                              color: primaryGold,
+                              size: 21,
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Text(
+                                '${requests.length} demande(s) à valider',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                onPressed: () => _reviewAdvertisementRequest(
-                                  doc.id,
-                                  approved: true,
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              if (snapshot.hasError)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Impossible de charger les demandes. Vérifiez votre '
+                      'connexion et vos droits administrateur.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontSize: 15),
+                    ),
+                  ),
+                )
+              else if (!snapshot.hasData)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Center(
+                      child: CircularProgressIndicator(color: primaryGold),
+                    ),
+                  ),
+                )
+              else if (requests.isEmpty)
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(26),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF004D40),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF52765C)),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.task_alt, color: primaryGold, size: 38),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Aucune demande en attente',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Les demandes déjà traitées restent disponibles dans l’historique.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final doc = requests[index];
+                      final data = doc.data();
+                      final url = (data['imageUrl'] ?? '').toString();
+                      final busy = _reviewingPromotions.contains(doc.id);
+                      final free = data['paymentRequired'] == false;
+                      final revision = data['editRevision'] is int
+                          ? data['editRevision'] as int
+                          : 0;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 18),
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF004D40),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF75854A)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                (data['businessName'] ?? 'Établissement')
+                                    .toString(),
+                                style: TextStyle(
+                                  color: primaryGold,
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                                child: const Text('Approuver'),
+                              ),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: primaryGold,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      'À VALIDER',
+                                      style: TextStyle(
+                                        color: primaryDarkGreen,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                  if (free)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 5,
+                                      ),
+                                      child: Text(
+                                        'Sans paiement',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              if (url.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: AspectRatio(
+                                    aspectRatio: 16 / 9,
+                                    child: ColoredBox(
+                                      color: primaryDarkGreen,
+                                      child: Image.network(
+                                        url,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) => const Center(
+                                          child: Text(
+                                            'Photo momentanément indisponible.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (revision > 0)
+                                _promotionInfo(
+                                  Icons.edit_outlined,
+                                  'Modifiée par le professionnel · version ${revision + 1}',
+                                ),
+                              _promotionInfo(
+                                Icons.category_outlined,
+                                'Type : ${data['advertisementType'] ?? '-'}',
+                              ),
+                              _promotionInfo(
+                                Icons.date_range,
+                                'Du ${date(data['startDate'])} au ${date(data['endDate'])}',
+                              ),
+                              _promotionInfo(
+                                Icons.schedule,
+                                '${data['durationDays'] ?? data['duration'] ?? '-'} jour(s)',
+                              ),
+                              if ((data['budget'] ?? '').toString().isNotEmpty)
+                                _promotionInfo(
+                                  Icons.info_outline,
+                                  'Budget indicatif : ${data['budget']}',
+                                ),
+                              _promotionInfo(
+                                Icons.email_outlined,
+                                (data['userEmail'] ?? 'Email non renseigné')
+                                    .toString(),
+                              ),
+                              if ((data['promotion'] ?? '')
+                                  .toString()
+                                  .isNotEmpty) ...[
+                                const SizedBox(height: 17),
+                                Text(
+                                  data['promotion'].toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 8),
+                              Text(
+                                (data['description'] ?? '').toString(),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 15,
+                                  height: 1.45,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              _promotionAction(
+                                label: 'Voir la demande complète',
+                                icon: Icons.visibility_outlined,
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        AdvertisementRequestStatusScreen(
+                                          requestId: doc.id,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _promotionAction(
+                                label: busy
+                                    ? 'Traitement en cours…'
+                                    : 'Approuver la publicité',
+                                icon: Icons.check_circle_outline,
+                                filled: true,
+                                onPressed: busy
+                                    ? null
+                                    : () => _reviewAdvertisementRequest(
+                                        doc.id,
+                                        approved: true,
+                                        expectedRevision: revision,
+                                      ),
+                              ),
+                              const SizedBox(height: 10),
+                              _promotionAction(
+                                label: 'Refuser la demande',
+                                icon: Icons.close,
+                                danger: true,
+                                onPressed: busy
+                                    ? null
+                                    : () => _reviewAdvertisementRequest(
+                                        doc.id,
+                                        approved: false,
+                                        expectedRevision: revision,
+                                      ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
+                        ),
+                      );
+                    }, childCount: requests.length),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 
   Future<void> _reviewAdvertisementRequest(
     String requestId, {
     required bool approved,
+    required int expectedRevision,
   }) async {
+    if (_reviewingPromotions.contains(requestId)) {
+      return;
+    }
+    setState(() => _reviewingPromotions.add(requestId));
     try {
-      final firestore = FirebaseFirestore.instance;
-
-      final requestRef =
-          firestore.collection('advertisementRequests').doc(requestId);
-
-      final requestSnapshot = await requestRef.get();
-
-      if (!requestSnapshot.exists) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Advertising request not found.'),
-            ),
-          );
-        }
+      await PromotionRequestService.review(
+        requestId,
+        approved: approved,
+        expectedRevision: expectedRevision,
+      );
+      if (!mounted) {
         return;
       }
-
-      final data = requestSnapshot.data()!;
-
-      if (!approved) {
-        await requestRef.update({
-          'status': 'rejected',
-          'reviewedAt': FieldValue.serverTimestamp(),
-          'reviewedBy': FirebaseAuth.instance.currentUser?.email ?? 'admin',
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Advertising request rejected.'),
-            ),
-          );
-        }
-        return;
-      }
-
-      final advertisementType = (data['advertisementType'] ?? 'Business')
-          .toString()
-          .trim()
-          .toLowerCase();
-
-      String targetType;
-
-      if (advertisementType == 'event') {
-        targetType = 'event';
-      } else if (advertisementType == 'marketplace') {
-        targetType = 'marketplace';
-      } else {
-        targetType = 'business';
-      }
-
-      final targetRoute = targetType == 'event'
-          ? '/event'
-          : targetType == 'marketplace'
-              ? '/marketplace'
-              : '/business';
-
-      final businessName =
-          (data['businessName'] ?? 'Sponsored Advertisement').toString().trim();
-
-      final description = (data['description'] ?? '').toString().trim();
-
-      final promotion = (data['promotion'] ?? '').toString().trim();
-
-      final promoCode =
-          (data['promoCode'] ?? '').toString().trim().toUpperCase();
-
-      final startDate = data['startDate'];
-      final endDate = data['endDate'];
-
-      final bannerRef = firestore.collection('sponsoredBanners').doc();
-
-      final batch = firestore.batch();
-
-      batch.set(
-        bannerRef,
-        {
-          'title': businessName,
-          'body': description,
-          'imageUrl': (data['imageUrl'] ?? '').toString(),
-          'promoCode': promoCode,
-          'discountPercent': 0,
-          'discountText': promotion,
-          'promotion': promotion,
-          'usageLimit': 100,
-          'claimsCount': 0,
-          'businessName': businessName,
-          'description': description,
-          'targetType': (data['targetType'] ?? targetType).toString(),
-          'targetId': (data['targetId'] ?? '').toString(),
-          'targetName': (data['targetName'] ?? businessName).toString(),
-          'targetData': data['targetData'] is Map
-              ? Map<String, dynamic>.from(
-                  data['targetData'],
-                )
-              : <String, dynamic>{},
-          'targetRoute': targetRoute,
-          'targetBusinessId': targetType == 'business'
-              ? (data['targetId'] ?? '').toString()
-              : '',
-          'targetBusinessName': targetType == 'business'
-              ? (data['targetName'] ?? businessName).toString()
-              : '',
-          'targetBusinessData':
-              targetType == 'business' && data['targetData'] is Map
-                  ? Map<String, dynamic>.from(
-                      data['targetData'],
-                    )
-                  : <String, dynamic>{},
-          'startsAt': startDate is Timestamp ? startDate : Timestamp.now(),
-          'endsAt': endDate is Timestamp
-              ? endDate
-              : Timestamp.fromDate(
-                  DateTime.now().add(
-                    const Duration(days: 30),
-                  ),
-                ),
-          'status': 'active',
-          'source': 'advertisementRequest',
-          'sourceRequestId': requestId,
-          'createdBy':
-              (data['createdByEmail'] ?? data['userEmail'] ?? '').toString(),
-          'createdByUserId':
-              (data['createdByUserId'] ?? data['userId'] ?? '').toString(),
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-      );
-
-      batch.update(
-        requestRef,
-        {
-          'status': 'approved',
-          'reviewedAt': FieldValue.serverTimestamp(),
-          'reviewedBy': FirebaseAuth.instance.currentUser?.email ?? 'admin',
-          'sponsoredBannerId': bannerRef.id,
-        },
-      );
-
-      await batch.commit();
-
-      if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Advertising approved and banner published.',
+            approved
+                ? 'Publicité approuvée. La diffusion suit les dates prévues.'
+                : 'Demande refusée.',
           ),
         ),
       );
     } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Unable to review advertising request: $error',
-          ),
-        ),
-      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Décision impossible : $error')));
+    } finally {
+      if (mounted) {
+        setState(() => _reviewingPromotions.remove(requestId));
+      }
     }
   }
 
@@ -1445,9 +1591,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
     final delegatedContent = delegatedCollection != null
         ? _buildSubmissionReviewTab([delegatedCollection])
-        : _buildAdminMessage(
-            'Aucune permission administrateur disponible.',
-          );
+        : _buildAdminMessage('Aucune permission administrateur disponible.');
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
@@ -1455,15 +1599,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         backgroundColor: primaryDarkGreen,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(
-          color: primaryGold,
-        ),
+        iconTheme: IconThemeData(color: primaryGold),
+        actions: [
+          _buildAdminNotificationButton(),
+          if (isSuperAdmin)
+            IconButton(
+              tooltip: 'Synchroniser À proximité',
+              icon: const Icon(Icons.location_on_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AdminNearbyBackfillScreen(),
+                ),
+              ),
+            ),
+        ],
         title: Text(
           isSuperAdmin ? 'Admin Control Panel' : 'My Admin Panel',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -1473,37 +1627,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           indicatorColor: primaryGold,
           tabs: isSuperAdmin
               ? const [
+                  Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
+                  Tab(icon: Icon(Icons.fact_check), text: 'Submissions'),
+                  Tab(icon: Icon(Icons.verified_user), text: 'Verifications'),
+                  Tab(icon: Icon(Icons.edit_note), text: 'Quick Post'),
+                  Tab(icon: Icon(Icons.category), text: 'Categories'),
+                  Tab(icon: Icon(Icons.campaign), text: 'Banners'),
+                  Tab(icon: Icon(Icons.campaign_outlined), text: 'Ad Requests'),
+                  Tab(icon: Icon(Icons.admin_panel_settings), text: 'Admins'),
+                  Tab(icon: Icon(Icons.wallpaper), text: 'Bienvenue'),
+                  Tab(icon: Icon(Icons.movie_outlined), text: 'Présentation'),
                   Tab(
-                    icon: Icon(Icons.dashboard),
-                    text: 'Dashboard',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.fact_check),
-                    text: 'Submissions',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.verified_user),
-                    text: 'Verifications',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.edit_note),
-                    text: 'Quick Post',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.category),
-                    text: 'Categories',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.campaign),
-                    text: 'Banners',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.campaign_outlined),
-                    text: 'Ad Requests',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.admin_panel_settings),
-                    text: 'Admins',
+                    icon: Icon(Icons.notifications_active_outlined),
+                    text: 'Campagnes',
                   ),
                 ]
               : const [
@@ -1541,24 +1677,22 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     'professionalSubmissions',
                   ),
                 ]),
-                _buildSubmissionReviewTab(
-                  [
-                    const _ReviewCollection(
-                      'Verification Requests',
-                      'verificationRequests',
-                    ),
-                  ],
-                  verificationMode: true,
-                ),
+                _buildSubmissionReviewTab([
+                  const _ReviewCollection(
+                    'Verification Requests',
+                    'verificationRequests',
+                  ),
+                ], verificationMode: true),
                 _buildAdminPostForm(),
                 const AdminUniversalContentManagerScreen(),
                 const AdminBannerScreen(),
                 _buildAdvertisementRequests(),
                 _buildInviteAdminForm(),
+                const AdminWelcomeScreen(),
+                const AdminStartupPresentationScreen(),
+                const AdminLocalCampaignsScreen(),
               ]
-            : [
-                delegatedContent,
-              ],
+            : [delegatedContent],
       ),
     );
   }
@@ -1588,17 +1722,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            cardGreen,
-            primaryDarkGreen,
-          ],
+          colors: [cardGreen, primaryDarkGreen],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: [
@@ -1631,9 +1760,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 const SizedBox(height: 4),
                 const Text(
                   'Super Admin Control Center',
-                  style: TextStyle(
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(color: Colors.white70),
                 ),
               ],
             ),
@@ -1720,27 +1847,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         onTap: onTap,
         borderRadius: BorderRadius.circular(15),
         child: Container(
-          constraints: const BoxConstraints(
-            minHeight: 150,
-          ),
+          constraints: const BoxConstraints(minHeight: 150),
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             color: cardGreen,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: primaryGold.withValues(alpha: 0.12),
-            ),
+            border: Border.all(color: primaryGold.withValues(alpha: 0.12)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    icon,
-                    color: primaryGold,
-                    size: 28,
-                  ),
+                  Icon(icon, color: primaryGold, size: 28),
                   const Spacer(),
                   if (onTap != null)
                     Icon(
@@ -1765,10 +1884,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 subtitle,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 11,
-                ),
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
               ),
             ],
           ),
@@ -1808,17 +1924,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     bool verificationMode = false,
   }) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream:
-          _firestore.collection(reviewCollection.collectionName).snapshots(),
+      stream: _firestore
+          .collection(reviewCollection.collectionName)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Padding(
             padding: const EdgeInsets.all(24),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
-            ),
+            child: Center(child: CircularProgressIndicator(color: primaryGold)),
           );
         }
 
@@ -1832,7 +1945,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           final data = doc.data();
           final status = data['status']?.toString() ?? 'pendingApproval';
 
-          final isPending = status == 'pendingApproval' ||
+          final isPending =
+              status == 'pendingApproval' ||
               status == 'pendingAdminReview' ||
               status == 'pendingPaymentAndReview' ||
               status == 'pending';
@@ -1865,17 +1979,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               return false;
             }
 
-            final fields = Map<String, dynamic>.from(
-              data['fields'] ?? {},
-            );
+            final fields = Map<String, dynamic>.from(data['fields'] ?? {});
 
-            final category = (data['category'] ??
-                    data['scope'] ??
-                    fields['category'] ??
-                    fields['communityCategory'] ??
-                    '')
-                .toString()
-                .trim();
+            final category =
+                (data['category'] ??
+                        data['scope'] ??
+                        fields['category'] ??
+                        fields['communityCategory'] ??
+                        '')
+                    .toString()
+                    .trim();
 
             return scopes.contains(category);
           }
@@ -1896,9 +2009,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ),
             const SizedBox(height: 10),
             if (docs.isEmpty)
-              _buildAdminMessage(
-                'Aucune demande en attente.',
-              )
+              _buildAdminMessage('Aucune demande en attente.')
             else
               ...docs.map(
                 (doc) => _buildSubmissionCard(
@@ -1917,20 +2028,22 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     bool verificationMode = false,
   }) {
     final data = doc.data();
+    if (!verificationMode && isProfessionalReviewSource(doc.reference.parent.id)) {
+      return AdminProfessionalSubmissionTile(
+        model: AdminProfessionalReviewData(data,doc.reference.parent.id),
+        onOpen: () => _showSubmissionDetails(doc,verificationMode: false));
+    }
 
-    final fields = Map<String, dynamic>.from(
-      data['fields'] ?? {},
-    );
 
-    final badge = Map<String, dynamic>.from(
-      data['verificationBadge'] ?? {},
-    );
+    final fields = Map<String, dynamic>.from(data['fields'] ?? {});
+
+    final badge = Map<String, dynamic>.from(data['verificationBadge'] ?? {});
 
     final title = fields['title']?.toString().trim().isNotEmpty == true
         ? fields['title'].toString()
         : data['tierTitle']?.toString() ??
-            data['type']?.toString() ??
-            'Pending Submission';
+              data['type']?.toString() ??
+              'Pending Submission';
 
     final subtitle = [
       if (fields['jobCategory'] != null) 'Category: ${fields['jobCategory']}',
@@ -1947,9 +2060,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     return Card(
       color: cardGreen,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -1998,25 +2109,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: primaryGold,
-                  side: BorderSide(
-                    color: primaryGold,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 13,
-                  ),
+                  side: BorderSide(color: primaryGold),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                icon: Icon(
-                  Icons.visibility_outlined,
-                  color: primaryGold,
-                ),
+                icon: Icon(Icons.visibility_outlined, color: primaryGold),
                 label: const Text(
                   'View Details',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -2025,18 +2127,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             Row(
               children: [
                 Expanded(
-                  child: _submissionApproveButton(
-                    doc,
-                    verificationMode,
-                  ),
+                  child: _submissionApproveButton(doc, verificationMode),
                 ),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: _submissionRejectButton(
-                    doc,
-                    verificationMode,
-                  ),
-                ),
+                Expanded(child: _submissionRejectButton(doc, verificationMode)),
               ],
             ),
             const SizedBox(height: 8),
@@ -2044,15 +2138,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               width: double.infinity,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(
-                    color: Colors.redAccent,
-                  ),
+                  side: const BorderSide(color: Colors.redAccent),
                 ),
                 onPressed: () => _deleteSubmission(doc),
-                icon: const Icon(
-                  Icons.delete_forever,
-                  color: Colors.redAccent,
-                ),
+                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
                 label: const Text(
                   'Delete Permanently',
                   style: TextStyle(
@@ -2068,10 +2157,56 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
+  // EH_ADMIN_ONGLETS_V1
+  Future<void> _openProfessionalReviewTabs(DocumentSnapshot<Map<String,dynamic>> doc) async {
+    if (!_canManageSubmission(doc)) {
+      _showMessage('Vous n’avez pas la permission de consulter cette modération.', backgroundColor: Colors.redAccent);
+      return;
+    }
+    try {
+      final current = await doc.reference.get(const GetOptions(source: Source.server));
+      if (!mounted) { return; }
+      if (!current.exists) { _showMessage('Cette demande n’existe plus.', backgroundColor: Colors.orange); return; }
+      final source = current.reference.parent.id;
+      final model = AdminProfessionalReviewData(current.data() ?? <String,dynamic>{}, source);
+      final initialFingerprint = reviewPresentationFingerprint(model);
+      await showModalBottomSheet<void>(context: context,isScrollControlled: true,
+        backgroundColor: Colors.transparent,builder: (sheetContext) => AdminProfessionalReviewSheet(
+          model: model, referenceLabel: current.reference.path,
+          onReview: (approved) async {
+            final latest = await current.reference.get(const GetOptions(source: Source.server));
+            if (!latest.exists) { return false; }
+            final latestModel = AdminProfessionalReviewData(latest.data() ?? <String,dynamic>{},source);
+            if (reviewPresentationFingerprint(latestModel) != initialFingerprint) { return false; }
+            await _reviewSubmission(latest,approved: approved,verificationMode: false);
+            final saved = await current.reference.get(const GetOptions(source: Source.server));
+            return saved.exists && saved.data()?['status'] == (approved ? 'approved' : 'rejected');
+          },
+          onDelete: () async {
+            await _deleteSubmission(current);
+            final remaining = await current.reference.get(const GetOptions(source: Source.server));
+            return !remaining.exists;
+          },
+          onOpenVerification: AppSession.isSuperAdmin ? () {
+            if (!mounted) { return; }
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const AdminProfessionalModerationScreen()));
+          } : null,
+        ));
+    } catch (_) {
+      if (mounted) _showMessage('Impossible d’ouvrir le dossier. Vérifiez la connexion et vos droits.', backgroundColor: Colors.redAccent);
+    }
+  }
+
   Future<void> _showSubmissionDetails(
     DocumentSnapshot<Map<String, dynamic>> doc, {
     required bool verificationMode,
   }) async {
+    if (!verificationMode && isProfessionalReviewSource(doc.reference.parent.id)) {
+      await _openProfessionalReviewTabs(doc);
+      return;
+    }
+
     final data = doc.data() ?? <String, dynamic>{};
 
     final fields = data['fields'] is Map
@@ -2086,24 +2221,28 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         ? Map<String, dynamic>.from(data['eventMedia'] as Map)
         : <String, dynamic>{};
 
-    final ticketTypes =
-        data['ticketTypes'] is List ? data['ticketTypes'] as List : const [];
+    final ticketTypes = data['ticketTypes'] is List
+        ? data['ticketTypes'] as List
+        : const [];
 
-    final artists =
-        data['artists'] is List ? data['artists'] as List : const [];
+    final artists = data['artists'] is List
+        ? data['artists'] as List
+        : const [];
 
     final photoUrls = eventMedia['photoUrls'] is List
         ? (eventMedia['photoUrls'] as List)
-            .map((value) => value.toString())
-            .where((value) => value.trim().isNotEmpty)
-            .toList()
+              .map((value) => value.toString())
+              .where((value) => value.trim().isNotEmpty)
+              .toList()
         : <String>[];
 
     final title = fields['title']?.toString().trim().isNotEmpty == true
         ? fields['title'].toString()
         : data['type']?.toString() ?? 'Submission Details';
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     await showModalBottomSheet<void>(
       context: context,
@@ -2119,9 +2258,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             return Container(
               decoration: const BoxDecoration(
                 color: Color(0xFF061E12),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
@@ -2135,12 +2272,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      18,
-                      16,
-                      10,
-                      12,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(18, 16, 10, 12),
                     child: Row(
                       children: [
                         Expanded(
@@ -2156,11 +2288,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                'Submission ID: ${doc.id}',
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 11,
+                              const Text(
+                                'Consultez les informations avant de décider.',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -2168,18 +2300,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(sheetContext),
-                          icon: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                          ),
+                          icon: const Icon(Icons.close, color: Colors.white),
                         ),
                       ],
                     ),
                   ),
-                  const Divider(
-                    color: Colors.white12,
-                    height: 1,
-                  ),
+                  const Divider(color: Colors.white12, height: 1),
                   Expanded(
                     child: ListView(
                       controller: scrollController,
@@ -2189,34 +2315,68 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           title: 'Submission',
                           icon: Icons.assignment_outlined,
                           children: [
-                            _adminDetailRow(
-                              'Type',
-                              data['type'],
-                            ),
-                            _adminDetailRow(
-                              'Status',
-                              data['status'],
-                            ),
+                            _adminDetailRow('Type', data['type']),
+                            _adminDetailRow('Status', data['status']),
                             _adminDetailRow(
                               'Submitted by',
                               data['submitterEmail'],
                             ),
-                            _adminDetailRow(
-                              'Owner ID',
-                              data['ownerId'],
+                            _adminDetailRow('Created', data['createdAt']),
+                          ],
+                        ),
+                        ExpansionTile(
+                          tilePadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                          ),
+                          collapsedIconColor: Colors.white70,
+                          iconColor: primaryGold,
+                          title: const Text(
+                            'Informations techniques',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
                             ),
-                            _adminDetailRow(
-                              'Creator ID',
-                              data['creatorId'],
+                          ),
+                          subtitle: const Text(
+                            'Identifiants et coordonnées GPS',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
                             ),
+                          ),
+                          children: [
+                            _adminDetailRow('ID de la demande', doc.id),
+                            _adminDetailRow('ID propriétaire', data['ownerId']),
+                            _adminDetailRow('ID créateur', data['creatorId']),
                             _adminDetailRow(
-                              'Submitted user ID',
+                              'ID utilisateur',
                               data['submittedBy'],
                             ),
-                            _adminDetailRow(
-                              'Created',
-                              data['createdAt'],
-                            ),
+                            for (final entry in fields.entries)
+                              if (const [
+                                    'latitude',
+                                    'longitude',
+                                    'lat',
+                                    'lng',
+                                    'long',
+                                    'ownerId',
+                                    'creatorId',
+                                    'submittedBy',
+                                  ].contains(entry.key.toLowerCase()) ||
+                                  const [
+                                    'latitude',
+                                    'longitude',
+                                    'lat',
+                                    'lng',
+                                    'long',
+                                    'ownerid',
+                                    'creatorid',
+                                    'submittedby',
+                                  ].contains(entry.key.toLowerCase()))
+                                _adminDetailRow(
+                                  _adminReadableFieldName(entry.key),
+                                  entry.value,
+                                ),
                           ],
                         ),
                         if (fields.isNotEmpty)
@@ -2227,7 +2387,20 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 .where(
                                   (entry) =>
                                       entry.value != null &&
-                                      entry.value.toString().trim().isNotEmpty,
+                                      entry.value
+                                          .toString()
+                                          .trim()
+                                          .isNotEmpty &&
+                                      !const [
+                                        'latitude',
+                                        'longitude',
+                                        'lat',
+                                        'lng',
+                                        'long',
+                                        'ownerid',
+                                        'creatorid',
+                                        'submittedby',
+                                      ].contains(entry.key.toLowerCase()),
                                 )
                                 .map(
                                   (entry) => _adminDetailRow(
@@ -2279,9 +2452,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             title: 'Artists / Performers',
                             icon: Icons.mic_external_on_outlined,
                             children: [
-                              for (var index = 0;
-                                  index < artists.length;
-                                  index++)
+                              for (
+                                var index = 0;
+                                index < artists.length;
+                                index++
+                              )
                                 if (artists[index] is Map)
                                   _adminArtistDetail(
                                     Map<String, dynamic>.from(
@@ -2296,9 +2471,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             title: 'Tickets & Prices',
                             icon: Icons.confirmation_number_outlined,
                             children: [
-                              for (var index = 0;
-                                  index < ticketTypes.length;
-                                  index++)
+                              for (
+                                var index = 0;
+                                index < ticketTypes.length;
+                                index++
+                              )
                                 if (ticketTypes[index] is Map)
                                   _adminTicketDetail(
                                     Map<String, dynamic>.from(
@@ -2375,12 +2552,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                               await _deleteSubmission(doc);
                             },
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: Colors.redAccent,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 13,
-                              ),
+                              side: const BorderSide(color: Colors.redAccent),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
                             icon: const Icon(
                               Icons.delete_forever,
@@ -2420,20 +2593,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.18),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: primaryGold,
-                size: 20,
-              ),
+              Icon(icon, color: primaryGold, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -2454,10 +2621,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _adminDetailRow(
-    String label,
-    dynamic value,
-  ) {
+  Widget _adminDetailRow(String label, dynamic value) {
     if (value == null || value.toString().trim().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -2466,7 +2630,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
     if (value is Timestamp) {
       final date = value.toDate();
-      displayedValue = '${date.day.toString().padLeft(2, '0')}/'
+      displayedValue =
+          '${date.day.toString().padLeft(2, '0')}/'
           '${date.month.toString().padLeft(2, '0')}/'
           '${date.year} '
           '${date.hour.toString().padLeft(2, '0')}:'
@@ -2506,10 +2671,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _adminBooleanRow(
-    String label,
-    bool value,
-  ) {
+  Widget _adminBooleanRow(String label, bool value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
       child: Row(
@@ -2523,10 +2685,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
           Text(
@@ -2542,10 +2701,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _adminTicketDetail(
-    Map<String, dynamic> ticket,
-    int index,
-  ) {
+  Widget _adminTicketDetail(Map<String, dynamic> ticket, int index) {
     final name = ticket['name']?.toString() ?? 'Ticket ${index + 1}';
     final price = (ticket['price'] as num?)?.toDouble() ?? 0;
     final capacity = (ticket['capacity'] as num?)?.toInt() ?? 0;
@@ -2565,10 +2721,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         children: [
           Text(
             name,
-            style: TextStyle(
-              color: primaryGold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 7),
           Text(
@@ -2581,10 +2734,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           const SizedBox(height: 5),
           Text(
             'Capacity: $capacity   •   Sold: $sold',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 5),
           Text(
@@ -2600,10 +2750,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _adminArtistDetail(
-    Map<String, dynamic> artist,
-    int index,
-  ) {
+  Widget _adminArtistDetail(Map<String, dynamic> artist, int index) {
     final name = artist['name']?.toString().trim().isNotEmpty == true
         ? artist['name'].toString()
         : 'Artist ${index + 1}';
@@ -2631,10 +2778,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 errorBuilder: (_, __, ___) => const SizedBox(
                   width: 55,
                   height: 55,
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.white38,
-                  ),
+                  child: Icon(Icons.person, color: Colors.white38),
                 ),
               ),
             )
@@ -2642,10 +2786,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             const SizedBox(
               width: 55,
               height: 55,
-              child: Icon(
-                Icons.person,
-                color: Colors.white38,
-              ),
+              child: Icon(Icons.person, color: Colors.white38),
             ),
           const SizedBox(width: 10),
           Expanded(
@@ -2693,7 +2834,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       (match) => '${match.group(1)} ${match.group(2)}',
     );
 
-    if (spaced.isEmpty) return key;
+    if (spaced.isEmpty) {
+      return key;
+    }
 
     return '${spaced[0].toUpperCase()}${spaced.substring(1)}';
   }
@@ -2703,24 +2846,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     bool verificationMode,
   ) {
     return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.greenAccent,
-      ),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
       onPressed: () => _reviewSubmission(
         doc,
         approved: true,
         verificationMode: verificationMode,
       ),
-      icon: Icon(
-        Icons.check_circle,
-        color: primaryDarkGreen,
-      ),
+      icon: Icon(Icons.check_circle, color: primaryDarkGreen),
       label: Text(
         'Approve',
-        style: TextStyle(
-          color: primaryDarkGreen,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -2730,31 +2865,21 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     bool verificationMode,
   ) {
     return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.redAccent,
-      ),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
       onPressed: () => _reviewSubmission(
         doc,
         approved: false,
         verificationMode: verificationMode,
       ),
-      icon: const Icon(
-        Icons.cancel,
-        color: Colors.white,
-      ),
+      icon: const Icon(Icons.cancel, color: Colors.white),
       label: const Text(
         'Reject',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  bool _canManageSubmission(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  bool _canManageSubmission(DocumentSnapshot<Map<String, dynamic>> doc) {
     if (AppSession.isSuperAdmin) {
       return true;
     }
@@ -2851,20 +2976,17 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         await _firestore
             .collection('users')
             .doc(data['submittedBy'].toString())
-            .set(
-          {
-            'verificationStatus': 'approved',
-            'verificationBadge': badge.isNotEmpty
-                ? badge
-                : {
-                    'title': data['tierTitle'],
-                    'price': data['tierPrice'],
-                    'productId': data['tierId'],
-                  },
-            'verifiedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+            .set({
+              'verificationStatus': 'approved',
+              'verificationBadge': badge.isNotEmpty
+                  ? badge
+                  : {
+                      'title': data['tierTitle'],
+                      'price': data['tierPrice'],
+                      'productId': data['tierId'],
+                    },
+              'verifiedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
       }
 
       _showMessage(
@@ -2872,10 +2994,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         backgroundColor: approved ? cardGreen : Colors.orange,
       );
     } catch (error) {
-      _showMessage(
-        'Erreur : $error',
-        backgroundColor: Colors.redAccent,
-      );
+      _showMessage('Erreur : $error', backgroundColor: Colors.redAccent);
     }
   }
 
@@ -2903,9 +3022,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         ),
         content: const Text(
           'This removes the submission and hides any published feed/category copy.',
-          style: TextStyle(
-            color: Colors.white70,
-          ),
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -2913,9 +3030,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text(
               'Delete',
@@ -2929,7 +3044,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       ),
     );
 
-    if (shouldDelete != true) return;
+    if (shouldDelete != true) {
+      return;
+    }
 
     try {
       final sourceCollection = doc.reference.parent.id;
@@ -2949,33 +3066,21 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       await _firestore
           .collection('publicFeed')
           .doc('${sourceCollection}_${doc.id}')
-          .set(
-        {
-          'status': 'deleted',
-          'deletedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      if (categoryCollection != null) {
-        await _firestore.collection(categoryCollection).doc(doc.id).set(
-          {
+          .set({
             'status': 'deleted',
             'deletedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+          }, SetOptions(merge: true));
+
+      if (categoryCollection != null) {
+        await _firestore.collection(categoryCollection).doc(doc.id).set({
+          'status': 'deleted',
+          'deletedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       }
 
-      _showMessage(
-        'Submission deleted.',
-        backgroundColor: cardGreen,
-      );
+      _showMessage('Submission deleted.', backgroundColor: cardGreen);
     } catch (error) {
-      _showMessage(
-        'Erreur : $error',
-        backgroundColor: Colors.redAccent,
-      );
+      _showMessage('Erreur : $error', backgroundColor: Colors.redAccent);
     }
   }
 
@@ -2984,21 +3089,17 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     Map<String, dynamic> data, {
     required bool verificationMode,
   }) async {
-    final fields = Map<String, dynamic>.from(
-      data['fields'] ?? {},
-    );
+    final fields = Map<String, dynamic>.from(data['fields'] ?? {});
 
-    final badge = Map<String, dynamic>.from(
-      data['verificationBadge'] ?? {},
-    );
+    final badge = Map<String, dynamic>.from(data['verificationBadge'] ?? {});
 
     final sourceCollection = doc.reference.parent.id;
 
     final title = fields['title']?.toString().trim().isNotEmpty == true
         ? fields['title'].toString()
         : data['tierTitle']?.toString() ??
-            data['type']?.toString() ??
-            'Approved submission';
+              data['type']?.toString() ??
+              'Approved submission';
 
     final category = switch (sourceCollection) {
       'jobSubmissions' => 'job',
@@ -3008,62 +3109,58 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       'verificationRequests' => 'verification',
       _ => data['type']?.toString() ?? 'approved',
     };
-    final imageUrl = (fields['logoUrl'] ??
-            fields['businessLogoUrl'] ??
-            fields['imageUrl'] ??
-            fields['photoUrl'] ??
-            fields['coverImageUrl'] ??
-            data['logoUrl'] ??
-            data['businessLogoUrl'] ??
-            data['imageUrl'] ??
-            data['photoUrl'] ??
-            data['coverImageUrl'] ??
-            '')
-        .toString()
-        .trim();
+    final imageUrl =
+        (fields['logoUrl'] ??
+                fields['businessLogoUrl'] ??
+                fields['imageUrl'] ??
+                fields['photoUrl'] ??
+                fields['coverImageUrl'] ??
+                data['logoUrl'] ??
+                data['businessLogoUrl'] ??
+                data['imageUrl'] ??
+                data['photoUrl'] ??
+                data['coverImageUrl'] ??
+                '')
+            .toString()
+            .trim();
     await _firestore
         .collection('publicFeed')
         .doc('${sourceCollection}_${doc.id}')
-        .set(
-      {
-        'sourceCollection': sourceCollection,
-        'sourceId': doc.id,
-        'status': 'published',
-        'category': category,
-        'communityCategory': fields['communityCategory'],
-        'title': title,
-        'subtitle': fields['cityAddress']?.toString() ??
-            fields['country']?.toString() ??
-            data['submitterEmail']?.toString() ??
-            '',
-        'description': fields['description']?.toString() ??
-            fields['requirements']?.toString() ??
-            '',
-        'imageUrl': imageUrl,
-        'logoUrl': imageUrl,
-        'submittedBy': data['submittedBy'],
-        'submitterEmail': data['submitterEmail'],
-        'verificationBadge': badge.isNotEmpty
-            ? badge
-            : verificationMode
-                ? {
-                    'title': data['tierTitle'],
-                    'price': data['tierPrice'],
-                    'productId': data['tierId'],
-                  }
-                : null,
-        'isDemo': false,
-        'rating': _parseRating(
-          fields['rating']?.toString(),
-        ),
-        'reviewCount': _parseReviewCount(
-          fields['rating']?.toString(),
-        ),
-        'publishedAt': FieldValue.serverTimestamp(),
-        'approvedBy': _auth.currentUser?.uid,
-      },
-      SetOptions(merge: true),
-    );
+        .set({
+          'sourceCollection': sourceCollection,
+          'sourceId': doc.id,
+          'status': 'published',
+          'category': category,
+          'communityCategory': fields['communityCategory'],
+          'title': title,
+          'subtitle':
+              fields['cityAddress']?.toString() ??
+              fields['country']?.toString() ??
+              data['submitterEmail']?.toString() ??
+              '',
+          'description':
+              fields['description']?.toString() ??
+              fields['requirements']?.toString() ??
+              '',
+          'imageUrl': imageUrl,
+          'logoUrl': imageUrl,
+          'submittedBy': data['submittedBy'],
+          'submitterEmail': data['submitterEmail'],
+          'verificationBadge': badge.isNotEmpty
+              ? badge
+              : verificationMode
+              ? {
+                  'title': data['tierTitle'],
+                  'price': data['tierPrice'],
+                  'productId': data['tierId'],
+                }
+              : null,
+          'isDemo': false,
+          'rating': _parseRating(fields['rating']?.toString()),
+          'reviewCount': _parseReviewCount(fields['rating']?.toString()),
+          'publishedAt': FieldValue.serverTimestamp(),
+          'approvedBy': _auth.currentUser?.uid,
+        }, SetOptions(merge: true));
 
     final categoryCollection = switch (sourceCollection) {
       'jobSubmissions' => 'jobs',
@@ -3078,18 +3175,21 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     if (categoryCollection != null) {
       final phone = fields['phoneNumber']?.toString() ?? '';
 
-      final location = fields['cityAddress']?.toString() ??
+      final location =
+          fields['cityAddress']?.toString() ??
           fields['country']?.toString() ??
           'Europe';
 
       final address = fields['address']?.toString() ?? location;
 
-      final email = fields['emailAddress']?.toString() ??
+      final email =
+          fields['emailAddress']?.toString() ??
           fields['email']?.toString() ??
           data['submitterEmail']?.toString() ??
           '';
 
-      final website = fields['websiteUrl']?.toString() ??
+      final website =
+          fields['websiteUrl']?.toString() ??
           fields['website']?.toString() ??
           '';
 
@@ -3097,85 +3197,79 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           ? 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}'
           : '';
 
-      final description = fields['description']?.toString() ??
+      final description =
+          fields['description']?.toString() ??
           fields['requirements']?.toString() ??
           '';
 
       final publishedCategory = sourceCollection == 'marketplaceSubmissions'
           ? (fields['itemCategory']?.toString().trim().isNotEmpty == true
-              ? fields['itemCategory'].toString().trim()
-              : 'Habesha & Traditional')
+                ? fields['itemCategory'].toString().trim()
+                : 'Habesha & Traditional')
           : fields['businessCategory']?.toString().trim().isNotEmpty == true
-              ? fields['businessCategory'].toString().trim()
-              : fields['jobCategory']?.toString().trim().isNotEmpty == true
-                  ? fields['jobCategory'].toString().trim()
-                  : category;
+          ? fields['businessCategory'].toString().trim()
+          : fields['jobCategory']?.toString().trim().isNotEmpty == true
+          ? fields['jobCategory'].toString().trim()
+          : category;
 
-      await _firestore.collection(categoryCollection).doc(doc.id).set(
-        {
-          ...data,
-          ...fields,
-          'id': doc.id,
-          'name': title,
-          'title': title,
-          'location': location,
-          'address': address,
-          'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
-          'email': email,
-          'website': website,
-          'whatsapp': whatsapp,
-          'description': description,
-          'businessCategory': publishedCategory,
-          'category': publishedCategory,
-          'logoUrl': imageUrl,
-          'imageUrl': imageUrl,
-          'registration': fields['registration']?.toString() ??
-              fields['siret']?.toString() ??
-              'SIRET: Registered Business',
-          'openingHours':
-              fields['openingHours']?.toString() ?? 'Mon - Sun: Open',
-          'badge': badge['title']?.toString() ??
-              (verificationMode ? data['tierTitle']?.toString() : 'Verified'),
-          'gallery': data['gallery'] ??
-              fields['gallery'] ??
-              (imageUrl.isNotEmpty ? [imageUrl] : <String>[]),
-          'rating': '5.0 (New)',
-          'reviewCount': 0,
-          'status': 'published',
-          'sourceCollection': sourceCollection,
-          'sourceId': doc.id,
-          'publishedAt': FieldValue.serverTimestamp(),
-          'approvedBy': _auth.currentUser?.uid,
-        },
-        SetOptions(merge: true),
-      );
+      await _firestore.collection(categoryCollection).doc(doc.id).set({
+        ...data,
+        ...fields,
+        'id': doc.id,
+        'name': title,
+        'title': title,
+        'location': location,
+        'address': address,
+        'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
+        'email': email,
+        'website': website,
+        'whatsapp': whatsapp,
+        'description': description,
+        'businessCategory': publishedCategory,
+        'category': publishedCategory,
+        'logoUrl': imageUrl,
+        'imageUrl': imageUrl,
+        'registration':
+            fields['registration']?.toString() ??
+            fields['siret']?.toString() ??
+            'SIRET: Registered Business',
+        'openingHours': fields['openingHours']?.toString() ?? 'Mon - Sun: Open',
+        'badge':
+            badge['title']?.toString() ??
+            (verificationMode ? data['tierTitle']?.toString() : 'Verified'),
+        'gallery':
+            data['gallery'] ??
+            fields['gallery'] ??
+            (imageUrl.isNotEmpty ? [imageUrl] : <String>[]),
+        'rating': '5.0 (New)',
+        'reviewCount': 0,
+        'status': 'published',
+        'sourceCollection': sourceCollection,
+        'sourceId': doc.id,
+        'publishedAt': FieldValue.serverTimestamp(),
+        'approvedBy': _auth.currentUser?.uid,
+      }, SetOptions(merge: true));
     }
   }
 
   double _parseRating(String? ratingText) {
-    if (ratingText == null) return 0;
+    if (ratingText == null) {
+      return 0;
+    }
 
-    final match = RegExp(
-      r'(\d+(?:\.\d+)?)',
-    ).firstMatch(ratingText);
+    final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(ratingText);
 
-    return double.tryParse(
-          match?.group(1) ?? '',
-        ) ??
-        0;
+    return double.tryParse(match?.group(1) ?? '') ?? 0;
   }
 
   int _parseReviewCount(String? ratingText) {
-    if (ratingText == null) return 0;
+    if (ratingText == null) {
+      return 0;
+    }
 
-    final match = RegExp(
-      r'\((\d+)',
-    ).firstMatch(ratingText);
+    final match = RegExp(r'\((\d+)').firstMatch(ratingText);
 
-    return int.tryParse(
-          match?.group(1) ?? '',
-        ) ??
-        0;
+    return int.tryParse(match?.group(1) ?? '') ?? 0;
   }
 
   // ===========================================================================
@@ -3190,9 +3284,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           child: Text(
             'Seul le Super Admin peut gérer les administrateurs.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white70,
-            ),
+            style: TextStyle(color: Colors.white70),
           ),
         ),
       );
@@ -3219,10 +3311,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           const SizedBox(height: 7),
           const Text(
             'Le Super Admin attribue un administrateur à une catégorie précise. Un seul administrateur actif peut être associé à une catégorie.',
-            style: TextStyle(
-              color: Colors.white70,
-              height: 1.45,
-            ),
+            style: TextStyle(color: Colors.white70, height: 1.45),
           ),
           const SizedBox(height: 20),
           _buildSectionTitle('Nouvel administrateur'),
@@ -3238,7 +3327,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             value: selectedInviteRole,
             items: inviteRoles,
             onChanged: (value) {
-              if (value == null) return;
+              if (value == null) {
+                return;
+              }
 
               setState(() {
                 selectedInviteRole = value;
@@ -3269,7 +3360,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             value: selectedInviteScope,
             items: availableScopes,
             onChanged: (value) {
-              if (value == null) return;
+              if (value == null) {
+                return;
+              }
 
               if (selectedInviteRole != 'Habesha Connect Admin') {
                 return;
@@ -3293,17 +3386,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             decoration: BoxDecoration(
               color: primaryGold.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(13),
-              border: Border.all(
-                color: primaryGold.withValues(alpha: 0.25),
-              ),
+              border: Border.all(color: primaryGold.withValues(alpha: 0.25)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.security,
-                  color: primaryGold,
-                ),
+                Icon(Icons.security, color: primaryGold),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
@@ -3322,19 +3410,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryGold,
-              minimumSize: const Size(
-                double.infinity,
-                52,
-              ),
+              minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: _sendAdminInvite,
-            icon: Icon(
-              Icons.person_add_alt_1,
-              color: primaryDarkGreen,
-            ),
+            icon: Icon(Icons.person_add_alt_1, color: primaryDarkGreen),
             label: Text(
               'Créer l’administrateur',
               style: TextStyle(
@@ -3451,31 +3533,28 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           .collection('publicFeed')
           .doc('${collection}_${newDoc.id}')
           .set({
-        'sourceCollection': collection,
-        'sourceId': newDoc.id,
-        'status': 'published',
-        'category': collection == 'businesses'
-            ? 'business'
-            : collection == 'jobs'
+            'sourceCollection': collection,
+            'sourceId': newDoc.id,
+            'status': 'published',
+            'category': collection == 'businesses'
+                ? 'business'
+                : collection == 'jobs'
                 ? 'job'
                 : 'event',
-        'title': title,
-        'subtitle': city,
-        'description': description,
-        'imageUrl': logoUrl ?? '',
-        'logoUrl': logoUrl ?? '',
-        'phone': phone,
-        'submitterEmail': email,
-        'verificationBadge': {
-          'title': 'Premium',
-          'price': 'Verified',
-        },
-        'isDemo': false,
-        'rating': 5.0,
-        'reviewCount': 0,
-        'publishedAt': FieldValue.serverTimestamp(),
-        'approvedBy': user.uid,
-      });
+            'title': title,
+            'subtitle': city,
+            'description': description,
+            'imageUrl': logoUrl ?? '',
+            'logoUrl': logoUrl ?? '',
+            'phone': phone,
+            'submitterEmail': email,
+            'verificationBadge': {'title': 'Premium', 'price': 'Verified'},
+            'isDemo': false,
+            'rating': 5.0,
+            'reviewCount': 0,
+            'publishedAt': FieldValue.serverTimestamp(),
+            'approvedBy': user.uid,
+          });
 
       _showMessage(
         '$selectedCategory published successfully.',
@@ -3500,7 +3579,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     _mapLinkController.clear();
     _descController.clear();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _businessLogo = null;
@@ -3545,10 +3626,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 decoration: BoxDecoration(
                   color: cardGreen,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: primaryGold,
-                    width: 2,
-                  ),
+                  border: Border.all(color: primaryGold, width: 2),
                   image: _businessLogo != null
                       ? DecorationImage(
                           image: FileImage(_businessLogo!),
@@ -3560,11 +3638,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.camera_alt,
-                            color: primaryGold,
-                            size: 30,
-                          ),
+                          Icon(Icons.camera_alt, color: primaryGold, size: 30),
                           const SizedBox(height: 4),
                           const Text(
                             'Add Logo',
@@ -3585,7 +3659,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             value: selectedCategory,
             items: categories,
             onChanged: (value) {
-              if (value == null) return;
+              if (value == null) {
+                return;
+              }
 
               setState(() {
                 selectedCategory = value;
@@ -3604,7 +3680,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             value: selectedCountry,
             items: countryPhoneCodes.keys.toList(),
             onChanged: (value) {
-              if (value == null) return;
+              if (value == null) {
+                return;
+              }
 
               setState(() {
                 selectedCountry = value;
@@ -3632,15 +3710,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           TextField(
             controller: _phoneController,
             keyboardType: TextInputType.phone,
-            style: const TextStyle(
-              color: Colors.white,
-            ),
+            style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: '6 12 34 56 78',
-              hintStyle: const TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-              ),
+              hintStyle: const TextStyle(color: Colors.white54, fontSize: 12),
               filled: true,
               fillColor: cardGreen,
               border: OutlineInputBorder(
@@ -3679,10 +3752,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryGold,
-              minimumSize: const Size(
-                double.infinity,
-                52,
-              ),
+              minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -3740,9 +3810,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         ),
         const SizedBox(height: 5),
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: cardGreen,
             borderRadius: BorderRadius.circular(10),
@@ -3751,18 +3819,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             child: DropdownButton<String>(
               value: value,
               dropdownColor: cardGreen,
-              style: const TextStyle(
-                color: Colors.white,
-              ),
+              style: const TextStyle(color: Colors.white),
               isExpanded: true,
               items: items
                   .map(
                     (item) => DropdownMenuItem<String>(
                       value: item,
-                      child: Text(
-                        item,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      child: Text(item, overflow: TextOverflow.ellipsis),
                     ),
                   )
                   .toList(),
@@ -3797,15 +3860,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          style: const TextStyle(
-            color: Colors.white,
-          ),
+          style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-              color: Colors.white54,
-              fontSize: 12,
-            ),
+            hintStyle: const TextStyle(color: Colors.white54, fontSize: 12),
             filled: true,
             fillColor: cardGreen,
             border: OutlineInputBorder(
@@ -3826,12 +3884,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         color: cardGreen,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        message,
-        style: const TextStyle(
-          color: Colors.white70,
-        ),
-      ),
+      child: Text(message, style: const TextStyle(color: Colors.white70)),
     );
   }
 }
@@ -3844,8 +3897,5 @@ class _ReviewCollection {
   final String title;
   final String collectionName;
 
-  const _ReviewCollection(
-    this.title,
-    this.collectionName,
-  );
+  const _ReviewCollection(this.title, this.collectionName);
 }

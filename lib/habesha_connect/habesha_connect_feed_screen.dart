@@ -4,7 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class HabeshaConnectFeedScreen extends StatefulWidget {
-  const HabeshaConnectFeedScreen({super.key});
+  const HabeshaConnectFeedScreen({super.key, this.initialPostId});
+
+  /// Affiche directement une publication depuis À proximité.
+  final String? initialPostId;
 
   @override
   State<HabeshaConnectFeedScreen> createState() =>
@@ -375,8 +378,35 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
         children: [
           _buildTabs(),
           Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _postsStream(),
+             child: widget.initialPostId != null && widget.initialPostId!.isNotEmpty
+                 ? StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                     stream: _postsCollection.doc(widget.initialPostId).snapshots(),
+                     builder: (context, snapshot) {
+                       if (snapshot.hasError) return _buildErrorState(snapshot.error);
+                       if (!snapshot.hasData) {
+                         return const Center(child: CircularProgressIndicator(color: primaryGold));
+                       }
+                       final document = snapshot.data!;
+                       if (!document.exists || document.data()?['status'] != 'published') {
+                         return const Center(child: Text('Publication indisponible.',
+                           style: TextStyle(color: Colors.white70)));
+                       }
+                       return ListView(
+                         padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
+                         children: [
+                           _FeedPostCard(
+                             document: document,
+                             formatDate: _formatDate,
+                             categoryName: _categoryName,
+                             locationText: _locationText,
+                             requireAccount: _requireAccount,
+                           ),
+                         ],
+                       );
+                     },
+                   )
+                 : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+               stream: _postsStream(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return _buildErrorState(snapshot.error);
@@ -643,7 +673,7 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
 }
 
 class _FeedPostCard extends StatelessWidget {
-  final QueryDocumentSnapshot<Map<String, dynamic>> document;
+  final DocumentSnapshot<Map<String, dynamic>> document;
   final String Function(dynamic) formatDate;
   final String Function(Map<String, dynamic>) categoryName;
   final String? Function(Map<String, dynamic>) locationText;
@@ -666,7 +696,7 @@ class _FeedPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = document.data();
+    final data = document.data() ?? <String, dynamic>{};
 
     final text = _firstString([
       data['text'],

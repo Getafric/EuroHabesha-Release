@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -8,6 +9,8 @@ class AppSession {
   static bool isEmailVerified = false;
   static bool isSuperAdmin = false;
   static List<String> roles = [];
+  static String? _validatedSuperAdminUid;
+  static int _sessionRevision = 0;
 
   static String displayName = 'Guest mode';
   static String email = '';
@@ -19,6 +22,8 @@ class AppSession {
       email.trim().toLowerCase() == superAdminEmail;
 
   static void continueAsGuest() {
+    _sessionRevision++;
+    _validatedSuperAdminUid = null;
     isGuest = true;
     isEmailVerified = false;
     isSuperAdmin = false;
@@ -38,12 +43,18 @@ class AppSession {
     List<String> assignedRoles = const [],
     bool superAdminValidated = false,
   }) {
+    _sessionRevision++;
     final normalizedEmail = emailAddress.trim().toLowerCase();
 
     isGuest = false;
     isEmailVerified = verified;
 
-    isSuperAdmin = superAdminValidated && normalizedEmail == superAdminEmail;
+    final user = FirebaseAuth.instance.currentUser;
+    isSuperAdmin = superAdminValidated &&
+        normalizedEmail == superAdminEmail &&
+        user != null && user.emailVerified &&
+        user.email?.trim().toLowerCase() == superAdminEmail;
+    _validatedSuperAdminUid = isSuperAdmin ? user!.uid : null;
 
     roles = isSuperAdmin ? ['superAdmin'] : List<String>.from(assignedRoles);
 
@@ -56,6 +67,7 @@ class AppSession {
   }
 
   static Future<void> restoreFromFirebase() async {
+    final revision = ++_sessionRevision;
     final User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
@@ -67,7 +79,8 @@ class AppSession {
     final normalizedEmail = emailAddress.trim().toLowerCase();
 
     final keepValidatedSuperAdmin =
-        isSuperAdmin && normalizedEmail == superAdminEmail;
+        isSuperAdmin && user.emailVerified &&
+        _validatedSuperAdminUid == user.uid && normalizedEmail == superAdminEmail;
 
     isGuest = false;
     isEmailVerified = user.emailVerified;
@@ -82,6 +95,7 @@ class AppSession {
     photoUrl = user.photoURL?.trim() ?? '';
 
     isSuperAdmin = keepValidatedSuperAdmin;
+    if (!isSuperAdmin) _validatedSuperAdminUid = null;
 
     if (isSuperAdmin) {
       roles = ['superAdmin'];
@@ -98,7 +112,10 @@ class AppSession {
       final inviteDocument = await FirebaseFirestore.instance
           .collection('adminInvites')
           .doc(normalizedEmail)
-          .get();
+          .get().timeout(const Duration(seconds: 8));
+
+      if (revision != _sessionRevision ||
+          FirebaseAuth.instance.currentUser?.uid != user.uid) return;
 
       if (!inviteDocument.exists) {
         return;
@@ -133,7 +150,9 @@ class AppSession {
         ...permissions,
       ];
     } on FirebaseException {
-      roles = [];
+      if (revision == _sessionRevision) roles = [];
+    } on TimeoutException {
+      if (revision == _sessionRevision) roles = [];
     }
   }
 

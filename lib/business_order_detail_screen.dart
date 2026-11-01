@@ -274,6 +274,25 @@ class BusinessOrderDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _financialRow(String label, String value, {bool emphasized = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: TextStyle(
+            color: emphasized ? primaryGold : Colors.white70,
+            fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
+          ))),
+          const SizedBox(width: 12),
+          Text(value, style: TextStyle(
+            color: emphasized ? primaryGold : Colors.white,
+            fontWeight: FontWeight.bold,
+          )),
+        ],
+      ),
+    );
+  }
+
   Widget _statusBadge(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -384,6 +403,12 @@ class BusinessOrderDetailScreen extends StatelessWidget {
           final items = _cartItems(data['cartItems']);
 
           final total = data['orderTotal'] ?? data['cartTotal'];
+
+          final businessFee = _toDouble(data['businessFee']);
+          final sellerNet = _toDouble(data['sellerNet']);
+          final canViewFinancials = isSeller;
+          final rawPaymentMethod = data['paymentMethod']?.toString().toLowerCase() ?? '';
+          final isCashPayment = rawPaymentMethod.contains('cash') || rawPaymentMethod.contains('cod') || rawPaymentMethod.contains('delivery');
 
           final shortOrderId = orderId.length > 8
               ? orderId.substring(0, 8).toUpperCase()
@@ -688,6 +713,41 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              if (canViewFinancials) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: cardGreen,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: primaryGold.withValues(alpha: 0.35)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Détail financier professionnel',
+                        style: TextStyle(color: primaryGold, fontSize: 17, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                      _financialRow('Montant de la vente', _formatMoney(total)),
+                      _financialRow('Commission Euro Habesha',
+                        businessFee == null ? 'Non renseignée' : _formatMoney(businessFee)),
+                      const Divider(color: Colors.white24, height: 24),
+                      _financialRow('Net professionnel théorique',
+                        sellerNet == null ? 'Non renseigné' : _formatMoney(sellerNet), emphasized: true),
+                      if (businessFee == null || sellerNet == null) ...[
+                        const SizedBox(height: 10),
+                        const Text('Cette commande ne contient pas tous les détails de commission. Aucun montant n’a été estimé.',
+                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      ],
+                      if (isCashPayment) ...[
+                        const SizedBox(height: 10),
+                        const Text('Paiement en espèces : la commission plateforme n’est pas encaissée automatiquement.',
+                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
               if (notes.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -757,7 +817,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (isSeller && !isPaid) ...[
+                    if (isSeller && !isPaid && isCashPayment) ...[
                       const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ Future<void> openDirectChat({
   required String otherUserId,
   required String otherUserName,
   bool professionalAutoReply = false,
+  String? professionalSourceCollection,
+  String? professionalBusinessId,
 }) async {
   final user = FirebaseAuth.instance.currentUser;
 
@@ -37,7 +40,18 @@ Future<void> openDirectChat({
   }
 
   final ids = [user.uid, targetUid]..sort();
-  final chatId = '${ids[0]}_${ids[1]}';
+  final scoped = professionalSourceCollection != null || professionalBusinessId != null;
+  final source = professionalSourceCollection ?? '';
+  final businessId = professionalBusinessId ?? '';
+  if (scoped && (!const ['businessSubmissions', 'jobSubmissions'].contains(source) ||
+      businessId.isEmpty || businessId.contains('/'))) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Le lien de ce professionnel doit être vérifié.')));
+    return;
+  }
+  final chatId = scoped
+      ? 'pro_${source}_${businessId}_${ids[0]}_${ids[1]}'
+      : '${ids[0]}_${ids[1]}';
 
   final myName = AppSession.displayName.trim().isNotEmpty
       ? AppSession.displayName.trim()
@@ -49,10 +63,18 @@ Future<void> openDirectChat({
   final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
 
   try {
+    if (scoped) {
+      final profile = await FirebaseFirestore.instance.collection(source).doc(businessId)
+          .get(const GetOptions(source: Source.server));
+      if (!profile.exists || profile.data()?['chatEnabled'] == false) {
+        throw StateError('La discussion est désactivée pour cet établissement.');
+      }
+    }
     final myPhotoUrl = AppSession.photoUrl.trim();
 
+    // First-chat fix: create/merge without reading a missing private document.
     final chatData = <String, dynamic>{
-      'participants': [user.uid, targetUid],
+      'participants': ids,
       'participantNames': {
         user.uid: myName,
         targetUid: targetName,
@@ -60,7 +82,11 @@ Future<void> openDirectChat({
       'participantPhotos': {
         user.uid: myPhotoUrl,
       },
-      'chatType': professionalAutoReply ? 'professional' : 'direct',
+      'chatType': professionalAutoReply || scoped ? 'professional' : 'direct',
+      if (scoped) ...{
+        'professionalId': targetUid,
+        'professionalContext': {'sourceCollection': source, 'businessId': businessId},
+      },
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
@@ -336,22 +362,21 @@ class ChatScreen extends StatelessWidget {
           children: [
             const Icon(Icons.chat_bubble_outline, color: primaryGold, size: 56),
             const SizedBox(height: 14),
-            const Text('Sign in to use messages',
-                style: TextStyle(
+            Text('chat.sign_in_title'.tr(),
+                style: const TextStyle(
                     color: primaryGold,
                     fontSize: 18,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text(
-                'Guest users can browse, but messaging needs a verified account.',
+            Text('chat.sign_in_subtitle'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 18),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: primaryGold),
               onPressed: () => Navigator.pushNamed(context, '/login'),
-              child: const Text('Sign In / Register',
-                  style: TextStyle(
+              child: Text('profile.sign_in_register'.tr(),
+                  style: const TextStyle(
                       color: primaryDarkGreen, fontWeight: FontWeight.bold)),
             ),
           ],
@@ -463,6 +488,17 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     try {
       final chatRef =
           FirebaseFirestore.instance.collection('chats').doc(widget.chatId);
+      final chatSnapshot = await chatRef.get(const GetOptions(source: Source.server));
+      final professionalContext = chatSnapshot.data()?['professionalContext'];
+      if (professionalContext is Map) {
+        final profile = await FirebaseFirestore.instance
+            .collection(professionalContext['sourceCollection'].toString())
+            .doc(professionalContext['businessId'].toString())
+            .get(const GetOptions(source: Source.server));
+        if (!profile.exists || profile.data()?['chatEnabled'] == false) {
+          throw StateError('La discussion est désactivée pour cet établissement.');
+        }
+      }
       await chatRef.collection('messages').add({
         'senderId': user.uid,
         'senderEmail': user.email,

@@ -1,9 +1,13 @@
-import 'dart:io';
+// Euro Habesha: photos et publicites v1
+import 'banner_destination.dart';
+import 'dart:typed_data';
+// EH_CADRAGE_AVIS_V1
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'professional_photo_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'app_session.dart';
@@ -27,7 +31,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
   final ImagePicker _picker = ImagePicker();
 
-  final List<double> _presetDiscounts = [
+  final List<double> _presetDiscounts = [0,
     5,
     10,
     15,
@@ -39,7 +43,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
   double _discountPercent = 20;
 
-  File? _bannerImageFile;
+  Uint8List? _bannerImageFile;
   String _existingImageUrl = '';
 
   String _targetType = 'business';
@@ -80,16 +84,15 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
   }
 
   Future<void> _pickBannerImage() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-
-    if (picked == null || !mounted) return;
-
-    setState(() {
-      _bannerImageFile = File(picked.path);
-    });
+    try {
+      final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+      if (picked == null) { return; }
+      final bytes = await picked.readAsBytes();
+      if (!mounted) { return; }
+      final framed = await frameProfessionalPhoto(context, bytes: bytes, use: ProfessionalPhotoUse.banner);
+      if (!mounted || framed == null) { return; }
+      setState(() => _bannerImageFile = framed);
+    } catch (_) { _message('Impossible d’ouvrir cette photo. Réessayez.'); }
   }
 
   void _resetForm() {
@@ -167,7 +170,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
       _targetType = (data['targetType'] ?? 'business').toString().toLowerCase();
 
-      if (!['business', 'event', 'marketplace'].contains(_targetType)) {
+      if (!['business', 'job', 'event', 'marketplace'].contains(_targetType)) {
         _targetType = 'business';
       }
 
@@ -260,13 +263,13 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       throw Exception('Administrator is not signed in.');
     }
 
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_banner.jpg';
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}_banner.png';
 
     final ref = FirebaseStorage.instance.ref(
       'announcements/${user.uid}/$fileName',
     );
 
-    await ref.putFile(_bannerImageFile!);
+    await ref.putData(_bannerImageFile!, SettableMetadata(contentType: 'image/png'));
 
     return ref.getDownloadURL();
   }
@@ -290,12 +293,16 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       return;
     }
 
+    if (_targetType == 'job' && (_selectedTargetId ?? '').isEmpty) {
+      _message('Choisissez une fiche de prestataire avant de publier.');
+      return;
+    }
     setState(() => _saving = true);
 
     try {
       final imageUrl = await _uploadImage();
 
-      final promotion = '${_discountPercent.toInt()}% OFF';
+      final promotion = _discountPercent > 0 ? '${_discountPercent.toInt()}% OFF' : '';
 
       final data = <String, dynamic>{
         // Existing schema.
@@ -310,11 +317,8 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
         'targetId': _selectedTargetId ?? '',
         'targetName': _selectedTargetName ?? '',
         'targetData': _selectedTargetData ?? {},
-        'targetRoute': _targetType == 'event'
-            ? '/event'
-            : _targetType == 'marketplace'
-                ? '/marketplace'
-                : '/business',
+        'targetRoute': bannerRouteForType(_targetType),
+     'targetCollection': bannerCollectionForType(_targetType),
 
 // Compatibilité avec les anciennes publicités Business.
         'targetBusinessId':
@@ -814,14 +818,14 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                 ),
               ),
               child: _bannerImageFile != null
-                  ? Image.file(
+                  ? Image.memory(
                       _bannerImageFile!,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                     )
                   : _existingImageUrl.isNotEmpty
                       ? Image.network(
                           _existingImageUrl,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         )
                       : const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -886,7 +890,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                   return DropdownMenuItem<double>(
                     value: discount,
                     child: Text(
-                      '${discount.toInt()}% OFF',
+                      discount == 0 ? 'Sans réduction' : '${discount.toInt()}% OFF',
                     ),
                   );
                 }).toList(),
@@ -974,7 +978,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Advertisement Destination',
+          'Destination de la publicité',
           style: TextStyle(
             color: gold,
             fontWeight: FontWeight.bold,
@@ -996,12 +1000,10 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
               items: const [
                 DropdownMenuItem(
                   value: 'business',
-                  child: Text('Business / Restaurant'),
+                  child: Text('Commerce / Restaurant'),
                 ),
-                DropdownMenuItem(
-                  value: 'event',
-                  child: Text('Event'),
-                ),
+                DropdownMenuItem(value: 'job', child: Text('Jobs / Prestataires'),),
+     DropdownMenuItem(value: 'event', child: Text('Événement'),),
                 DropdownMenuItem(
                   value: 'marketplace',
                   child: Text('Marketplace'),
@@ -1027,16 +1029,16 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
   }
 
   Widget _buildTargetItemSelector() {
-    final collection = _targetType == 'event'
-        ? 'events'
-        : _targetType == 'marketplace'
-            ? 'marketplace'
-            : 'businesses';
+    final collection = bannerCollectionForType(_targetType);
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection(collection).snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.hasError) {
+       return const Text('Impossible de charger les fiches. Réessayez.',
+         style: TextStyle(color: Colors.white70));
+     }
+     if (!snapshot.hasData) {
           return const LinearProgressIndicator(
             color: gold,
           );
@@ -1073,10 +1075,10 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
               dropdownColor: cardGreen,
               hint: Text(
                 _targetType == 'event'
-                    ? 'Choose an event'
+                    ? 'Choisir un événement'
                     : _targetType == 'marketplace'
-                        ? 'Choose a marketplace listing'
-                        : 'Choose a business / restaurant',
+                        ? 'Choisir une annonce Marketplace'
+                        : _targetType == 'job' ? 'Choisir un prestataire / service' : 'Choisir un commerce / restaurant',
                 style: const TextStyle(
                   color: Colors.white54,
                 ),

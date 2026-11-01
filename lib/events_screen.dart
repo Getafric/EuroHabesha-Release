@@ -1,8 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'event_qr_documents.dart';
 import 'app_session.dart';
 import 'subscription_service.dart';
 import 'dynamic_submission_screen.dart';
@@ -114,7 +115,7 @@ class EventsScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.confirmation_number_outlined,
                 color: Color(0xFFFFD700)),
-            tooltip: 'My Tickets',
+            tooltip: 'profile.my_tickets'.tr(),
             onPressed: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const MyTicketsScreen())),
           ),
@@ -527,6 +528,22 @@ class EventDetailScreen extends StatelessWidget {
             style: TextStyle(color: Color(0xFFFFD700))),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: Color(0xFFFFD700)),
+        actions: [
+          if (validPublicEventId(eventData['id']?.toString() ?? ''))
+            IconButton(tooltip: 'Partager le QR public',
+              icon: const Icon(Icons.qr_code_2),
+              onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
+                builder: (_) => EventQrDocumentScreen(
+                  title: eventData['title']?.toString() ?? 'Événement',
+                  payload: publicEventLink(eventData['id'].toString()),
+                  details: [
+                    for (final key in ['date', 'time', 'location'])
+                      if ((eventData[key]?.toString().trim() ?? '').isNotEmpty)
+                        eventData[key].toString(),
+                  ],
+                  isTicket: false,
+                )))),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -2238,99 +2255,18 @@ class TicketQRCodeScreen extends StatelessWidget {
   final String ticketId;
   final bool nonRefundable;
   final bool nonTransferable;
-
-  const TicketQRCodeScreen(
-      {super.key,
-      required this.eventName,
-      required this.attendeeName,
-      required this.ticketId,
-      this.nonRefundable = false,
-      this.nonTransferable = false});
+  const TicketQRCodeScreen({super.key, required this.eventName,
+    required this.attendeeName, required this.ticketId,
+    this.nonRefundable = false, this.nonTransferable = false});
 
   @override
-  Widget build(BuildContext context) {
-    final qrPayload = 'EURO_HABESHA_TICKET|$ticketId|$eventName|$attendeeName';
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF061E12),
-      appBar: AppBar(
-          title: const Text('My Ticket',
-              style: TextStyle(color: Color(0xFFFFD700))),
-          backgroundColor: const Color(0xFF061E12)),
-      body: Center(
-        child: Container(
-          margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(15)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('EURO HABESHA TICKET',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2)),
-              const Divider(color: Colors.black26),
-              const SizedBox(height: 10),
-              Text(eventName,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              QrImageView(
-                data: qrPayload,
-                version: QrVersions.auto,
-                size: 210,
-                backgroundColor: Colors.white,
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.person, color: Colors.black54, size: 16),
-                    const SizedBox(width: 5),
-                    Text(attendeeName,
-                        style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 15),
-              Text('Ticket ID: $ticketId',
-                  style: const TextStyle(color: Colors.black54, fontSize: 14)),
-              if (nonRefundable) ...[
-                const SizedBox(height: 10),
-                const Text('NON-REFUNDABLE',
-                    style: TextStyle(
-                        color: Colors.red, fontWeight: FontWeight.bold)),
-              ],
-              if (nonTransferable) ...[
-                const SizedBox(height: 6),
-                const Text('NON-TRANSFERABLE',
-                    style: TextStyle(
-                        color: Colors.red, fontWeight: FontWeight.bold)),
-              ],
-              const SizedBox(height: 10),
-              const Text('Present this QR code at the entrance.',
-                  style: TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => EventQrDocumentScreen(
+    title: eventName,
+    payload: 'EURO_HABESHA_TICKET|$ticketId|$eventName|$attendeeName',
+    details: [attendeeName, 'Billet : $ticketId'],
+    isTicket: true, nonRefundable: nonRefundable,
+    nonTransferable: nonTransferable,
+  );
 }
 
 class MyTicketsScreen extends StatelessWidget {
@@ -2347,7 +2283,7 @@ class MyTicketsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF061E12),
       appBar: AppBar(
-        title: const Text('My Tickets',
+        title: Text('profile.my_tickets'.tr(),
             style: TextStyle(color: Color(0xFFFFD700))),
         backgroundColor: const Color(0xFF061E12),
         iconTheme: const IconThemeData(color: Color(0xFFFFD700)),
@@ -3035,6 +2971,10 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
 
       await FirebaseFirestore.instance.runTransaction(
         (transaction) async {
+          // Firestore can retry: discard the outcome of an aborted attempt.
+          valid = false;
+          failureReason = null;
+          ticket = null;
           final snapshot = await transaction.get(ticketRef);
 
           if (!snapshot.exists) {

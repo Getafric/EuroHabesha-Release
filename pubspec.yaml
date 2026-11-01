@@ -2,7 +2,7 @@ name: euro_habesha
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 3.2.2+101
+version: 3.2.3+107
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -16,32 +16,32 @@ dependencies:
     sdk: flutter
   easy_localization: ^3.0.8
 
-  # ── Firebase & Auth ──
+  # Firebase & Auth
   firebase_core: 4.15.0
   firebase_auth: 6.7.0
   cloud_firestore: 6.10.0
   firebase_storage: ^13.6.0
   google_sign_in: ^6.3.0
 
-  # ── Notifications & Messaging (ኖቲፊኬሽን) ──
+  # Notifications & Messaging
   firebase_messaging: ^16.7.0
   flutter_local_notifications: ^17.2.4
 
-  # ── Location & Maps (ጂፒኤስ እና ካርታ) ──
+  # Location & Maps
   geolocator: ^14.0.3
 
-  # ── Utilities, Media & Scanner (ካሜራ፣ ሊንክ እና ፎቶዎች) ──
-  url_launcher: ^6.3.1
+  # Utilities, Media & Scanner
+  url_launcher: ^6.3.3
   image_picker: ^1.2.3
   file_selector: ^1.0.3
-  cached_network_image: ^3.4.1  
+  cached_network_image: ^3.4.1
   shared_preferences: ^2.5.3
   google_fonts: ^6.3.3
 
-  # ── Monetization & Ads (ማስታወቂያ እና ክፍያ) ──
+  # Monetization & Ads
   in_app_purchase: ^3.2.0
   google_mobile_ads: ^9.0.0
-  mobile_scanner: ^7.4.0
+  mobile_scanner: ^7.4.2
   qr_flutter: ^4.1.0
   in_app_review: ^2.0.12
   pdf: ^3.13.1
@@ -50,6 +50,8 @@ dependencies:
   cloud_functions: ^6.5.0
   flutter_stripe: ^14.1.0
   geocoding: ^5.0.0
+  share_plus: ^13.3.1
+  video_player: ^2.14.1
 
 dev_dependencies:
   flutter_test:
@@ -67,7 +69,8 @@ flutter:
     - assets/icons/
     - assets/translations/
     - assets/sounds/
-# App Icon Configuration
+
+# Icône de l'application sur le téléphone
 flutter_launcher_icons:
   android: true
   ios: true
@@ -76,15 +79,22 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/euro_habesha_logo.png"
   adaptive_icon_background: "#061E12"
 
-# ── Splash Screen Configuration ──
+# Écran de démarrage : fond vert sans logo visible
 flutter_native_splash:
   color: "#061E12"
-  image: "assets/images/euro_habesha_logo.png"
+  color_dark: "#061E12"
+  image: "assets/images/splash_transparent.png"
+  image_dark: "assets/images/splash_transparent.png"
   android_gravity: center
   ios_content_mode: center
+
   android_12:
     color: "#061E12"
-    image: "assets/images/euro_habesha_logo.png"
+    color_dark: "#061E12"
+    image: "assets/images/splash_transparent.png"
+    image_dark: "assets/images/splash_transparent.png"
     icon_background_color: "#061E12"
+    icon_background_color_dark: "#061E12"
+
   ios: true
   android: true

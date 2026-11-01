@@ -1,8 +1,10 @@
+import 'admin_professional_verification_review_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dynamic_submission_screen.dart';
 import 'app_session.dart';
 import 'status_badge_widget.dart';
+import 'services/nearby_sync_service.dart';
 
 class AdminUniversalContentManagerScreen extends StatefulWidget {
   const AdminUniversalContentManagerScreen({super.key});
@@ -21,26 +23,11 @@ class _AdminUniversalContentManagerScreenState
   String _selectedSection = 'businesses';
 
   final List<Map<String, String>> _sections = [
-    {
-      'key': 'businesses',
-      'label': 'Businesses & Restaurants',
-    },
-    {
-      'key': 'jobs',
-      'label': 'Jobs & Professionals',
-    },
-    {
-      'key': 'events',
-      'label': 'Events',
-    },
-    {
-      'key': 'marketplace',
-      'label': 'Marketplace Items',
-    },
-    {
-      'key': 'posts',
-      'label': 'Community Feed Posts',
-    },
+    {'key': 'businesses', 'label': 'Businesses & Restaurants'},
+    {'key': 'jobs', 'label': 'Jobs & Professionals'},
+    {'key': 'events', 'label': 'Events'},
+    {'key': 'marketplace', 'label': 'Marketplace Items'},
+    {'key': 'posts', 'label': 'Community Feed Posts'},
   ];
 
   String get _selectedSectionLabel {
@@ -70,9 +57,7 @@ class _AdminUniversalContentManagerScreenState
           children: [
             _buildSectionSwitcher(),
             _buildManagementHeader(constraints),
-            Expanded(
-              child: _buildItemsStream(),
-            ),
+            Expanded(child: _buildItemsStream()),
           ],
         );
       },
@@ -88,10 +73,7 @@ class _AdminUniversalContentManagerScreenState
       height: 56,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 7,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         itemCount: _sections.length,
         itemBuilder: (context, index) {
           final section = _sections[index];
@@ -102,11 +84,7 @@ class _AdminUniversalContentManagerScreenState
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              label: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
               selected: isSelected,
               selectedColor: primaryGold,
               backgroundColor: cardGreen,
@@ -160,10 +138,7 @@ class _AdminUniversalContentManagerScreenState
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 7),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: _buildAddButton(),
-            ),
+            Align(alignment: Alignment.centerLeft, child: _buildAddButton()),
           ],
         ),
       );
@@ -198,25 +173,14 @@ class _AdminUniversalContentManagerScreenState
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryGold,
         foregroundColor: primaryDarkGreen,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         minimumSize: const Size(0, 38),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      icon: const Icon(
-        Icons.add,
-        size: 17,
-      ),
+      icon: const Icon(Icons.add, size: 17),
       label: const Text(
         'Add Content',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
       ),
       onPressed: () => _showAddEditDialog(null),
     );
@@ -228,19 +192,16 @@ class _AdminUniversalContentManagerScreenState
 
   Widget _buildItemsStream() {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream:
-          FirebaseFirestore.instance.collection(_selectedSection).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection(_selectedSection)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return _buildErrorState(snapshot.error);
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(
-              color: primaryGold,
-            ),
-          );
+          return Center(child: CircularProgressIndicator(color: primaryGold));
         }
 
         final docs = snapshot.data?.docs ?? [];
@@ -250,12 +211,7 @@ class _AdminUniversalContentManagerScreenState
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            4,
-            16,
-            24,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           itemCount: docs.length,
           itemBuilder: (context, index) {
             return _buildContentCard(docs[index]);
@@ -272,11 +228,7 @@ class _AdminUniversalContentManagerScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.redAccent,
-              size: 42,
-            ),
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 42),
             const SizedBox(height: 12),
             const Text(
               'Unable to load this content.',
@@ -290,10 +242,7 @@ class _AdminUniversalContentManagerScreenState
             Text(
               error?.toString() ?? 'Unknown Firestore error.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 11,
-              ),
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
             ),
           ],
         ),
@@ -308,11 +257,7 @@ class _AdminUniversalContentManagerScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              color: primaryGold,
-              size: 42,
-            ),
+            Icon(Icons.inbox_outlined, color: primaryGold, size: 42),
             const SizedBox(height: 12),
             const Text(
               'No items in this category yet.',
@@ -326,10 +271,7 @@ class _AdminUniversalContentManagerScreenState
             const Text(
               'Tap "+ Add Content" to create one.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white54,
-                height: 1.4,
-              ),
+              style: TextStyle(color: Colors.white54, height: 1.4),
             ),
           ],
         ),
@@ -341,9 +283,7 @@ class _AdminUniversalContentManagerScreenState
   // CONTENT CARD
   // ---------------------------------------------------------------------------
 
-  Widget _buildContentCard(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  Widget _buildContentCard(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
 
     final title = _firstNonEmpty([
@@ -363,7 +303,8 @@ class _AdminUniversalContentManagerScreenState
 
     final status = data['status']?.toString() ?? 'published';
 
-    final isVerified = data['isVerified'] == true ||
+    final isVerified =
+        data['isVerified'] == true ||
         data['verificationStatus']?.toString().toLowerCase() == 'approved';
 
     final subscriptionTier = data['subscriptionTier']?.toString();
@@ -378,9 +319,7 @@ class _AdminUniversalContentManagerScreenState
     return Card(
       color: cardGreen,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -395,15 +334,9 @@ class _AdminUniversalContentManagerScreenState
               imageUrl: imageUrl,
             ),
             const SizedBox(height: 10),
-            const Divider(
-              color: Colors.white12,
-              height: 1,
-            ),
+            const Divider(color: Colors.white12, height: 1),
             const SizedBox(height: 8),
-            _buildActionButtons(
-              doc: doc,
-              isVerified: isVerified,
-            ),
+            _buildActionButtons(doc: doc, isVerified: isVerified),
           ],
         ),
       ),
@@ -441,10 +374,7 @@ class _AdminUniversalContentManagerScreenState
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -497,11 +427,7 @@ class _AdminUniversalContentManagerScreenState
         color: primaryGold.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(
-        Icons.article_outlined,
-        color: primaryGold,
-        size: 24,
-      ),
+      child: Icon(Icons.article_outlined, color: primaryGold, size: 24),
     );
   }
 
@@ -514,10 +440,7 @@ class _AdminUniversalContentManagerScreenState
     final badgeColor = isPositive ? Colors.greenAccent : Colors.redAccent;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 3,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: badgeColor.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(4),
@@ -556,36 +479,22 @@ class _AdminUniversalContentManagerScreenState
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: primaryGold,
-              side: BorderSide(
-                color: primaryGold,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 7,
-              ),
+              side: BorderSide(color: primaryGold),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               minimumSize: const Size(0, 34),
             ),
             onPressed: () => _showEventDetails(doc),
-            icon: const Icon(
-              Icons.visibility_outlined,
-              size: 14,
-            ),
+            icon: const Icon(Icons.visibility_outlined, size: 14),
             label: const Text(
               'View Details',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
             ),
           ),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryGold,
             foregroundColor: primaryDarkGreen,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             minimumSize: const Size(0, 34),
           ),
           onPressed: () {
@@ -595,55 +504,33 @@ class _AdminUniversalContentManagerScreenState
               _showAddEditDialog(doc);
             }
           },
-          icon: const Icon(
-            Icons.edit,
-            size: 14,
-          ),
+          icon: const Icon(Icons.edit, size: 14),
           label: Text(
             isEvent ? 'Edit Event' : 'Edit / Replace Photo',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
           ),
         ),
         if (canVerify)
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isVerified ? Colors.grey.shade700 : const Color(0xFF00E676),
+              backgroundColor: isVerified
+                  ? Colors.grey.shade700
+                  : const Color(0xFF00E676),
               foregroundColor: isVerified ? Colors.white : primaryDarkGreen,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 7,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               minimumSize: const Size(0, 34),
             ),
-            onPressed: () => _toggleVerify(
-              doc,
-              isVerified,
-            ),
-            icon: Icon(
-              isVerified ? Icons.close : Icons.verified,
-              size: 14,
-            ),
+            onPressed: () => _toggleVerify(doc, isVerified),
+            icon: Icon(Icons.folder_open_outlined, size: 14),
             label: Text(
-              isVerified ? 'Unverify' : 'Verify ✓',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
+              'Dossier & vérification',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
             ),
           ),
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(
-              color: Colors.redAccent,
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 7,
-            ),
+            side: const BorderSide(color: Colors.redAccent),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             minimumSize: const Size(0, 34),
           ),
           onPressed: () => _delete(doc),
@@ -654,10 +541,7 @@ class _AdminUniversalContentManagerScreenState
           ),
           label: const Text(
             'Delete',
-            style: TextStyle(
-              color: Colors.redAccent,
-              fontSize: 11,
-            ),
+            style: TextStyle(color: Colors.redAccent, fontSize: 11),
           ),
         ),
       ],
@@ -672,7 +556,9 @@ class _AdminUniversalContentManagerScreenState
         .doc(eventDoc.id)
         .get();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     if (!submission.exists) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -704,15 +590,14 @@ class _AdminUniversalContentManagerScreenState
           .doc(eventDoc.id)
           .get();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       final publicData = eventDoc.data() ?? <String, dynamic>{};
       final submissionData = submission.data() ?? <String, dynamic>{};
 
-      final data = <String, dynamic>{
-        ...publicData,
-        ...submissionData,
-      };
+      final data = <String, dynamic>{...publicData, ...submissionData};
 
       final fields = data['fields'] is Map
           ? Map<String, dynamic>.from(data['fields'] as Map)
@@ -726,13 +611,14 @@ class _AdminUniversalContentManagerScreenState
 
       final ticketTypes =
           publicTicketTypes is List && publicTicketTypes.isNotEmpty
-              ? publicTicketTypes
-              : data['ticketTypes'] is List
-                  ? data['ticketTypes'] as List
-                  : const [];
+          ? publicTicketTypes
+          : data['ticketTypes'] is List
+          ? data['ticketTypes'] as List
+          : const [];
 
-      final artists =
-          data['artists'] is List ? data['artists'] as List : const [];
+      final artists = data['artists'] is List
+          ? data['artists'] as List
+          : const [];
       final photoUrls = <String>[];
 
       final rawEventMedia = data['eventMedia'] ?? data['media'];
@@ -759,11 +645,17 @@ class _AdminUniversalContentManagerScreenState
       final submittedInformation = <String, dynamic>{};
 
       fields.forEach((key, value) {
-        if (value == null) return;
+        if (value == null) {
+          return;
+        }
 
-        if (value is String && value.trim().isEmpty) return;
+        if (value is String && value.trim().isEmpty) {
+          return;
+        }
 
-        if (value is Map || value is List) return;
+        if (value is Map || value is List) {
+          return;
+        }
 
         submittedInformation[key] = value;
       });
@@ -775,7 +667,9 @@ class _AdminUniversalContentManagerScreenState
         'Event Details',
       ]);
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       await showModalBottomSheet<void>(
         context: context,
@@ -791,9 +685,7 @@ class _AdminUniversalContentManagerScreenState
               return Container(
                 decoration: const BoxDecoration(
                   color: Color(0xFF061E12),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Column(
                   children: [
@@ -807,12 +699,7 @@ class _AdminUniversalContentManagerScreenState
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        18,
-                        16,
-                        8,
-                        12,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(18, 16, 8, 12),
                       child: Row(
                         children: [
                           Expanded(
@@ -827,18 +714,12 @@ class _AdminUniversalContentManagerScreenState
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(sheetContext),
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                            ),
+                            icon: const Icon(Icons.close, color: Colors.white),
                           ),
                         ],
                       ),
                     ),
-                    const Divider(
-                      color: Colors.white12,
-                      height: 1,
-                    ),
+                    const Divider(color: Colors.white12, height: 1),
                     Expanded(
                       child: ListView(
                         controller: scrollController,
@@ -872,26 +753,14 @@ class _AdminUniversalContentManagerScreenState
                                 'Address',
                                 fields['address'] ?? data['address'],
                               ),
-                              _eventAdminRow(
-                                'Date',
-                                fields['date'],
-                              ),
-                              _eventAdminRow(
-                                'Start date',
-                                fields['startDate'],
-                              ),
-                              _eventAdminRow(
-                                'End date',
-                                fields['endDate'],
-                              ),
+                              _eventAdminRow('Date', fields['date']),
+                              _eventAdminRow('Start date', fields['startDate']),
+                              _eventAdminRow('End date', fields['endDate']),
                               _eventAdminRow(
                                 'Start time',
                                 fields['startTime'] ?? fields['time'],
                               ),
-                              _eventAdminRow(
-                                'End time',
-                                fields['endTime'],
-                              ),
+                              _eventAdminRow('End time', fields['endTime']),
                             ],
                           ),
                           _eventAdminSection(
@@ -969,9 +838,11 @@ class _AdminUniversalContentManagerScreenState
                               title: 'Artists / Performers',
                               icon: Icons.mic_external_on_outlined,
                               children: [
-                                for (var index = 0;
-                                    index < artists.length;
-                                    index++)
+                                for (
+                                  var index = 0;
+                                  index < artists.length;
+                                  index++
+                                )
                                   if (artists[index] is Map)
                                     _eventAdminArtist(
                                       Map<String, dynamic>.from(
@@ -1021,9 +892,11 @@ class _AdminUniversalContentManagerScreenState
                               title: 'Tickets & Capacity',
                               icon: Icons.confirmation_number_outlined,
                               children: [
-                                for (var index = 0;
-                                    index < ticketTypes.length;
-                                    index++)
+                                for (
+                                  var index = 0;
+                                  index < ticketTypes.length;
+                                  index++
+                                )
                                   if (ticketTypes[index] is Map)
                                     _eventAdminTicket(
                                       Map<String, dynamic>.from(
@@ -1050,26 +923,14 @@ class _AdminUniversalContentManagerScreenState
                             title: 'Administration',
                             icon: Icons.admin_panel_settings_outlined,
                             children: [
-                              _eventAdminRow(
-                                'Status',
-                                data['status'],
-                              ),
-                              _eventAdminRow(
-                                'Event ID',
-                                eventDoc.id,
-                              ),
-                              _eventAdminRow(
-                                'Created',
-                                data['createdAt'],
-                              ),
+                              _eventAdminRow('Status', data['status']),
+                              _eventAdminRow('Event ID', eventDoc.id),
+                              _eventAdminRow('Created', data['createdAt']),
                               _eventAdminRow(
                                 'Published',
                                 publicData['publishedAt'],
                               ),
-                              _eventAdminRow(
-                                'Updated',
-                                data['updatedAt'],
-                              ),
+                              _eventAdminRow('Updated', data['updatedAt']),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -1085,21 +946,15 @@ class _AdminUniversalContentManagerScreenState
                               ),
                               onPressed: () async {
                                 Navigator.pop(sheetContext);
-                                await _deleteEventSafely(eventDoc);
+                                await _openEventEditor(eventDoc);
                               },
                               onLongPress: () async {
-                                await _openEventEditor(
-                                  eventDoc,
-                                );
+                                await _openEventEditor(eventDoc);
                               },
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                              ),
+                              icon: const Icon(Icons.edit_outlined),
                               label: const Text(
                                 'Edit Event',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -1108,9 +963,7 @@ class _AdminUniversalContentManagerScreenState
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Colors.redAccent,
-                                ),
+                                side: const BorderSide(color: Colors.redAccent),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 13,
                                 ),
@@ -1118,7 +971,7 @@ class _AdminUniversalContentManagerScreenState
                               onPressed: () async {
                                 Navigator.pop(sheetContext);
 
-                                await _delete(eventDoc);
+                                await _deleteEventSafely(eventDoc);
                               },
                               icon: const Icon(
                                 Icons.delete_forever,
@@ -1145,13 +998,13 @@ class _AdminUniversalContentManagerScreenState
         },
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Unable to load event details: $e',
-          ),
+          content: Text('Unable to load event details: $e'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -1170,20 +1023,14 @@ class _AdminUniversalContentManagerScreenState
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.18),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: primaryGold,
-                size: 20,
-              ),
+              Icon(icon, color: primaryGold, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1213,15 +1060,14 @@ class _AdminUniversalContentManagerScreenState
         .replaceAll('_', ' ')
         .trim();
 
-    if (spaced.isEmpty) return key;
+    if (spaced.isEmpty) {
+      return key;
+    }
 
     return '${spaced[0].toUpperCase()}${spaced.substring(1)}';
   }
 
-  Widget _eventAdminRow(
-    String label,
-    dynamic value,
-  ) {
+  Widget _eventAdminRow(String label, dynamic value) {
     if (value == null) {
       return const SizedBox.shrink();
     }
@@ -1231,7 +1077,8 @@ class _AdminUniversalContentManagerScreenState
     if (value is Timestamp) {
       final date = value.toDate();
 
-      displayedValue = '${date.day.toString().padLeft(2, '0')}/'
+      displayedValue =
+          '${date.day.toString().padLeft(2, '0')}/'
           '${date.month.toString().padLeft(2, '0')}/'
           '${date.year} '
           '${date.hour.toString().padLeft(2, '0')}:'
@@ -1277,10 +1124,7 @@ class _AdminUniversalContentManagerScreenState
     );
   }
 
-  Widget _eventAdminBoolean(
-    String label,
-    bool value,
-  ) {
+  Widget _eventAdminBoolean(String label, bool value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
       child: Row(
@@ -1294,10 +1138,7 @@ class _AdminUniversalContentManagerScreenState
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
           Text(
@@ -1313,10 +1154,7 @@ class _AdminUniversalContentManagerScreenState
     );
   }
 
-  Widget _eventAdminTicket(
-    Map<String, dynamic> ticket,
-    int index,
-  ) {
+  Widget _eventAdminTicket(Map<String, dynamic> ticket, int index) {
     final name = ticket['name']?.toString().trim().isNotEmpty == true
         ? ticket['name'].toString()
         : 'Ticket ${index + 1}';
@@ -1374,20 +1212,14 @@ class _AdminUniversalContentManagerScreenState
           const SizedBox(height: 5),
           Text(
             'Capacity: $capacity • Sold: $sold • Remaining: $remaining',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _eventAdminArtist(
-    Map<String, dynamic> artist,
-    int index,
-  ) {
+  Widget _eventAdminArtist(Map<String, dynamic> artist, int index) {
     final name = artist['name']?.toString().trim().isNotEmpty == true
         ? artist['name'].toString()
         : 'Artist ${index + 1}';
@@ -1415,11 +1247,7 @@ class _AdminUniversalContentManagerScreenState
                   return const SizedBox(
                     width: 55,
                     height: 55,
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.white38,
-                      size: 40,
-                    ),
+                    child: Icon(Icons.person, color: Colors.white38, size: 40),
                   );
                 },
               ),
@@ -1428,11 +1256,7 @@ class _AdminUniversalContentManagerScreenState
             const SizedBox(
               width: 55,
               height: 55,
-              child: Icon(
-                Icons.person,
-                color: Colors.white38,
-                size: 40,
-              ),
+              child: Icon(Icons.person, color: Colors.white38, size: 40),
             ),
           const SizedBox(width: 10),
           Expanded(
@@ -1453,35 +1277,20 @@ class _AdminUniversalContentManagerScreenState
   // ADD / EDIT DIALOG
   // ---------------------------------------------------------------------------
 
-  void _showAddEditDialog(
-    DocumentSnapshot<Map<String, dynamic>>? existingDoc,
-  ) {
+  void _showAddEditDialog(DocumentSnapshot<Map<String, dynamic>>? existingDoc) {
     final isEditing = existingDoc != null;
     final data = existingDoc?.data() ?? <String, dynamic>{};
 
     final titleController = TextEditingController(
-      text: _firstNonEmpty([
-        data['title'],
-        data['name'],
-        data['text'],
-        '',
-      ]),
+      text: _firstNonEmpty([data['title'], data['name'], data['text'], '']),
     );
 
     final locationController = TextEditingController(
-      text: _firstNonEmpty([
-        data['location'],
-        data['address'],
-        '',
-      ]),
+      text: _firstNonEmpty([data['location'], data['address'], '']),
     );
 
     final descController = TextEditingController(
-      text: _firstNonEmpty([
-        data['description'],
-        data['text'],
-        '',
-      ]),
+      text: _firstNonEmpty([data['description'], data['text'], '']),
     );
 
     final phoneController = TextEditingController(
@@ -1516,10 +1325,7 @@ class _AdminUniversalContentManagerScreenState
           ),
           title: Text(
             isEditing ? 'Edit Content' : 'Add New Content',
-            style: TextStyle(
-              color: primaryGold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
           ),
           content: SizedBox(
             width: 520,
@@ -1527,19 +1333,13 @@ class _AdminUniversalContentManagerScreenState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _dialogField(
-                    'Title / Name *',
-                    titleController,
-                  ),
+                  _dialogField('Title / Name *', titleController),
                   _dialogField(
                     'Category / Type',
                     categoryController,
                     hint: 'e.g. Restaurants, Concert, Service...',
                   ),
-                  _dialogField(
-                    'Location / City / Address',
-                    locationController,
-                  ),
+                  _dialogField('Location / City / Address', locationController),
                   _dialogField(
                     'Phone Number',
                     phoneController,
@@ -1566,9 +1366,7 @@ class _AdminUniversalContentManagerScreenState
               },
               child: const Text(
                 'Cancel',
-                style: TextStyle(
-                  color: Colors.white54,
-                ),
+                style: TextStyle(color: Colors.white54),
               ),
             ),
             ElevatedButton(
@@ -1585,11 +1383,7 @@ class _AdminUniversalContentManagerScreenState
                   }
 
                   ScaffoldMessenger.of(dialogCtx).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Title / Name is required.',
-                      ),
-                    ),
+                    const SnackBar(content: Text('Title / Name is required.')),
                   );
                   return;
                 }
@@ -1611,20 +1405,53 @@ class _AdminUniversalContentManagerScreenState
                 };
 
                 try {
-                  if (isEditing) {
-                    await existingDoc.reference.set(
-                      updateData,
-                      SetOptions(merge: true),
-                    );
-                  } else {
+                  final firestore = FirebaseFirestore.instance;
+                  final sourceRef = isEditing
+                      ? existingDoc.reference
+                      : firestore.collection(_selectedSection).doc();
+                  final feedRef = firestore
+                      .collection('publicFeed')
+                      .doc('${_selectedSection}_${sourceRef.id}');
+                  if (!isEditing) {
                     updateData['createdAt'] = FieldValue.serverTimestamp();
                     updateData['publishedAt'] = FieldValue.serverTimestamp();
                     updateData['isDemo'] = false;
-
-                    await FirebaseFirestore.instance
-                        .collection(_selectedSection)
-                        .add(updateData);
                   }
+
+                  // Une publication publique est enregistrée en même temps
+                  // dans sa collection d'origine et dans le catalogue public.
+                  // Le catalogue n'inclut pas les coordonnées privées.
+                  final publicData = <String, dynamic>{
+                    'sourceCollection': _selectedSection,
+                    'sourceId': sourceRef.id,
+                    'title': title,
+                    'name': title,
+                    'category': categoryController.text.trim(),
+                    'type': _selectedSection,
+                    'location': locationController.text.trim(),
+                    'cityAddress': locationController.text.trim(),
+                    'description': descController.text.trim(),
+                    'imageUrl': imageController.text.trim(),
+                    'status': 'published',
+                    'isDemo': false,
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  };
+                  if (!isEditing) {
+                    publicData['publishedAt'] = FieldValue.serverTimestamp();
+                    publicData['createdAt'] = FieldValue.serverTimestamp();
+                  }
+                  final batch = firestore.batch();
+                  batch.set(sourceRef, updateData, SetOptions(merge: true));
+                  batch.set(feedRef, publicData, SetOptions(merge: true));
+                  // La fiche Nearby reflète le document final, sans écraser
+                  // les champs non modifiés (ex. lieu public déjà enregistré).
+                  NearbySyncService(firestore).stageUpsert(
+                    batch,
+                    sourceCollection: _selectedSection,
+                    sourceId: sourceRef.id,
+                    publicData: <String, dynamic>{...data, ...updateData},
+                  );
+                  await batch.commit();
 
                   if (!dialogCtx.mounted) {
                     return;
@@ -1659,9 +1486,7 @@ class _AdminUniversalContentManagerScreenState
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        'Operation failed: $e',
-                      ),
+                      content: Text('Operation failed: $e'),
                       backgroundColor: Colors.redAccent,
                     ),
                   );
@@ -1694,21 +1519,12 @@ class _AdminUniversalContentManagerScreenState
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          labelStyle: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
-          hintStyle: const TextStyle(
-            color: Colors.white38,
-            fontSize: 11,
-          ),
+          labelStyle: const TextStyle(color: Colors.white70, fontSize: 12),
+          hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
           filled: true,
           fillColor: primaryDarkGreen,
           border: OutlineInputBorder(
@@ -1732,42 +1548,15 @@ class _AdminUniversalContentManagerScreenState
     DocumentSnapshot<Map<String, dynamic>> doc,
     bool current,
   ) async {
-    final next = !current;
-
-    try {
-      await doc.reference.update({
-        'isVerified': next,
-        'verificationStatus': next ? 'approved' : 'unverified',
-        'verifiedAt': next ? FieldValue.serverTimestamp() : null,
-        'verifiedBy': AppSession.email,
-      });
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            next ? 'Item verified successfully.' : 'Verification removed.',
-          ),
-          backgroundColor: cardGreen,
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => AdminProfessionalVerificationReviewScreen(
+          sourceCollection: doc.reference.parent.id,
+          businessId: doc.id,
         ),
-      );
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Verification update failed: $e',
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    }
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1787,42 +1576,42 @@ class _AdminUniversalContentManagerScreenState
           .limit(1)
           .get();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (purchasedTickets.docs.isNotEmpty) {
-        await FirebaseFirestore.instance.collection('events').doc(eventId).set({
+        final firestore = FirebaseFirestore.instance;
+        final batch = firestore.batch();
+        final cancellation = <String, dynamic>{
           'status': 'cancelled',
           'isActive': false,
           'isArchived': true,
           'cancelledAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        };
+        batch.set(
+          firestore.collection('events').doc(eventId),
+          cancellation,
+          SetOptions(merge: true),
+        );
+        batch.set(
+          firestore.collection('eventSubmissions').doc(eventId),
+          cancellation,
+          SetOptions(merge: true),
+        );
+        batch.set(
+          firestore.collection('publicFeed').doc('eventSubmissions_$eventId'),
+          cancellation,
+          SetOptions(merge: true),
+        );
+        NearbySyncService(
+          firestore,
+        ).stageRemove(batch, sourceCollection: 'events', sourceId: eventId);
+        await batch.commit();
 
-        await FirebaseFirestore.instance
-            .collection('eventSubmissions')
-            .doc(eventId)
-            .set({
-          'status': 'cancelled',
-          'isActive': false,
-          'isArchived': true,
-          'cancelledAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-
-        if (!mounted) return;
-        final publicFeedRef = FirebaseFirestore.instance
-            .collection('publicFeed')
-            .doc('eventSubmissions_$eventId');
-
-        final publicFeedSnapshot = await publicFeedRef.get();
-
-        if (publicFeedSnapshot.exists) {
-          await publicFeedRef.set({
-            'status': 'cancelled',
-            'isActive': false,
-            'isArchived': true,
-            'cancelledAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        if (!mounted) {
+          return;
         }
-        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1837,7 +1626,9 @@ class _AdminUniversalContentManagerScreenState
 
       await _deleteEventWithoutTickets(eventDoc);
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1884,37 +1675,41 @@ class _AdminUniversalContentManagerScreenState
       },
     );
 
-    if (confirm != true) return;
+    if (confirm != true) {
+      return;
+    }
 
     final firestore = FirebaseFirestore.instance;
     final batch = firestore.batch();
 
-    batch.delete(
-      firestore.collection('events').doc(eventId),
-    );
+    batch.delete(firestore.collection('events').doc(eventId));
 
-    batch.delete(
-      firestore.collection('eventSubmissions').doc(eventId),
-    );
+    batch.delete(firestore.collection('eventSubmissions').doc(eventId));
 
     batch.delete(
       firestore.collection('publicFeed').doc('eventSubmissions_$eventId'),
     );
+    batch.delete(firestore.collection('publicFeed').doc('events_$eventId'));
+    NearbySyncService(
+      firestore,
+    ).stageRemove(batch, sourceCollection: 'events', sourceId: eventId);
 
     await batch.commit();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Event permanently deleted.'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Event permanently deleted.')));
   }
 
-  Future<void> _delete(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) async {
+  Future<void> _delete(DocumentSnapshot<Map<String, dynamic>> doc) async {
+    if (doc.reference.parent.id == 'events') {
+      await _deleteEventSafely(doc);
+      return;
+    }
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -1932,9 +1727,7 @@ class _AdminUniversalContentManagerScreenState
           ),
           content: const Text(
             'This will permanently delete this item from the database.',
-            style: TextStyle(
-              color: Colors.white70,
-            ),
+            style: TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
@@ -1943,9 +1736,7 @@ class _AdminUniversalContentManagerScreenState
               },
               child: const Text(
                 'Cancel',
-                style: TextStyle(
-                  color: Colors.white70,
-                ),
+                style: TextStyle(color: Colors.white70),
               ),
             ),
             ElevatedButton(
@@ -1957,9 +1748,7 @@ class _AdminUniversalContentManagerScreenState
               },
               child: const Text(
                 'Delete',
-                style: TextStyle(
-                  color: Colors.white,
-                ),
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -1989,6 +1778,11 @@ class _AdminUniversalContentManagerScreenState
           .doc('${sourceCollection}_$sourceId');
 
       batch.delete(publicFeedRef);
+      NearbySyncService(firestore).stageRemove(
+        batch,
+        sourceCollection: sourceCollection,
+        sourceId: sourceId,
+      );
 
       await batch.commit();
 
@@ -2016,9 +1810,7 @@ class _AdminUniversalContentManagerScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Item deleted from the database and public feed.',
-          ),
+          content: Text('Item deleted from the database and public feed.'),
         ),
       );
     } catch (e) {
@@ -2028,9 +1820,7 @@ class _AdminUniversalContentManagerScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Delete failed: $e',
-          ),
+          content: Text('Delete failed: $e'),
           backgroundColor: Colors.redAccent,
         ),
       );

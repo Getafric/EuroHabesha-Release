@@ -3,16 +3,42 @@
   "profile_settings": "ናይ ፕሮፋይል ቅንብራት",
   "language": "ቋንቋ",
   "system_language": "ቋንቋ ስርዓት",
-
   "ticker_legal_title": "ዝእመኑ ናይ ሕጊ ኣገልግሎታት",
   "ticker_legal_desc": "ኣብ ፓሪስን ሮማን ዝርከቡ ናይ ኢሚግሬሽን ጠበቓታት ርኸቡ።",
-
   "ticker_transport_title": "ቅልጡፍ ጽዕነትን መጓዓዝያን",
   "ticker_transport_desc": "ኣብ ፈረንሳን ጀርመንን ዝእመን ናይ ጽዕነትን ሎጂስቲክስን ኣገልግሎት።",
-
   "ticker_verify_title": "ፕሮፋይልኩም ኣረጋግጹ",
   "ticker_verify_desc": "ንናይ ንግዲ ፕሮፋይልኩም Silver ወይ VIP Gold ባጅ ርኸቡ።",
-
   "ticker_events_title": "ናይ ሓበሻ ማሕበረሰብ ፍጻመታት",
-  "ticker_events_desc": "ዝመጹ ባህላዊ በዓላትን ባህላዊ ርክባትን ተኸታተሉ።"
+  "ticker_events_desc": "ዝመጹ ባህላዊ በዓላትን ባህላዊ ርክባትን ተኸታተሉ።",
+  "language_ui": {
+    "language": "ቋንቋ",
+    "system": "ቋንቋ ስልኪ",
+    "failed": "ነቲ ቋንቋ ምዕቃብ ኣይተኻእለን። እንደገና ፈትኑ።",
+    "home": "መእተዊ",
+    "business": "ንግድታት",
+    "messages": "መልእኽትታት",
+    "profile": "መግለጺ",
+    "profile_title": "መግለጺን ቅጥዕታትን",
+    "edit_profile": "መግለጺ ኣስተኻኽል",
+    "settings_summary": "ምልክታታት፣ ብሕታዊነት፣ ቋንቋ፣ ምድምሳስ",
+    "settings_title": "ቅጥዕታት መግለጺ",
+    "notifications": "ናይ ፑሽ ምልክታታት",
+    "notifications_summary": "ምልክታታትን ሓድሽ ሓበሬታን ተቐበል",
+    "phone_privacy": "ብሕታዊነት ቁጽሪ ስልኪ",
+    "phone_public": "ቁጽሪ ስልክኹም ብወግዒ ይርአ",
+    "phone_private": "ቁጽሪ ስልክኹም ብሕታዊ እዩ",
+    "privacy": "ብሕታዊነትን ድሕነትን",
+    "privacy_summary": "ብሕታዊነትን ውልቃዊ ሓበሬታን",
+    "delete_account": "ሕሳበይ ደምስስ",
+    "delete_summary": "ሕሳብኩምን ሓበሬታኹምን ንሓዋሩ ደምስሱ",
+    "privacy_help": "ኣብ Euro Habesha ቅጥዕታት ብሕታዊነትን ውልቃዊ ሓበሬታኹምን ኣመሓድሩ።",
+    "sign_in": "እቶ / ተመዝገብ",
+    "guest": "ናይ ጋሻ ኩነታት",
+    "guest_help": "ብናጻ ተዓዘቡ። ንምዝርጋሕ ወይ ንምርኻብ ጥራይ እተዉ።",
+    "close": "ዕጸው",
+    "cancel": "ኣቋርጽ",
+    "save": "ለውጥታት ዓቅብ",
+    "delete": "ደምስስ"
+  }
 }

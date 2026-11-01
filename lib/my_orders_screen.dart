@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -57,8 +58,8 @@ class MyOrdersScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: primaryDarkGreen,
         appBar: AppBar(
-          title: const Text(
-            'My Orders',
+          title: Text(
+            'orders.title'.tr(),
             style: TextStyle(
               color: primaryGold,
               fontWeight: FontWeight.bold,
@@ -68,26 +69,26 @@ class MyOrdersScreen extends StatelessWidget {
           iconTheme: const IconThemeData(
             color: primaryGold,
           ),
-          bottom: const TabBar(
+          bottom: TabBar(
             indicatorColor: primaryGold,
             labelColor: primaryGold,
             unselectedLabelColor: Colors.white54,
             tabs: [
               Tab(
                 icon: Icon(Icons.access_time),
-                text: 'Active',
+                text: 'orders.active'.tr(),
               ),
               Tab(
                 icon: Icon(Icons.history),
-                text: 'History',
+                text: 'orders.history'.tr(),
               ),
             ],
           ),
         ),
         body: user == null
-            ? const Center(
+            ? Center(
                 child: Text(
-                  'Please sign in to see your orders.',
+                  'orders.sign_in_required'.tr(),
                   style: TextStyle(
                     color: Colors.white70,
                   ),

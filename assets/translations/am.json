@@ -1,4 +1,4 @@
-﻿{
+{
   "app_name": "Euro Habesha",
   "profile_settings": "የመገለጫ ቅንብሮች",
   "language": "ቋንቋ",
@@ -14,5 +14,36 @@
   "ticker_verify_desc": "ለንግድ መገለጫዎ የSilver ወይም VIP Gold ባጅ ያግኙ።",
 
   "ticker_events_title": "የሐበሻ ማህበረሰብ ዝግጅቶች",
-  "ticker_events_desc": "መጪዎቹን ባህላዊ በዓላትና የባህል ስብሰባዎች ይከታተሉ።"
+    "ticker_events_desc": "መጪዎቹን ባህላዊ በዓላትና የባህል ስብሰባዎች ይከታተሉ።"
+  ,
+  "language_ui": {
+    "language": "ቋንቋ",
+    "system": "የስልኩ ቋንቋ",
+    "failed": "ቋንቋውን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
+    "home": "መነሻ",
+    "business": "ንግዶች",
+    "messages": "መልዕክቶች",
+    "profile": "መገለጫ",
+    "profile_title": "መገለጫ እና ቅንብሮች",
+    "edit_profile": "መገለጫ አርትዕ",
+    "settings_summary": "ማሳወቂያዎች፣ ግላዊነት፣ ቋንቋ፣ መሰረዝ",
+    "settings_title": "የመገለጫ ቅንብሮች",
+    "notifications": "የግፋ ማሳወቂያዎች",
+    "notifications_summary": "ማሳወቂያዎችን እና ዝማኔዎችን ተቀበል",
+    "phone_privacy": "የስልክ ቁጥር ግላዊነት",
+    "phone_public": "የስልክ ቁጥርዎ በይፋ ይታያል",
+    "phone_private": "የስልክ ቁጥርዎ የግል ነው",
+    "privacy": "ግላዊነት እና ደህንነት",
+    "privacy_summary": "ግላዊነት እና የግል መረጃ",
+    "delete_account": "መለያዬን ሰርዝ",
+    "delete_summary": "መለያዎን እና መረጃዎን በቋሚነት ይሰርዙ",
+    "privacy_help": "በEuro Habesha የግላዊነት እና የግል መረጃ ቅንብሮችዎን ያስተዳድሩ።",
+    "sign_in": "ግባ / ተመዝገብ",
+    "guest": "የእንግዳ ሁነታ",
+    "guest_help": "በነፃ ይመልከቱ። ለመለጠፍ ወይም ለመገናኘት ብቻ ይግቡ።",
+    "close": "ዝጋ",
+    "cancel": "ሰርዝ",
+    "save": "ለውጦችን አስቀምጥ",
+    "delete": "ሰርዝ"
+  }
 }

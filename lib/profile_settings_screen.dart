@@ -1,3 +1,5 @@
+import 'notification_service.dart';
+import 'local_campaign_preferences.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +12,46 @@ import 'verification_screen.dart';
 import 'pro_vip_subscription_screen.dart';
 import 'status_badge_widget.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+String languageLabel(BuildContext context, String code) {
+  switch (code) {
+    case 'system':
+      return 'languages.system'.tr();
+    case 'en':
+      return 'languages.english'.tr();
+    case 'fr':
+      return 'languages.french'.tr();
+    case 'de':
+      return 'languages.german'.tr();
+    case 'it':
+      return 'languages.italian'.tr();
+    case 'es':
+      return 'languages.spanish'.tr();
+    case 'nl':
+      return 'languages.dutch'.tr();
+    case 'sv':
+      return 'languages.swedish'.tr();
+    case 'da':
+      return 'languages.danish'.tr();
+    case 'no':
+      return 'languages.norwegian'.tr();
+    default:
+      return 'languages.english'.tr();
+  }
+}
+
+const String _languagePreferenceKey = 'app_language_mode';
+
+Future<void> saveLanguagePreference(String code) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_languagePreferenceKey, code);
+}
+
+Future<String> loadLanguagePreference() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString(_languagePreferenceKey) ?? 'system';
+}
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,9 +67,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _pushNotificationsEnabled = true;
   bool _phonePublic = false;
   bool _isGuest = AppSession.isGuest;
-  String _selectedLanguage = 'Auto';
+  String _selectedLanguage = 'system';
 
-  // የተጠቃሚው ፕሮፋይል መረጃዎች (በቀላሉ በስክሪኑ ላይ እንዲዘመኑ)
+  // የተጠቃሚው ፕሮፋይል መረጃዎች
   String userName = AppSession.displayName;
   String userEmail = AppSession.email;
   String userCity = AppSession.city;
@@ -38,22 +80,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final languageCode =
-        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
-    _selectedLanguage = switch (languageCode) {
-      'fr' => 'French',
-      'nl' => 'Dutch',
-      'am' => 'Amharic',
-      _ => 'English',
-    };
     _isGuest = AppSession.isGuest;
     userName = AppSession.displayName;
     userEmail = AppSession.email;
     userCity = AppSession.city;
     userPhone = AppSession.phone;
+    _loadSavedLanguage();
   }
 
-  // የፕሮፋይል ፎቶ ከጋለሪ የመምረጫ ፊቸር
+  Future<void> _loadSavedLanguage() async {
+    final savedLanguage = await loadLanguagePreference();
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedLanguage = savedLanguage;
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentLocale = context.locale.languageCode;
+    _selectedLanguage = switch (currentLocale) {
+      'en' => 'en',
+      'fr' => 'fr',
+      'de' => 'de',
+      'it' => 'it',
+      'es' => 'es',
+      'nl' => 'nl',
+      'sv' => 'sv',
+      'da' => 'da',
+      'no' => 'no',
+      _ => 'en',
+    };
+  }
+
   Future<void> _pickProfileImage() async {
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -124,8 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // 1. የተሟላ የፕሮፋይል ማስተካከያ ፖፕ-አፕ (ስም፣ ኢሜል፣ ከተማ፣ ስልክ እና ፎቶ)
-  void _showEditProfileDialog(BuildContext context) {
+  void _showEditProfileDialog() {
     final TextEditingController nameController =
         TextEditingController(text: userName);
     final TextEditingController emailController =
@@ -139,20 +200,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardGreen,
-        title: Text('Edit Profile & Credentials',
+        title: Text('profile.edit_profile'.tr(),
             style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ፎቶ መቀየሪያ አዝራር በዲያሎጉ ውስጥ
               GestureDetector(
                 onTap: () async {
                   await _pickProfileImage();
-                  if (!mounted) return;
+                  if (!mounted || !dialogContext.mounted) return;
                   Navigator.pop(dialogContext);
-                  _showEditProfileDialog(
-                      context); // ፎቶው ወዲያውኑ እንዲታደስ ዲያሎጉን እንደገና መክፈት
+                  _showEditProfileDialog();
                 },
                 child: CircleAvatar(
                   radius: 35,
@@ -165,7 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-              _buildDialogField('Full Name', nameController),
+              _buildDialogField('profile.full_name'.tr(), nameController),
               const SizedBox(height: 10),
               _buildDialogField('Email Address', emailController),
               const SizedBox(height: 10),
@@ -191,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   phone: phoneController.text,
                 );
 
-                if (!mounted) return;
+                if (!mounted || !dialogContext.mounted) return;
 
                 Navigator.pop(dialogContext);
 
@@ -219,7 +278,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // 2. አካውንት የማጥፊያ ማረጋገጫ
   void _showDeleteAccountDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -259,7 +317,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: Text('User Profile & Settings',
+        title: Text('profile.title'.tr(),
             style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
         backgroundColor: primaryDarkGreen,
         centerTitle: true,
@@ -269,7 +327,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // ── ራስጌ የፕሮፋይል ፎቶ እና ዝርዝር ──
             Center(
               child: Stack(
                 children: [
@@ -287,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     bottom: 0,
                     right: 0,
                     child: GestureDetector(
-                      onTap: () => _showEditProfileDialog(context),
+                      onTap: () => _showEditProfileDialog(),
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
@@ -309,7 +366,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 2),
             Text(
                 _isGuest
-                    ? 'Browse freely. Sign in only when you want to post or contact.'
+                    ? 'language_ui.guest_help'.tr()
                     : '$userCity • $userEmail',
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
                 textAlign: TextAlign.center),
@@ -323,12 +380,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
             const SizedBox(height: 25),
-
             if (!_isGuest) ...[
               const VerificationStatusCard(),
             ],
-
-            // ── ሴቲንግ እና ዝርዝሮች ──
             Container(
               decoration: BoxDecoration(
                 color: cardGreen,
@@ -336,21 +390,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
-                  // Edit Profile
                   ListTile(
                     leading: Icon(Icons.person_outline, color: primaryGold),
-                    title: const Text('Edit Profile & Credentials',
-                        style: TextStyle(color: Colors.white)),
+                    title: Text('profile.edit_profile'.tr(),
+                        style: const TextStyle(color: Colors.white)),
                     trailing: const Icon(Icons.arrow_forward_ios,
                         color: Colors.white54, size: 16),
-                    onTap: () => _showEditProfileDialog(context),
+                    onTap: () => _showEditProfileDialog(),
                   ),
                   const Divider(color: Colors.white24, height: 1),
-
                   ListTile(
                     leading: Icon(Icons.settings_outlined, color: primaryGold),
                     title: Text('profile_settings'.tr(),
-                        style: TextStyle(color: Colors.white)),
+                        style: const TextStyle(color: Colors.white)),
                     subtitle: const Text(
                         'Notifications, privacy, language, deletion',
                         style: TextStyle(color: Colors.white38, fontSize: 11)),
@@ -366,17 +418,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const Divider(color: Colors.white24, height: 1),
-
                   if (!_isGuest && !AppSession.isSuperAdmin) ...[
                     ListTile(
                       leading:
                           Icon(Icons.verified_outlined, color: primaryGold),
-                      title: const Text('Request Admin Verification',
-                          style: TextStyle(color: Colors.white)),
-                      subtitle: const Text(
-                          'Submit business SIRET or ID for "✓ Verified" mark',
-                          style:
-                              TextStyle(color: Colors.white38, fontSize: 11)),
+                      title: Text('profile.request_admin_verification'.tr(),
+                          style: const TextStyle(color: Colors.white)),
+                      subtitle: Text(
+                        'profile.request_admin_verification_subtitle'.tr(),
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
                       trailing: const Icon(Icons.arrow_forward_ios,
                           color: Colors.white54, size: 16),
                       onTap: () {
@@ -391,12 +445,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ListTile(
                       leading:
                           Icon(Icons.workspace_premium, color: primaryGold),
-                      title: const Text('PRO & VIP Subscriptions',
-                          style: TextStyle(color: Colors.white)),
-                      subtitle: const Text(
-                          'Upgrade directory ranking via App Store / Google Play',
+                      title: Text('profile.pro_vip_subscriptions'.tr(),
+                          style: const TextStyle(color: Colors.white)),
+                      subtitle: Text(
+                          'profile.pro_vip_subscriptions_subtitle'.tr(),
                           style:
-                              TextStyle(color: Colors.white38, fontSize: 11)),
+                              const TextStyle(color: Colors.white38, fontSize: 11)),
                       trailing: const Icon(Icons.arrow_forward_ios,
                           color: Colors.white54, size: 16),
                       onTap: () {
@@ -412,12 +466,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ListTile(
                       leading: Icon(Icons.confirmation_number_outlined,
                           color: primaryGold),
-                      title: const Text('My Tickets',
-                          style: TextStyle(color: Colors.white)),
-                      subtitle: const Text(
-                          'View your purchased tickets and QR codes',
+                      title: Text('profile.my_tickets'.tr(),
+                          style: const TextStyle(color: Colors.white)),
+                      subtitle: Text('profile.my_tickets_subtitle'.tr(),
                           style:
-                              TextStyle(color: Colors.white38, fontSize: 11)),
+                              const TextStyle(color: Colors.white38, fontSize: 11)),
                       trailing: const Icon(Icons.arrow_forward_ios,
                           color: Colors.white54, size: 16),
                       onTap: () => Navigator.push(
@@ -428,8 +481,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const Divider(color: Colors.white24, height: 1),
                     ListTile(
                       leading: Icon(Icons.bookmark_outline, color: primaryGold),
-                      title: const Text('My Saved Listings',
-                          style: TextStyle(color: Colors.white)),
+                      title: Text('profile.my_saved_listings'.tr(),
+                          style: const TextStyle(color: Colors.white)),
                       trailing: const Icon(Icons.arrow_forward_ios,
                           color: Colors.white54, size: 16),
                       onTap: () {
@@ -443,15 +496,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const Divider(color: Colors.white24, height: 1),
                   ],
-
-                  // Notifications Toggle
+                  const LocalCampaignPreferencesCard(),
                   SwitchListTile(
                     secondary:
                         Icon(Icons.notifications_outlined, color: primaryGold),
-                    title: const Text('Push Notifications',
-                        style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('Receive alerts & updates',
-                        style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    title: Text(
+                      'settings.push_notifications'.tr(),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      'settings.notifications_subtitle'.tr(),
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
+                    ),
                     activeThumbColor: primaryGold,
                     value: _pushNotificationsEnabled,
                     onChanged: (bool value) {
@@ -461,24 +520,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content: Text(value
-                                ? 'Notifications enabled'
-                                : 'Notifications disabled')),
+                                ? 'settings.notifications_enabled'.tr()
+                                : 'settings.notifications_disabled'.tr())),
                       );
                     },
                   ),
                   const Divider(color: Colors.white24, height: 1),
-
                   if (!_isGuest) ...[
                     SwitchListTile(
                       secondary: Icon(Icons.phone_android, color: primaryGold),
-                      title: const Text('Phone Number Visibility',
-                          style: TextStyle(color: Colors.white)),
+                      title: Text(
+                        'settings.phone_privacy'.tr(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
                       subtitle: Text(
-                          _phonePublic
-                              ? 'Public on profile and listings'
-                              : 'Private and hidden from other users',
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 11)),
+                        _phonePublic
+                            ? 'settings.phone_public'.tr()
+                            : 'settings.phone_private'.tr(),
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
                       activeThumbColor: primaryGold,
                       value: _phonePublic,
                       onChanged: (bool value) {
@@ -487,57 +550,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const Divider(color: Colors.white24, height: 1),
                   ],
-
                   ListTile(
                     leading: Icon(Icons.language, color: primaryGold),
-                    title: const Text('Language',
-                        style: TextStyle(color: Colors.white)),
-                    subtitle: Text('Current: $_selectedLanguage',
-                        style: const TextStyle(
-                            color: Colors.white38, fontSize: 11)),
+                    title: Text(
+                      'settings.language'.tr(),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      'settings.current_language'.tr(
+                        args: [languageLabel(context, _selectedLanguage)],
+                      ),
+                      style: const TextStyle(color: Colors.white54),
+                    ),
                     trailing: DropdownButton<String>(
                       value: _selectedLanguage,
                       dropdownColor: cardGreen,
                       underline: const SizedBox.shrink(),
                       iconEnabledColor: primaryGold,
                       style: const TextStyle(color: Colors.white),
-                      items: const [
-                        'System language',
-                        'English',
-                        'French',
-                        'Amharic',
-                        'Tigrinya',
-                      ].map((language) {
-                        return DropdownMenuItem<String>(
-                          value: language,
-                          child: Text(language),
-                        );
-                      }).toList(),
-                      onChanged: (value) async {
+                      items: [
+                        DropdownMenuItem(
+                          value: 'system',
+                          child: Text('languages.system'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'en',
+                          child: Text('languages.english'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'fr',
+                          child: Text('languages.french'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'de',
+                          child: Text('languages.german'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'it',
+                          child: Text('languages.italian'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'es',
+                          child: Text('languages.spanish'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'nl',
+                          child: Text('languages.dutch'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'sv',
+                          child: Text('languages.swedish'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'da',
+                          child: Text('languages.danish'.tr()),
+                        ),
+                        DropdownMenuItem(
+                          value: 'no',
+                          child: Text('languages.norwegian'.tr()),
+                        ),
+                      ],
+                      onChanged: (String? value) async {
                         if (value == null) return;
 
                         switch (value) {
-                          case 'System language':
+                          case 'system':
                             await context.resetLocale();
                             break;
-
-                          case 'English':
+                          case 'en':
                             await context.setLocale(const Locale('en'));
                             break;
-
-                          case 'French':
+                          case 'fr':
                             await context.setLocale(const Locale('fr'));
                             break;
-
-                          case 'Amharic':
-                            await context.setLocale(const Locale('am'));
+                          case 'de':
+                            await context.setLocale(const Locale('de'));
                             break;
-
-                          case 'Tigrinya':
-                            await context.setLocale(const Locale('ti'));
+                          case 'it':
+                            await context.setLocale(const Locale('it'));
+                            break;
+                          case 'es':
+                            await context.setLocale(const Locale('es'));
+                            break;
+                          case 'nl':
+                            await context.setLocale(const Locale('nl'));
+                            break;
+                          case 'sv':
+                            await context.setLocale(const Locale('sv'));
+                            break;
+                          case 'da':
+                            await context.setLocale(const Locale('da'));
+                            break;
+                          case 'no':
+                            await context.setLocale(const Locale('no'));
                             break;
                         }
-
                         if (!mounted) return;
 
                         setState(() {
@@ -547,12 +654,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const Divider(color: Colors.white24, height: 1),
-
                   if (!_isGuest) ...[
                     ListTile(
                       leading: Icon(Icons.lock_outline, color: primaryGold),
-                      title: const Text('Privacy & Security (GDPR)',
-                          style: TextStyle(color: Colors.white)),
+                      title: Text(
+                        'settings.privacy_gdpr'.tr(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
                       trailing: const Icon(Icons.arrow_forward_ios,
                           color: Colors.white54, size: 16),
                       onTap: () {
@@ -560,26 +668,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           context: context,
                           builder: (dialogContext) => AlertDialog(
                             backgroundColor: cardGreen,
-                            title: Text('Privacy & Data Protection',
+                            title: Text('settings.privacy_data_title'.tr(),
                                 style: TextStyle(
                                     color: primaryGold,
                                     fontWeight: FontWeight.bold)),
-                            content: const SingleChildScrollView(
+                            content: SingleChildScrollView(
                               child: Text(
-                                'Euro Habesha operates strictly under European General Data Protection Regulation (GDPR) standards.\n\n'
-                                '• Your personal information, phone number, and listings are fully encrypted and secured.\n'
-                                '• We do not share your data with third-party advertising networks.\n'
-                                '• You have the full right to export or permanently delete your data at any time through your profile settings.',
-                                style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                    height: 1.5),
+                                'settings.privacy_gdpr_text'.tr(),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
                               ),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(dialogContext),
-                                child: Text('Got It',
+                                child: Text('got_it'.tr(),
                                     style: TextStyle(color: primaryGold)),
                               ),
                             ],
@@ -589,13 +695,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const Divider(color: Colors.white24, height: 1),
                   ],
-
-                  // Log Out
                   ListTile(
                     leading: Icon(_isGuest ? Icons.login : Icons.logout,
                         color: Colors.orangeAccent),
-                    title: Text(_isGuest ? 'Sign In / Register' : 'Log Out',
-                        style: const TextStyle(color: Colors.orangeAccent)),
+                    title: Text(
+                      _isGuest
+                          ? 'profile.sign_in_register'.tr()
+                          : 'profile.log_out'.tr(),
+                      style: const TextStyle(color: Colors.orangeAccent),
+                    ),
                     onTap: () {
                       if (_isGuest) {
                         Navigator.pushNamed(context, '/login');
@@ -606,40 +714,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context: context,
                         builder: (dialogContext) => AlertDialog(
                           backgroundColor: cardGreen,
-                          title: const Text('Log Out',
-                              style: TextStyle(
+                          title: Text('profile.log_out'.tr(),
+                              style: const TextStyle(
                                   color: Colors.orangeAccent,
                                   fontWeight: FontWeight.bold)),
-                          content: const Text(
-                              'Are you sure you want to log out from Euro Habesha?',
-                              style: TextStyle(color: Colors.white70)),
+                          content: Text(
+                            'profile.log_out_confirmation'.tr(),
+                            style: const TextStyle(color: Colors.white70),
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(dialogContext),
-                              child: Text('Cancel',
+                              child: Text('profile.cancel'.tr(),
                                   style: TextStyle(color: primaryGold)),
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orangeAccent),
                               onPressed: () async {
+                                await NotificationService.instance
+                                    .unregisterLocalCampaignDevice();
                                 await FirebaseAuth.instance.signOut();
                                 AppSession.signOut();
 
-                                if (!profileContext.mounted) {
-                                  return;
+                                if (!profileContext.mounted) return;
+
+                                if (dialogContext.mounted) {
+                                  Navigator.pop(dialogContext);
                                 }
-
-                                Navigator.pop(dialogContext);
-
                                 Navigator.of(profileContext)
                                     .pushNamedAndRemoveUntil(
-                                  '/login',
-                                  (route) => false,
-                                );
+                                        '/login', (route) => false);
                               },
-                              child: const Text('Log Out',
-                                  style: TextStyle(
+                              child: Text('profile.log_out'.tr(),
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold)),
                             ),
@@ -649,13 +757,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const Divider(color: Colors.white24, height: 1),
-
                   if (!_isGuest)
                     ListTile(
                       leading: const Icon(Icons.delete_forever,
                           color: Colors.redAccent),
-                      title: const Text('Delete My Account',
-                          style: TextStyle(color: Colors.redAccent)),
+                      title: Text('profile.delete_my_account'.tr(),
+                          style: const TextStyle(color: Colors.redAccent)),
                       onTap: () => _showDeleteAccountDialog(context),
                     ),
                 ],
@@ -692,9 +799,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ==========================================
-// ── ማይ ሴቭድ ሊስቲንግ ገጽ (Saved Listings Screen) ──
-// ==========================================
 class SavedListingsScreen extends StatelessWidget {
   const SavedListingsScreen({super.key});
 
@@ -704,7 +808,7 @@ class SavedListingsScreen extends StatelessWidget {
     const Color primaryGold = Color(0xFFFFD700);
     const Color cardGreen = Color(0xFF004D40);
 
-    final List<Map<String, String>> savedItems = const [
+    const List<Map<String, String>> savedItems = [
       {
         'title': 'Habesha Market Lyon',
         'category': 'Grocery & Store',
@@ -846,10 +950,6 @@ class VerificationStatusCard extends StatelessWidget {
   }
 }
 
-// ==========================================
-// Profile Settings Screen
-// ==========================================
-
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
 
@@ -864,20 +964,28 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   bool _pushNotificationsEnabled = true;
   bool _phonePublic = false;
-  String _selectedLanguage = 'Auto';
+  String _selectedLanguage = 'system';
 
   @override
   void initState() {
     super.initState();
+  }
 
-    final languageCode =
-        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
-
-    _selectedLanguage = switch (languageCode) {
-      'fr' => 'French',
-      'am' => 'Amharic',
-      'ti' => 'Tigrinya',
-      _ => 'English',
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentLocale = context.locale.languageCode;
+    _selectedLanguage = switch (currentLocale) {
+      'en' => 'en',
+      'fr' => 'fr',
+      'de' => 'de',
+      'it' => 'it',
+      'es' => 'es',
+      'nl' => 'nl',
+      'sv' => 'sv',
+      'da' => 'da',
+      'no' => 'no',
+      _ => 'en',
     };
   }
 
@@ -970,9 +1078,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B2F20),
         foregroundColor: Colors.white,
-        title: const Text(
-          'Profile Settings',
-          style: TextStyle(
+        title: Text(
+          'profile.title'.tr(),
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -982,21 +1090,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           vertical: 12,
         ),
         children: [
+          const LocalCampaignPreferencesCard(),
           SwitchListTile(
             secondary: Icon(
               Icons.notifications_outlined,
               color: primaryGold,
             ),
-            title: const Text(
-              'Push Notifications',
-              style: TextStyle(
+            title: Text(
+              'profile.push_notifications'.tr(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            subtitle: const Text(
-              'Receive alerts & updates',
-              style: TextStyle(color: Colors.white54),
+            subtitle: Text(
+              'profile.notifications_subtitle'.tr(),
+              style: const TextStyle(color: Colors.white54),
             ),
             activeThumbColor: primaryGold,
             value: _pushNotificationsEnabled,
@@ -1012,17 +1121,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               Icons.phone_android,
               color: primaryGold,
             ),
-            title: const Text(
-              'Phone Privacy',
-              style: TextStyle(
+            title: Text(
+              'settings.phone_privacy'.tr(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
             subtitle: Text(
               _phonePublic
-                  ? 'Your phone number is public'
-                  : 'Your phone number is private',
+                  ? 'settings.phone_public'.tr()
+                  : 'settings.phone_private'.tr(),
               style: const TextStyle(color: Colors.white54),
             ),
             activeThumbColor: primaryGold,
@@ -1039,15 +1148,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               Icons.language,
               color: primaryGold,
             ),
-            title: const Text(
-              'Language',
-              style: TextStyle(
+            title: Text(
+              'settings.language'.tr(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
             subtitle: Text(
-              'Current: $_selectedLanguage',
+              'settings.current_language'.tr(args: [_selectedLanguage]),
               style: const TextStyle(color: Colors.white54),
             ),
             trailing: DropdownButton<String>(
@@ -1056,40 +1165,81 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               underline: const SizedBox.shrink(),
               iconEnabledColor: primaryGold,
               style: const TextStyle(color: Colors.white),
-              items: const [
-                'System language',
-                'English',
-                'French',
-                'Amharic',
-                'Tigrinya',
-              ].map((language) {
-                return DropdownMenuItem<String>(
-                  value: language,
-                  child: Text(language),
-                );
-              }).toList(),
-              onChanged: (value) async {
+              items: [
+                DropdownMenuItem(
+                  value: 'system',
+                  child: Text('languages.system'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Text('languages.english'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'fr',
+                  child: Text('languages.french'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'de',
+                  child: Text('languages.german'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'it',
+                  child: Text('languages.italian'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'es',
+                  child: Text('languages.spanish'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'nl',
+                  child: Text('languages.dutch'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'sv',
+                  child: Text('languages.swedish'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'da',
+                  child: Text('languages.danish'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'no',
+                  child: Text('languages.norwegian'.tr()),
+                ),
+              ],
+              onChanged: (String? value) async {
                 if (value == null) return;
 
                 switch (value) {
-                  case 'System language':
+                  case 'system':
                     await context.resetLocale();
                     break;
-
-                  case 'English':
+                  case 'en':
                     await context.setLocale(const Locale('en'));
                     break;
-
-                  case 'French':
+                  case 'fr':
                     await context.setLocale(const Locale('fr'));
                     break;
-
-                  case 'Amharic':
-                    await context.setLocale(const Locale('am'));
+                  case 'de':
+                    await context.setLocale(const Locale('de'));
                     break;
-
-                  case 'Tigrinya':
-                    await context.setLocale(const Locale('ti'));
+                  case 'it':
+                    await context.setLocale(const Locale('it'));
+                    break;
+                  case 'es':
+                    await context.setLocale(const Locale('es'));
+                    break;
+                  case 'nl':
+                    await context.setLocale(const Locale('nl'));
+                    break;
+                  case 'sv':
+                    await context.setLocale(const Locale('sv'));
+                    break;
+                  case 'da':
+                    await context.setLocale(const Locale('da'));
+                    break;
+                  case 'no':
+                    await context.setLocale(const Locale('no'));
                     break;
                 }
 
@@ -1107,16 +1257,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               Icons.lock_outline,
               color: primaryGold,
             ),
-            title: const Text(
-              'Privacy & Security',
-              style: TextStyle(
+            title: Text(
+              'settings.privacy_security'.tr(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            subtitle: const Text(
-              'Privacy and personal data',
-              style: TextStyle(color: Colors.white54),
+            subtitle: Text(
+              'settings.privacy_subtitle'.tr(),
+              style: const TextStyle(color: Colors.white54),
             ),
             trailing: const Icon(
               Icons.arrow_forward_ios,
@@ -1131,16 +1281,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               Icons.delete_forever,
               color: Colors.redAccent,
             ),
-            title: const Text(
-              'Delete My Account',
-              style: TextStyle(
+            title: Text(
+              'settings.delete_account'.tr(),
+              style: const TextStyle(
                 color: Colors.redAccent,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            subtitle: const Text(
-              'Permanently delete your account and data',
-              style: TextStyle(color: Colors.white54),
+            subtitle: Text(
+              'settings.delete_account_subtitle'.tr(),
+              style: const TextStyle(color: Colors.white54),
             ),
             onTap: _showDeleteAccountDialog,
           ),

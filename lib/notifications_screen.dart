@@ -5,6 +5,7 @@ import 'chat_screen.dart';
 import 'business_order_detail_screen.dart';
 import 'cash_on_delivery_order_screen.dart';
 import 'admin_invitation_screen.dart';
+import 'notification_service.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -75,6 +76,12 @@ class NotificationScreen extends StatelessWidget {
 
   IconData _notificationIcon(String type) {
     switch (type) {
+      case 'advertisementRequest':
+        return Icons.campaign_outlined;
+      case 'localCampaign':
+        return Icons.local_offer_outlined;
+      case 'appointment':
+        return Icons.event_available_outlined;
       case 'order':
         return Icons.receipt_long_outlined;
 
@@ -122,6 +129,12 @@ class NotificationScreen extends StatelessWidget {
             : notification['orderId']?.toString().trim() ?? '';
 
     if (!context.mounted) {
+      return;
+    }
+
+    if (['advertisementRequest', 'localCampaign', 'appointment', 'tableReservation', 'restaurantReservation', 'reservation']
+        .contains(routeType)) {
+      await NotificationService.instance.openNotification(notification);
       return;
     }
 

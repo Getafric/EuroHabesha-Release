@@ -1,9 +1,21 @@
+// Euro Habesha: photos et publicites v1
+import 'public_profile_photo.dart';
+import 'service_profession.dart';
+import 'service_profession_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'table_reservation_option.dart';
+import 'professional_capabilities.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:url_launcher/url_launcher.dart';
+
 import 'cash_on_delivery_order_screen.dart';
+
 import 'dynamic_submission_screen.dart';
+
 import 'status_badge_widget.dart';
+
 import 'chat_screen.dart';
 
 class JobsScreen extends StatefulWidget {
@@ -15,142 +27,225 @@ class JobsScreen extends StatefulWidget {
 
 class _JobsScreenState extends State<JobsScreen> {
   final Color primaryDarkGreen = const Color(0xFF061E12);
+
   final Color primaryGold = const Color(0xFFFFD700);
+
   final Color cardGreen = const Color(0xFF004D40);
 
   // ── የቢዝነሶች እና የሰርቪስ አቅራቢዎች የተሟላ መረጃ ──
+
   final List<Map<String, dynamic>> _starterJobs = [
     {
       'id': 'starter_photo',
+
       'title': 'Professional Photographer & Videographer',
+
       'name': 'Getafric Production',
+
       'location': 'Lyon, France',
+
       'rating': '4.9 (140 reviews)',
+
       'phone': 'tel:+33600000000',
+
       'email': 'getafric@eurohabesha.eu',
+
       'website': 'https://www.eurohabesha.eu',
+
       'whatsapp': 'https://wa.me/33600000000',
+
       'description':
           'Professional wedding, commercial, and event photography and videography services using Canon EOS 90D and DJI RS 3 Pro equipment across Europe. Capturing your best moments with high-end cinematic quality.',
+
       'icon': Icons.camera_alt,
+
       'gallery': [
         'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80',
+
         'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+
         'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=800&q=80',
+
         'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=80',
+
         'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
+
         'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=800&q=80',
       ],
+
       'reviews': [
         {
           'user': 'Dawit M.',
+
           'comment':
               'Amazing photography work in Lyon! Very professional equipment and great quality.',
-          'rating': '5.0'
+
+          'rating': '5.0',
         },
+
         {
           'user': 'Hermela T.',
+
           'comment':
               'Getafric Production covered our wedding event. Highly recommended across France!',
-          'rating': '4.8'
+
+          'rating': '4.8',
         },
-      ]
+      ],
     },
+
     {
       'id': 'starter_translator',
+
       'title': 'Translator - Amharic / Tigrinya / French',
+
       'name': 'Selam Translation Services',
+
       'location': 'Brussels, Belgium',
+
       'rating': '4.9 (62 reviews)',
+
       'phone': 'tel:+3220000000',
+
       'email': 'translator@eurohabesha.eu',
+
       'website': 'https://www.eurohabesha.eu',
+
       'whatsapp': 'https://wa.me/3220000000',
+
       'description':
           'Certified translation for phone calls, appointments, legal letters, and documents. Rates available per hour or per paper.',
+
       'icon': Icons.translate,
+
       'serviceType': 'translator',
+
       'ratePerHour': '€25/hour',
+
       'ratePerDocument': 'From €30/document',
+
       'gallery': [],
+
       'reviews': [
         {
           'user': 'Mebratu K.',
+
           'comment': 'Very clear and professional translation support.',
-          'rating': '5.0'
+
+          'rating': '5.0',
         },
-      ]
+      ],
     },
+
     {
       'id': 'starter_designer',
+
       'title': 'Fashion / Clothes Designer',
+
       'name': 'Marta Habesha Design',
+
       'location': 'Frankfurt, Germany',
+
       'rating': '5.0 (44 reviews)',
+
       'phone': 'tel:+4915123456789',
+
       'email': 'designer@eurohabesha.eu',
+
       'website': 'https://www.eurohabesha.eu',
+
       'whatsapp': 'https://wa.me/4915123456789',
+
       'description':
           'Custom Habesha Kemis, modern cultural dresses, wedding outfits, and made-to-measure clothing. Orders are paid on delivery or arrival.',
+
       'icon': Icons.checkroom,
+
       'serviceType': 'designer',
+
       'gallery': [
         'https://images.unsplash.com/photo-1583391733958-d15317a86976?auto=format&fit=crop&w=800&q=80',
+
         'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
       ],
+
       'reviews': [
         {
           'user': 'Sara T.',
+
           'comment': 'Beautiful custom dress and perfect fitting.',
-          'rating': '5.0'
+
+          'rating': '5.0',
         },
-      ]
+      ],
     },
+
     {
       'id': 'starter_catering',
+
       'title': 'Catering / Injera & Wot Seller',
+
       'name': 'Taitu Habesha Catering',
+
       'location': 'Lyon, France',
+
       'rating': '4.8 (91 reviews)',
+
       'phone': 'tel:+33622334455',
+
       'email': 'catering@eurohabesha.eu',
+
       'website': 'https://www.eurohabesha.eu',
+
       'whatsapp': 'https://wa.me/33622334455',
+
       'description':
           'Fresh injera, doro wot, tibs, vegan platters, and event catering. Orders are cash on delivery or pay on arrival only.',
+
       'icon': Icons.restaurant_menu,
+
       'serviceType': 'catering',
+
       'depositPercentage': 50,
+
       'menuItems': [
         {'name': 'Injera pack', 'price': '€10'},
+
         {'name': 'Doro Wot', 'price': '€18'},
+
         {'name': 'Tibs Tray', 'price': '€25'},
       ],
+
       'gallery': [
         'https://images.unsplash.com/photo-1544025162-83569c72f1a6?auto=format&fit=crop&w=800&q=80',
+
         'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
       ],
+
       'reviews': [
         {
           'user': 'Dawit A.',
+
           'comment': 'Fresh injera and fast delivery.',
-          'rating': '4.8'
+
+          'rating': '4.8',
         },
-      ]
+      ],
     },
   ];
 
   Map<String, dynamic> _normalizeDoc(
-      DocumentSnapshot<Map<String, dynamic>> doc) {
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final raw = doc.data() ?? {};
+
     final fields = Map<String, dynamic>.from(raw['fields'] ?? {});
 
     final name = fields['title']?.toString().isNotEmpty == true
         ? fields['title'].toString()
         : raw['name']?.toString() ??
-            raw['title']?.toString() ??
-            'Job / Service';
+              raw['title']?.toString() ??
+              'Job / Service';
 
     final title = fields['jobCategory']?.toString().isNotEmpty == true
         ? fields['jobCategory'].toString()
@@ -159,8 +254,8 @@ class _JobsScreenState extends State<JobsScreen> {
     final location = fields['cityAddress']?.toString().isNotEmpty == true
         ? fields['cityAddress'].toString()
         : raw['location']?.toString() ??
-            fields['country']?.toString() ??
-            'Europe';
+              fields['country']?.toString() ??
+              'Europe';
 
     final phone = fields['phoneNumber']?.toString().isNotEmpty == true
         ? fields['phoneNumber'].toString()
@@ -181,83 +276,143 @@ class _JobsScreenState extends State<JobsScreen> {
     final description = fields['description']?.toString().isNotEmpty == true
         ? fields['description'].toString()
         : raw['description']?.toString() ??
-            fields['requirements']?.toString() ??
-            '';
-    final logoUrl = (fields['logoUrl'] ??
-            fields['imageUrl'] ??
-            fields['photoUrl'] ??
-            fields['businessLogoUrl'] ??
-            raw['logoUrl'] ??
-            raw['imageUrl'] ??
-            raw['photoUrl'] ??
-            raw['businessLogoUrl'] ??
-            raw['profileImageUrl'] ??
-            '')
-        .toString()
-        .trim();
+              fields['requirements']?.toString() ??
+              '';
 
-    final coverUrl = (fields['coverUrl'] ??
-            fields['coverImageUrl'] ??
-            raw['coverUrl'] ??
-            raw['coverImageUrl'] ??
-            '')
-        .toString()
-        .trim();
-    final serviceType = fields['jobCategory']
-                ?.toString()
-                .toLowerCase()
-                .contains('cater') ==
-            true
-        ? 'catering'
-        : fields['jobCategory']?.toString().toLowerCase().contains('design') ==
-                true
-            ? 'designer'
-            : fields['jobCategory']
-                        ?.toString()
-                        .toLowerCase()
-                        .contains('translat') ==
-                    true
-                ? 'translator'
-                : raw['serviceType']?.toString() ?? 'service';
+    final logoUrl =
+        (fields['logoUrl'] ??
+                fields['imageUrl'] ??
+                fields['photoUrl'] ??
+                fields['businessLogoUrl'] ??
+                raw['logoUrl'] ??
+                raw['imageUrl'] ??
+                raw['photoUrl'] ??
+                raw['businessLogoUrl'] ??
+                raw['profileImageUrl'] ??
+                '')
+            .toString()
+            .trim();
 
-    final double deposit = (raw['orderingModel'] is Map &&
+    final coverUrl =
+        (fields['coverUrl'] ??
+                fields['coverImageUrl'] ??
+                raw['coverUrl'] ??
+                raw['coverImageUrl'] ??
+                '')
+            .toString()
+            .trim();
+
+    final category = serviceText(fields['jobCategory']).isNotEmpty
+        ? serviceText(fields['jobCategory'])
+        : serviceText(raw['jobCategory']).isNotEmpty
+        ? serviceText(raw['jobCategory'])
+        : serviceText(raw['category']);
+    final definition = serviceDefinition(category);
+    final serviceType = definition.id == 'general'
+        ? raw['serviceType']?.toString() ?? 'service'
+        : definition.id;
+
+    final double deposit =
+        (raw['orderingModel'] is Map &&
             raw['orderingModel']['depositPercentage'] != null)
         ? ((raw['orderingModel']['depositPercentage'] as num).toDouble())
         : (raw['depositPercentage'] as num?)?.toDouble() ?? 0;
 
     final isVerified =
         raw['isVerified'] == true || raw['verificationStatus'] == 'approved';
+
     final subscriptionTier = raw['subscriptionTier']?.toString();
 
     return {
       'id': doc.id,
+      'sourceCollection': raw['sourceCollection'] ?? 'jobSubmissions',
+      'bookingSourceCollection': raw['bookingSourceCollection'],
+      'bookingBusinessId': raw['bookingBusinessId'],
+      'appointmentsEnabled': raw['appointmentsEnabled'],
+      'ordersEnabled': raw['ordersEnabled'],
+      'contactEnabled': raw['contactEnabled'],
+      'chatEnabled': raw['chatEnabled'],
+      'contactModel': raw['contactModel'],
+      'roomLayoutSourceCollection':
+          (raw['roomLayoutSourceCollection'] ??
+                  raw['sourceCollection'] ??
+                  'jobSubmissions')
+              .toString(),
+      'roomLayoutBusinessId':
+          (raw['roomLayoutBusinessId'] ??
+                  raw['sourceBusinessId'] ??
+                  raw['sourceId'] ??
+                  raw['sourceSubmissionId'] ??
+                  doc.id)
+              .toString(),
+      'sourceId': raw['sourceId']?.toString() ?? '',
+      'sourceSubmissionId': raw['sourceSubmissionId']?.toString() ?? '',
+      'sourceBusinessId': raw['sourceBusinessId']?.toString() ?? '',
+
       'submittedBy': raw['submittedBy']?.toString() ?? '',
+
       'ownerId': raw['ownerId']?.toString() ?? '',
+
       'creatorId': raw['creatorId']?.toString() ?? '',
+
       'name': name,
-      'title': title,
+
+      'title': definition.id == 'general' ? title : definition.label,
+
       'location': location,
+
       'logoUrl': logoUrl,
+
       'coverUrl': coverUrl,
-      'rating': raw['rating']?.toString() ?? '5.0 (New)',
+
+      'rating': raw['rating']?.toString() ?? '',
+
       'isVerified': isVerified,
+
       'subscriptionTier': subscriptionTier,
+
       'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
+
       'email': email,
+
       'website': website,
+
       'whatsapp': whatsapp,
+
       'description': description,
+
       'icon': serviceType == 'catering'
           ? Icons.restaurant_menu
           : serviceType == 'designer'
-              ? Icons.checkroom
-              : serviceType == 'translator'
-                  ? Icons.translate
-                  : Icons.work,
+          ? Icons.checkroom
+          : serviceType == 'translator'
+          ? Icons.translate
+          : Icons.work,
+
       'serviceType': serviceType,
+      'jobCategory': category,
+      'serviceDetails': publicServiceDetails(raw),
+      'serviceArea': serviceText(fields['serviceArea'] ?? raw['serviceArea']),
+      'availability': serviceText(
+        fields['availability'] ?? raw['availability'],
+      ),
+      'ratePerHour': serviceText(fields['ratePerHour'] ?? raw['ratePerHour']),
+      'ratePerDocument': serviceText(
+        fields['ratePerDocument'] ?? raw['ratePerDocument'],
+      ),
+      'languagesOffered': serviceText(
+        fields['languagesOffered'] ?? raw['languagesOffered'],
+      ),
+      'translatorServiceType': serviceText(
+        fields['translatorServiceType'] ?? raw['translatorServiceType'],
+      ),
+
       'depositPercentage': deposit,
+
       'menuItems': raw['menuItems'] is List ? raw['menuItems'] : [],
-      'gallery': raw['gallery'] is List ? raw['gallery'] : [],
+
+      'gallery': serviceGallery(raw),
+
       'reviews': raw['reviews'] is List ? raw['reviews'] : [],
     };
   }
@@ -266,13 +421,16 @@ class _JobsScreenState extends State<JobsScreen> {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('jobs').snapshots(),
+
       builder: (context, snapshot) {
         final List<Map<String, dynamic>> combined = [];
 
         if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
           for (final doc in snapshot.data!.docs) {
             final data = doc.data();
+
             final status = data['status']?.toString() ?? 'published';
+
             if (status == 'published' || status == 'approved') {
               combined.add(_normalizeDoc(doc));
             }
@@ -280,125 +438,190 @@ class _JobsScreenState extends State<JobsScreen> {
         }
 
         for (final starter in _starterJobs) {
-          if (!combined.any((j) =>
-              j['id'] == starter['id'] || j['name'] == starter['name'])) {
+          if (!combined.any(
+            (j) => j['id'] == starter['id'] || j['name'] == starter['name'],
+          )) {
             combined.add(starter);
           }
         }
 
         return Scaffold(
           backgroundColor: primaryDarkGreen,
+
           appBar: AppBar(
-            title: Text('Jobs & Services',
-                style:
-                    TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+            title: Text(
+              'Jobs & Services',
+
+              style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
+            ),
+
             backgroundColor: primaryDarkGreen,
+
             iconTheme: IconThemeData(color: primaryGold),
+
             actions: [
               IconButton(
                 icon: const Icon(Icons.search),
+
                 tooltip: 'Search services',
+
                 onPressed: () async {
                   final selected = await showSearch<Map<String, dynamic>?>(
                     context: context,
+
                     delegate: _ServiceSearchDelegate(combined),
                   );
+
                   if (!context.mounted || selected == null) return;
+
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => JobDetailScreen(jobData: selected)));
+                    context,
+
+                    MaterialPageRoute(
+                      builder: (_) => JobDetailScreen(jobData: selected),
+                    ),
+                  );
                 },
               ),
+
               IconButton(
                 icon: Icon(Icons.add_circle_outline, color: primaryGold),
+
                 tooltip: 'Post a Job or Service',
+
                 onPressed: () {
                   Navigator.push(
                     context,
+
                     MaterialPageRoute(
-                        builder: (_) => const DynamicSubmissionScreen(
-                            type: SubmissionType.job)),
+                      builder: (_) => const DynamicSubmissionScreen(
+                        type: SubmissionType.job,
+                      ),
+                    ),
                   );
                 },
               ),
             ],
           ),
+
           body: ListView.builder(
             padding: const EdgeInsets.all(16),
+
             itemCount: combined.length,
+
             itemBuilder: (context, index) {
               final job = combined[index];
+
               return Card(
                 color: cardGreen,
+
                 margin: const EdgeInsets.only(bottom: 12),
+
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+
                   side: BorderSide(
-                      color: primaryGold.withValues(alpha: 0.3), width: 1),
+                    color: primaryGold.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
+
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(16),
+
                   leading: Container(
                     width: 52,
+
                     height: 52,
+
                     clipBehavior: Clip.antiAlias,
+
                     decoration: BoxDecoration(
                       color: primaryDarkGreen,
+
                       borderRadius: BorderRadius.circular(12),
+
                       border: Border.all(
                         color: primaryGold.withValues(alpha: 0.45),
                       ),
                     ),
+
                     child:
                         (job['logoUrl']?.toString().trim().isNotEmpty ?? false)
-                            ? Image.network(
-                                job['logoUrl'].toString(),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Icon(
-                                  job['icon'] as IconData? ?? Icons.work,
-                                  color: primaryGold,
-                                  size: 27,
-                                ),
-                              )
-                            : Icon(
-                                job['icon'] as IconData? ?? Icons.work,
-                                color: primaryGold,
-                                size: 27,
-                              ),
+                        ? Image.network(
+                            job['logoUrl'].toString(),
+
+                            fit: BoxFit.cover,
+
+                            errorBuilder: (_, __, ___) => Icon(
+                              job['icon'] as IconData? ?? Icons.work,
+
+                              color: primaryGold,
+
+                              size: 27,
+                            ),
+                          )
+                        : Icon(
+                            job['icon'] as IconData? ?? Icons.work,
+
+                            color: primaryGold,
+
+                            size: 27,
+                          ),
                   ),
+
                   title: Row(
                     children: [
                       Expanded(
-                        child: Text(job['name'] ?? '',
-                            style: TextStyle(
-                                color: primaryGold,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16)),
+                        child: Text(
+                          job['name'] ?? '',
+
+                          style: TextStyle(
+                            color: primaryGold,
+
+                            fontWeight: FontWeight.bold,
+
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
+
                       StatusBadgeWidget(
                         isVerified: job['isVerified'] == true,
+
                         subscriptionTier: job['subscriptionTier']?.toString(),
+
                         compact: true,
                       ),
                     ],
                   ),
+
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4),
+
                     child: Text(
                       '${job['title']}\n📍 ${job['location']} • ⭐ ${job['rating']}',
+
                       style: const TextStyle(
-                          color: Colors.white70, fontSize: 12, height: 1.4),
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
                     ),
                   ),
+
                   trailing: Icon(
                     Icons.arrow_forward_ios,
+
                     color: primaryGold,
+
                     size: 14,
                   ),
+
                   onTap: () {
                     Navigator.push(
                       context,
+
                       MaterialPageRoute(
                         builder: (context) => JobDetailScreen(jobData: job),
                       ),
@@ -421,16 +644,16 @@ class _ServiceSearchDelegate extends SearchDelegate<Map<String, dynamic>?> {
 
   @override
   List<Widget>? buildActions(BuildContext context) => [
-        if (query.isNotEmpty)
-          IconButton(
-              icon: const Icon(Icons.clear), onPressed: () => query = ''),
-      ];
+    if (query.isNotEmpty)
+      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+  ];
 
   @override
   Widget? buildLeading(BuildContext context) => IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => close(context, null),
-      );
+    icon: const Icon(Icons.arrow_back),
+
+    onPressed: () => close(context, null),
+  );
 
   @override
   Widget buildResults(BuildContext context) => _buildMatches(context);
@@ -440,11 +663,14 @@ class _ServiceSearchDelegate extends SearchDelegate<Map<String, dynamic>?> {
 
   Widget _buildMatches(BuildContext context) {
     final normalized = query.trim().toLowerCase();
+
     final matches = services.where((service) {
       if (normalized.isEmpty) return true;
+
       final searchable =
           '${service['name']} ${service['title']} ${service['location']} ${service['serviceType'] ?? ''}'
               .toLowerCase();
+
       return searchable.contains(normalized);
     }).toList();
 
@@ -454,38 +680,55 @@ class _ServiceSearchDelegate extends SearchDelegate<Map<String, dynamic>?> {
 
     return ListView.builder(
       itemCount: matches.length,
+
       itemBuilder: (context, index) {
         final service = matches[index];
+
         return ListTile(
           leading: Container(
             width: 46,
+
             height: 46,
+
             clipBehavior: Clip.antiAlias,
+
             decoration: BoxDecoration(
               color: const Color(0xFF061E12),
+
               borderRadius: BorderRadius.circular(10),
+
               border: Border.all(
                 color: const Color(0xFFFFD700).withValues(alpha: 0.35),
               ),
             ),
+
             child: (service['logoUrl']?.toString().trim().isNotEmpty ?? false)
                 ? Image.network(
                     service['logoUrl'].toString(),
+
                     fit: BoxFit.cover,
+
                     errorBuilder: (_, __, ___) => Icon(
                       service['icon'] as IconData? ?? Icons.work,
+
                       color: const Color(0xFFFFD700),
+
                       size: 25,
                     ),
                   )
                 : Icon(
                     service['icon'] as IconData? ?? Icons.work,
+
                     color: const Color(0xFFFFD700),
+
                     size: 25,
                   ),
           ),
+
           title: Text(service['name'].toString()),
+
           subtitle: Text('${service['title']} • ${service['location']}'),
+
           onTap: () => close(context, service),
         );
       },
@@ -494,13 +737,11 @@ class _ServiceSearchDelegate extends SearchDelegate<Map<String, dynamic>?> {
 }
 
 // ── 💡 የተሟላ የቢዝነስ/ሰርቪስ ዲቴይል ገጽ ──
+
 class JobDetailScreen extends StatefulWidget {
   final Map<String, dynamic> jobData;
 
-  const JobDetailScreen({
-    super.key,
-    required this.jobData,
-  });
+  const JobDetailScreen({super.key, required this.jobData});
 
   @override
   State<JobDetailScreen> createState() => _JobDetailScreenState();
@@ -509,10 +750,16 @@ class JobDetailScreen extends StatefulWidget {
 class _JobDetailScreenState extends State<JobDetailScreen> {
   final Map<int, int> _cartQuantities = {};
 
+  bool _aboutExpanded = false;
+  String _selectedMenuCategory = 'Tous';
+  final _catalogKey = GlobalKey();
+
   Map<String, dynamic> get jobData => widget.jobData;
 
   static const Color primaryDarkGreen = Color(0xFF061E12);
+
   static const Color primaryGold = Color(0xFFFFD700);
+
   static const Color cardGreen = Color(0xFF004D40);
 
   String _text(dynamic value, [String fallback = '']) {
@@ -552,10 +799,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     switch (serviceType) {
       case 'catering':
         return Icons.restaurant_menu;
+
       case 'designer':
         return Icons.checkroom;
+
       case 'translator':
         return Icons.translate;
+
       default:
         return Icons.work_outline;
     }
@@ -563,7 +813,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Future<void> _launchUrl(
     String value, {
+
     bool isEmail = false,
+
     bool isPhone = false,
   }) async {
     final cleaned = value.trim();
@@ -576,335 +828,415 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           content: Text('Cette information n’est pas disponible.'),
         ),
       );
+
       return;
     }
 
     Uri uri;
 
     if (isEmail) {
-      uri = Uri(
-        scheme: 'mailto',
-        path: cleaned,
-      );
+      uri = Uri(scheme: 'mailto', path: cleaned);
     } else if (isPhone) {
       final phone = cleaned.startsWith('tel:') ? cleaned.substring(4) : cleaned;
 
-      uri = Uri(
-        scheme: 'tel',
-        path: phone,
-      );
+      uri = Uri(scheme: 'tel', path: phone);
     } else {
       uri = Uri.parse(cleaned);
     }
 
     if (await canLaunchUrl(uri)) {
-      await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final String name = _text(
-      jobData['name'],
-      'Professionnel',
-    );
+    final String name = _text(jobData['name'], 'Professionnel');
 
-    final String title = _text(
-      jobData['title'],
-      'Service professionnel',
-    );
+    final String title = _text(jobData['title'], 'Service professionnel');
 
     final String description = _text(
       jobData['description'],
+
       'Aucune description disponible.',
     );
 
-    final String location = _text(
-      jobData['location'],
-      'Europe',
-    );
+    final String location = _text(jobData['location'], 'Europe');
 
-    final String rating = _text(
-      jobData['rating'],
-      '5.0 (New)',
-    );
+    final String rating = _text(jobData['rating'], '');
 
     final String phone = _text(jobData['phone']);
+
     final String email = _text(jobData['email']);
+
     final String website = _text(jobData['website']);
+
     final String whatsapp = _text(jobData['whatsapp']);
 
-    final String serviceType =
-        _text(jobData['serviceType'], 'service').toLowerCase();
+    final fields = serviceMap(jobData['fields']);
+    final category = serviceText(fields['jobCategory']).isNotEmpty
+        ? serviceText(fields['jobCategory'])
+        : serviceText(jobData['jobCategory']).isNotEmpty
+        ? serviceText(jobData['jobCategory'])
+        : serviceText(jobData['category']);
+    final definition = serviceDefinition(
+      category.isNotEmpty ? category : _text(jobData['serviceType']),
+    );
+    final String serviceType = definition.id == 'general'
+        ? _text(jobData['serviceType'], 'service').toLowerCase()
+        : definition.id;
 
     final String logoUrl = _text(jobData['logoUrl']);
+
     final String coverUrl = _text(jobData['coverUrl']);
 
     final IconData icon = _serviceIcon(serviceType);
 
-    final List<dynamic> galleryImages = _list(jobData['gallery']);
+    final List<dynamic> galleryImages = serviceGallery(jobData);
 
     final List<dynamic> reviewsList = _list(jobData['reviews']);
 
     final List<dynamic> menuItems = _list(jobData['menuItems']);
 
-    final bool isVerified = jobData['isVerified'] == true ||
+    final bool isVerified =
+        jobData['isVerified'] == true ||
         jobData['verificationStatus'] == 'approved';
 
     final String? subTier = jobData['subscriptionTier']?.toString();
 
-    return Scaffold(
-      backgroundColor: primaryDarkGreen,
-      appBar: AppBar(
-        title: Text(
-          name,
-          style: const TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+    final sourceLink = professionalSource(jobData);
+    return ProfessionalCapabilitiesView(
+      source: sourceLink,
+      fallback: jobData,
+      legacyOrders: serviceType == 'catering' || serviceType == 'designer',
+      legacyChat: true,
+      builder: (context, actions) => Scaffold(
         backgroundColor: primaryDarkGreen,
-        foregroundColor: primaryGold,
-        iconTheme: const IconThemeData(
-          color: primaryGold,
+
+        appBar: AppBar(
+          title: Text(
+            name,
+
+            style: const TextStyle(
+              color: primaryGold,
+
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          backgroundColor: primaryDarkGreen,
+
+          foregroundColor: primaryGold,
+
+          iconTheme: const IconThemeData(color: primaryGold),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildBusinessHeader(
-              name: name,
-              title: title,
-              location: location,
-              logoUrl: logoUrl,
-              coverUrl: coverUrl,
-              icon: icon,
-              isVerified: isVerified,
-              subscriptionTier: subTier,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                24,
-                16,
-                30,
+
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: [
+              _buildBusinessHeader(
+                name: name,
+
+                title: definition.id == 'general' ? title : definition.label,
+
+                location: location,
+
+                logoUrl: logoUrl,
+
+                coverUrl: coverUrl,
+
+                icon: icon,
+
+                isVerified: isVerified,
+
+                subscriptionTier: subTier,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildContactButtons(
-                    phone: phone,
-                    email: email,
-                    website: website,
-                  ),
-                  const SizedBox(height: 22),
-                  _buildAboutCard(
-                    description: description,
-                    location: location,
-                    rating: rating,
-                  ),
-                  if (serviceType == 'translator') ...[
-                    const SizedBox(height: 20),
-                    _buildServiceInfoCard(
-                      [
-                        'Rate per hour: ${_text(jobData['ratePerHour'], 'À définir')}',
-                        'Rate per document: ${_text(jobData['ratePerDocument'], 'À définir')}',
-                        'Service type: In-person or Phone',
-                      ],
-                      cardGreen,
-                      primaryGold,
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 30),
+
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: [
+                    if (actions.contact)
+                      _buildContactButtons(
+                        phone: phone,
+                        email: email,
+                        website: website,
+                        address: _text(jobData['address'], location),
+                      ),
+                    const SizedBox(height: 14),
+                    PublicTableReservationAction(
+                      sourceCollection: sourceLink?.collection ?? '',
+                      businessId: sourceLink?.id ?? '',
+                      businessName: name,
                     ),
-                  ],
-                  if (serviceType == 'catering') ...[
-                    const SizedBox(height: 22),
-                    _buildMenuCard(
-                      menuItems,
-                      cardGreen,
-                      primaryGold,
+                    PublicAppointmentAction(
+                      source: sourceLink,
+                      businessName: name,
+                      enabled: actions.appointments,
                     ),
-                  ],
-                  if (galleryImages.isNotEmpty) ...[
+                    if (actions.orders) ...[
+                      _buildOrderButton(
+                        serviceType: serviceType,
+                        title: title,
+                        sellerName: name,
+                        sellerContact: phone,
+                        menuItems: menuItems,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (actions.chat ||
+                        (actions.contact && whatsapp.isNotEmpty)) ...[
+                      _buildCommunicationButtons(
+                        name: name,
+                        icon: icon,
+                        whatsapp: whatsapp,
+                        showWhatsApp: actions.contact && whatsapp.isNotEmpty,
+                        showChat: actions.chat,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (menuItems.isNotEmpty || serviceType == 'catering') ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: primaryGold,
+                          ),
+                          onPressed: _showCatalogue,
+                          icon: const Icon(Icons.storefront_outlined),
+                          label: Text(
+                            serviceType == 'catering'
+                                ? 'Voir le menu'
+                                : 'Voir les produits et services',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    _buildAboutCard(
+                      description: description,
+
+                      location: location,
+
+                      rating: rating,
+                    ),
+
+                    ServiceProfessionCard(data: jobData),
+                    if (serviceType == 'translator' &&
+                        publicServiceDetails(jobData).isEmpty &&
+                        [
+                          'ratePerHour',
+                          'ratePerDocument',
+                          'languagesOffered',
+                          'translatorServiceType',
+                        ].any((k) => _text(jobData[k]).isNotEmpty)) ...[
+                      const SizedBox(height: 16),
+                      _buildServiceInfoCard(
+                        [
+                          if (_text(jobData['ratePerHour']).isNotEmpty)
+                            'Tarif horaire indicatif : ${_text(jobData['ratePerHour'])}',
+                          if (_text(jobData['ratePerDocument']).isNotEmpty)
+                            'Tarif par document : ${_text(jobData['ratePerDocument'])}',
+                          if (_text(jobData['languagesOffered']).isNotEmpty)
+                            'Langues : ${_text(jobData['languagesOffered'])}',
+                          if (_text(
+                            jobData['translatorServiceType'],
+                          ).isNotEmpty)
+                            'Mode : ${_text(jobData['translatorServiceType'])}',
+                        ],
+                        cardGreen,
+                        primaryGold,
+                      ),
+                    ],
+                    if (menuItems.isNotEmpty || serviceType == 'catering') ...[
+                      const SizedBox(height: 22),
+
+                      Container(
+                        key: _catalogKey,
+                        child: _buildMenuCard(
+                          menuItems,
+
+                          cardGreen,
+
+                          primaryGold,
+
+                          allowOrdering:
+                              actions.orders && serviceType == 'catering',
+                        ),
+                      ),
+                    ],
+
+                    if (galleryImages.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+
+                      _buildGallery(galleryImages),
+                    ],
+
                     const SizedBox(height: 24),
-                    _buildGallery(galleryImages),
+
+                    _buildReviews(reviewsList),
+
+                    const SizedBox(height: 24),
                   ],
-                  const SizedBox(height: 24),
-                  _buildReviews(reviewsList),
-                  const SizedBox(height: 24),
-                  _buildCommunicationButtons(
-                    name: name,
-                    icon: icon,
-                    whatsapp: whatsapp,
-                  ),
-                  if (serviceType == 'designer' ||
-                      serviceType == 'catering') ...[
-                    const SizedBox(height: 12),
-                    _buildOrderButton(
-                      serviceType: serviceType,
-                      title: title,
-                      sellerName: name,
-                      sellerContact: phone,
-                      menuItems: menuItems,
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  void _showCatalogue() {
+    final target = _catalogKey.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(
+        target,
+        duration: const Duration(milliseconds: 300),
+        alignment: 0.05,
+      );
+    }
+  }
+
   Widget _buildBusinessHeader({
     required String name,
+
     required String title,
+
     required String location,
+
     required String logoUrl,
+
     required String coverUrl,
+
     required IconData icon,
+
     required bool isVerified,
+
     required String? subscriptionTier,
   }) {
     return Column(
       children: [
         Stack(
           clipBehavior: Clip.none,
+
           alignment: Alignment.bottomCenter,
+
           children: [
-            Container(
+            SizedBox(
               height: 190,
               width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF00695C),
-                    Color(0xFF003D33),
-                  ],
-                ),
-                image: coverUrl.isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(coverUrl),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: coverUrl.isEmpty
-                  ? const Icon(
-                      Icons.storefront,
-                      color: Colors.white12,
-                      size: 75,
-                    )
-                  : null,
-            ),
-            Positioned(
-              bottom: -52,
-              child: Container(
-                width: 108,
-                height: 108,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: cardGreen,
-                  border: Border.all(
-                    color: primaryGold,
-                    width: 3,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black54,
-                      blurRadius: 14,
-                    ),
-                  ],
-                  image: logoUrl.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(logoUrl),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: logoUrl.isEmpty
-                    ? Icon(
-                        icon,
-                        color: primaryGold,
-                        size: 48,
-                      )
-                    : null,
+              child: PublicProfilePhoto(
+                urls: [coverUrl],
+                semanticLabel: 'Photo entière du professionnel',
+                fallback: Icon(icon, color: primaryGold, size: 65),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 66),
+
+        const SizedBox(height: 12),
+
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+
           child: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+
                 children: [
                   Flexible(
                     child: Text(
                       name,
-                      textAlign: TextAlign.center,
+
+                      textAlign: TextAlign.start,
+
                       style: const TextStyle(
                         color: primaryGold,
+
                         fontSize: 23,
+
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
+
                   if (isVerified) ...[
                     const SizedBox(width: 7),
-                    const Icon(
-                      Icons.verified,
-                      color: primaryGold,
-                      size: 21,
-                    ),
+
+                    const Icon(Icons.verified, color: primaryGold, size: 21),
                   ],
                 ],
               ),
+
               const SizedBox(height: 5),
+
               Text(
                 title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+
+                textAlign: TextAlign.start,
+
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
+
               const SizedBox(height: 5),
+
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+
                 children: [
                   const Icon(
                     Icons.location_on_outlined,
+
                     color: primaryGold,
+
                     size: 15,
                   ),
+
                   const SizedBox(width: 4),
+
                   Flexible(
                     child: Text(
                       location,
-                      textAlign: TextAlign.center,
+
+                      textAlign: TextAlign.start,
+
                       style: const TextStyle(
                         color: Colors.white54,
+
                         fontSize: 12,
                       ),
                     ),
                   ),
                 ],
               ),
+
+              const SizedBox(height: 3),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Icon(Icons.star_outline, color: primaryGold, size: 16),
+                  SizedBox(width: 5),
+                  Text(
+                    'Avis clients',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+
               if (subscriptionTier != null &&
                   subscriptionTier.trim().isNotEmpty) ...[
                 const SizedBox(height: 8),
+
                 StatusBadgeWidget(
                   isVerified: isVerified,
+
                   subscriptionTier: subscriptionTier,
                 ),
               ],
@@ -919,139 +1251,127 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     required String phone,
     required String email,
     required String website,
+    required String address,
   }) {
+    Widget action(IconData icon, String label, VoidCallback onTap) {
+      return Expanded(
+        child: _buildContactActionButton(
+          icon,
+          label,
+          primaryGold,
+          cardGreen,
+          onTap,
+        ),
+      );
+    }
+
+    final mapQuery = Uri.encodeComponent(address);
     return Row(
       children: [
-        Expanded(
-          child: _buildContactActionButton(
-            Icons.phone,
-            'Appeler',
-            primaryGold,
-            cardGreen,
-            () => _launchUrl(
-              phone,
-              isPhone: true,
-            ),
-          ),
+        action(
+          Icons.phone_outlined,
+          'Appeler',
+          () => _launchUrl(phone, isPhone: true),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildContactActionButton(
-            Icons.email_outlined,
-            'E-mail',
-            primaryGold,
-            cardGreen,
-            () => _launchUrl(
-              email,
-              isEmail: true,
-            ),
-          ),
+        const SizedBox(width: 5),
+        action(
+          Icons.email_outlined,
+          'E-mail',
+          () => _launchUrl(email, isEmail: true),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildContactActionButton(
-            Icons.language,
-            'Site',
-            primaryGold,
-            cardGreen,
-            () => _launchUrl(website),
-          ),
-        ),
+        const SizedBox(width: 5),
+        action(Icons.language, 'Site', () => _launchUrl(website)),
+        const SizedBox(width: 5),
+        action(Icons.directions_outlined, 'Itinéraire', () {
+          if (address.trim().isNotEmpty) {
+            _launchUrl(
+              'https://www.google.com/maps/search/?api=1&query=$mapQuery',
+            );
+          }
+        }),
       ],
     );
   }
 
   Widget _buildAboutCard({
     required String description,
+
     required String location,
+
     required String rating,
   }) {
     return Container(
       width: double.infinity,
+
       padding: const EdgeInsets.all(16),
+
       decoration: BoxDecoration(
         color: cardGreen,
+
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.3),
-        ),
+
+        border: Border.all(color: primaryGold.withValues(alpha: 0.3)),
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
           const Text(
             'À propos',
+
             style: TextStyle(
               color: primaryGold,
+
               fontWeight: FontWeight.bold,
+
               fontSize: 15,
             ),
           ),
+
           const SizedBox(height: 8),
+
           Text(
             description,
+
+            maxLines: _aboutExpanded ? null : 4,
+
+            overflow: _aboutExpanded
+                ? TextOverflow.visible
+                : TextOverflow.ellipsis,
+
             style: const TextStyle(
               color: Colors.white,
+
               fontSize: 13,
+
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.location_on,
+
+          if (description.trim().length > 160)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () =>
+                    setState(() => _aboutExpanded = !_aboutExpanded),
+                child: Text(
+                  _aboutExpanded ? 'Voir moins' : 'Voir plus',
+                  style: const TextStyle(
                     color: primaryGold,
-                    size: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    location,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+                ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.star,
-                    color: primaryGold,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    rating,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
         ],
       ),
     );
   }
 
   Widget _buildGallery(List<dynamic> galleryImages) {
-    final images =
-        galleryImages.map((e) => _text(e)).where((e) => e.isNotEmpty).toList();
-
-    if (images.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
+    final images = galleryImages.whereType<String>().toList();
+    if (images.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1059,39 +1379,33 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           'Galerie (${images.length})',
           style: const TextStyle(
             color: primaryGold,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
-            fontSize: 16,
           ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Touchez une photo pour l’agrandir.',
+          style: TextStyle(color: Colors.white70),
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 125,
+          height: 160,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: images.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  images[index],
-                  width: 155,
-                  height: 125,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 155,
-                      color: cardGreen,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.white38,
-                      ),
-                    );
-                  },
+            separatorBuilder: (_, index) => const SizedBox(width: 10),
+            itemBuilder: (context, index) => SizedBox(
+              width: 170,
+              child: PublicProfilePhoto(
+                urls: [images[index]],
+                semanticLabel: 'Réalisation du professionnel',
+                fallback: const Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white70,
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ],
@@ -1101,23 +1415,27 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget _buildReviews(List<dynamic> reviewsList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+
       children: [
         const Text(
           'Avis clients',
+
           style: TextStyle(
             color: primaryGold,
+
             fontSize: 16,
+
             fontWeight: FontWeight.bold,
           ),
         ),
+
         const SizedBox(height: 10),
+
         if (reviewsList.isEmpty)
           const Text(
             'Aucun avis pour le moment.',
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: 12,
-            ),
+
+            style: TextStyle(color: Colors.white54, fontSize: 12),
           )
         else
           ...reviewsList.map((rawReview) {
@@ -1125,61 +1443,61 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
             return Container(
               width: double.infinity,
+
               margin: const EdgeInsets.only(bottom: 8),
+
               padding: const EdgeInsets.all(12),
+
               decoration: BoxDecoration(
                 color: cardGreen,
+
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.white12,
-                ),
+
+                border: Border.all(color: Colors.white12),
               ),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          _text(
-                            review['user'],
-                            'Utilisateur',
-                          ),
+                          _text(review['user'], 'Utilisateur'),
+
                           style: const TextStyle(
                             color: primaryGold,
+
                             fontWeight: FontWeight.bold,
+
                             fontSize: 12,
                           ),
                         ),
                       ),
-                      const Icon(
-                        Icons.star,
-                        color: primaryGold,
-                        size: 14,
-                      ),
+
+                      const Icon(Icons.star, color: primaryGold, size: 14),
+
                       const SizedBox(width: 3),
+
                       Text(
-                        _text(
-                          review['rating'],
-                          '5.0',
-                        ),
+                        _text(review['rating'], '5.0'),
+
                         style: const TextStyle(
                           color: Colors.white70,
+
                           fontSize: 11,
                         ),
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 5),
+
                   Text(
-                    _text(
-                      review['comment'],
-                      'Aucun commentaire.',
-                    ),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                    ),
+                    _text(review['comment'], 'Aucun commentaire.'),
+
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                 ],
               ),
@@ -1191,115 +1509,164 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildCommunicationButtons({
     required String name,
+
     required IconData icon,
+
     required String whatsapp,
+    required bool showWhatsApp,
+    required bool showChat,
   }) {
     return Row(
       children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF25D366),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: const Icon(
-              Icons.phone_in_talk,
-              size: 20,
-            ),
-            label: const Text(
-              'WhatsApp',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-            onPressed: () {
-              _launchUrl(whatsapp);
-            },
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGold,
-              foregroundColor: primaryDarkGreen,
-              padding: const EdgeInsets.symmetric(
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: const Icon(
-              Icons.chat_bubble_outline,
-              size: 20,
-            ),
-            label: const Text(
-              'Chat',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-            onPressed: () async {
-              final ownerId = _text(jobData['submittedBy']).isNotEmpty
-                  ? _text(jobData['submittedBy'])
-                  : _text(jobData['ownerId']).isNotEmpty
-                      ? _text(jobData['ownerId'])
-                      : _text(jobData['creatorId']);
+        if (showWhatsApp)
+          Expanded(
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
 
-              await openDirectChat(
-                context: context,
-                otherUserId: ownerId,
-                otherUserName: name,
-              );
-            },
+                foregroundColor: Colors.white,
+
+                padding: const EdgeInsets.symmetric(vertical: 12),
+
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              icon: const Icon(Icons.phone_in_talk, size: 20),
+
+              label: const Text(
+                'WhatsApp',
+
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+
+              onPressed: () {
+                _launchUrl(whatsapp);
+              },
+            ),
           ),
-        ),
+
+        if (showWhatsApp && showChat) const SizedBox(width: 10),
+
+        if (showChat)
+          Expanded(
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGold,
+
+                foregroundColor: primaryDarkGreen,
+
+                padding: const EdgeInsets.symmetric(vertical: 12),
+
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              icon: const Icon(Icons.chat_bubble_outline, size: 20),
+
+              label: const Text(
+                'Chat',
+
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+
+              onPressed: () async {
+                final ownerId = _text(jobData['submittedBy']).isNotEmpty
+                    ? _text(jobData['submittedBy'])
+                    : _text(jobData['ownerId']).isNotEmpty
+                    ? _text(jobData['ownerId'])
+                    : _text(jobData['creatorId']);
+
+                await openDirectChat(
+                  context: context,
+
+                  otherUserId: ownerId,
+
+                  otherUserName: name,
+                  professionalSourceCollection: professionalSource(
+                    jobData,
+                  )?.collection,
+                  professionalBusinessId: professionalSource(jobData)?.id,
+                );
+              },
+            ),
+          ),
       ],
     );
   }
 
   Widget _buildOrderButton({
     required String serviceType,
+
     required String title,
+
     required String sellerName,
+
     required String sellerContact,
+
     required List<dynamic> menuItems,
   }) {
     final bool isCatering = serviceType == 'catering';
 
     return SizedBox(
       width: double.infinity,
+
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryGold,
+
           foregroundColor: primaryDarkGreen,
-          padding: const EdgeInsets.symmetric(
-            vertical: 14,
-          ),
+
+          padding: const EdgeInsets.symmetric(vertical: 14),
+
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        icon: Icon(
-          isCatering ? Icons.delivery_dining : Icons.straighten,
-        ),
+
+        icon: Icon(isCatering ? Icons.delivery_dining : Icons.straighten),
+
         label: Text(
           isCatering ? 'Commander' : 'Envoyer une commande personnalisée',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
+
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         ),
-        onPressed: () {
+
+        onPressed: () async {
+          final link = professionalSource(jobData);
+          if (link != null) {
+            try {
+              final latest = await FirebaseFirestore.instance
+                  .collection(link.collection)
+                  .doc(link.id)
+                  .get(const GetOptions(source: Source.server));
+              if (!mounted) return;
+              if (!latest.exists || latest.data()?['ordersEnabled'] == false) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Les commandes sont désactivées pour cet établissement.',
+                    ),
+                  ),
+                );
+                return;
+              }
+            } catch (_) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Vérification impossible. Vérifiez la connexion puis réessayez.',
+                    ),
+                  ),
+                );
+              }
+              return;
+            }
+          }
+
           final List<Map<String, dynamic>> selectedItems = [];
 
           double cartTotal = 0;
@@ -1308,7 +1675,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             for (int i = 0; i < menuItems.length; i++) {
               final quantity = _cartQuantities[i] ?? 0;
 
-              if (quantity <= 0) {
+              if (quantity <= 0 || _isDigitalProduct(_map(menuItems[i]))) {
                 continue;
               }
 
@@ -1319,13 +1686,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               final lineTotal = unitPrice * quantity;
 
               selectedItems.add({
-                'name': _text(
-                  item['name'],
-                  'Article',
-                ),
+                'name': _text(item['name'], 'Article'),
+
                 'unitPrice': unitPrice,
+
                 'quantity': quantity,
+
                 'total': lineTotal,
+
                 'imageUrl': _text(item['imageUrl']),
               });
 
@@ -1333,13 +1701,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             }
 
             if (selectedItems.isEmpty) {
+              _showCatalogue();
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                    'Veuillez choisir au moins un article.',
-                  ),
+                  content: Text('Veuillez choisir au moins un article.'),
                 ),
               );
+
               return;
             }
           }
@@ -1347,25 +1716,35 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           final String sellerId = _text(jobData['submittedBy']).isNotEmpty
               ? _text(jobData['submittedBy'])
               : _text(jobData['ownerId']).isNotEmpty
-                  ? _text(jobData['ownerId'])
-                  : _text(jobData['creatorId']);
+              ? _text(jobData['ownerId'])
+              : _text(jobData['creatorId']);
 
           Navigator.push(
             context,
+
             MaterialPageRoute(
               builder: (_) => CashOnDeliveryOrderScreen(
                 itemType: serviceType,
+
                 itemTitle: title,
+
                 sellerName: sellerName,
+
                 sellerContact: sellerContact,
+
                 sellerId: sellerId,
+
                 price: isCatering
                     ? '€${cartTotal.toStringAsFixed(2)}'
                     : 'Custom quote',
+
                 sourceData: jobData,
+
                 depositPercentage:
                     (jobData['depositPercentage'] as num?)?.toDouble() ?? 0,
+
                 cartItems: selectedItems,
+
                 cartTotal: cartTotal,
               ),
             ),
@@ -1377,43 +1756,48 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildContactActionButton(
     IconData icon,
+
     String label,
+
     Color goldColor,
+
     Color bgColor,
+
     VoidCallback onTap,
   ) {
     return InkWell(
       onTap: onTap,
+
       borderRadius: BorderRadius.circular(10),
+
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 10,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+
         decoration: BoxDecoration(
           color: bgColor,
+
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: goldColor.withValues(
-              alpha: 0.5,
-            ),
-          ),
+
+          border: Border.all(color: goldColor.withValues(alpha: 0.5)),
         ),
+
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+
           children: [
-            Icon(
-              icon,
-              color: goldColor,
-              size: 16,
-            ),
+            Icon(icon, color: goldColor, size: 16),
+
             const SizedBox(width: 5),
+
             Flexible(
               child: Text(
                 label,
+
                 style: TextStyle(
                   color: goldColor,
+
                   fontWeight: FontWeight.bold,
+
                   fontSize: 11,
                 ),
               ),
@@ -1426,38 +1810,42 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildServiceInfoCard(
     List<String> lines,
+
     Color bgColor,
+
     Color goldColor,
   ) {
     return Container(
       width: double.infinity,
+
       padding: const EdgeInsets.all(14),
+
       decoration: BoxDecoration(
         color: bgColor,
+
         borderRadius: BorderRadius.circular(12),
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
           Text(
             'Tarifs',
-            style: TextStyle(
-              color: goldColor,
-              fontWeight: FontWeight.bold,
-            ),
+
+            style: TextStyle(color: goldColor, fontWeight: FontWeight.bold),
           ),
+
           const SizedBox(height: 8),
+
           for (final line in lines)
             Padding(
-              padding: const EdgeInsets.only(
-                bottom: 4,
-              ),
+              padding: const EdgeInsets.only(bottom: 4),
+
               child: Text(
                 line,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                ),
+
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ),
         ],
@@ -1465,18 +1853,68 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
+  bool _isDigitalProduct(Map<String, dynamic> item) {
+    final type = _text(
+      item['productType'] ??
+          item['itemType'] ??
+          item['type'] ??
+          item['category'],
+    ).toLowerCase();
+    return type.contains('ebook') ||
+        type.contains('e-book') ||
+        type.contains('numérique') ||
+        type.contains('digital');
+  }
+
+  String _productLabel(Map<String, dynamic> item) {
+    if (_isDigitalProduct(item)) return 'Ebook · paiement en ligne requis';
+    final type = _text(
+      item['productType'] ??
+          item['itemType'] ??
+          item['type'] ??
+          item['category'],
+    ).toLowerCase();
+    if (type.contains('book') || type.contains('livre')) return 'Livre papier';
+    if (type.contains('service')) return 'Service';
+    return 'Produit / prestation';
+  }
+
+  // Catégories libres enregistrées par les professionnels. Les anciens
+  // produits sans catégorie restent visibles dans « Autres ».
+  String _menuCategory(Map<String, dynamic> item) {
+    final explicit = _text(
+      item['menuCategory'] ??
+          item['categoryName'] ??
+          item['productCategory'] ??
+          item['category'],
+    );
+    if (explicit.isNotEmpty) return explicit;
+    final kind = _text(
+      item['productType'] ?? item['itemType'] ?? item['type'],
+    ).toLowerCase();
+    if (kind.contains('drink') || kind.contains('boisson')) return 'Boissons';
+    if (kind.contains('service')) return 'Services';
+    return 'Autres';
+  }
+
   Widget _buildMenuCard(
     List<dynamic> items,
+
     Color bgColor,
-    Color goldColor,
-  ) {
+
+    Color goldColor, {
+    required bool allowOrdering,
+  }) {
     int totalItems = 0;
+
     double totalPrice = 0;
 
     for (int i = 0; i < items.length; i++) {
       final item = _map(items[i]);
 
-      final quantity = _cartQuantities[i] ?? 0;
+      final quantity = allowOrdering && !_isDigitalProduct(item)
+          ? (_cartQuantities[i] ?? 0)
+          : 0;
 
       totalItems += quantity;
 
@@ -1485,72 +1923,157 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+
       children: [
         const Text(
-          'Menu',
+          'Produits et services',
+
           style: TextStyle(
             color: primaryGold,
+
             fontWeight: FontWeight.bold,
+
             fontSize: 18,
           ),
         ),
+
         const SizedBox(height: 12),
+
         if (items.isEmpty)
           Container(
             width: double.infinity,
+
             padding: const EdgeInsets.all(18),
+
             decoration: BoxDecoration(
               color: bgColor,
+
               borderRadius: BorderRadius.circular(14),
             ),
+
             child: const Text(
               'Aucun produit disponible pour le moment.',
-              style: TextStyle(
-                color: Colors.white54,
-              ),
+
+              style: TextStyle(color: Colors.white54),
             ),
           )
-        else
-          for (int i = 0; i < items.length; i++)
-            _buildMenuItem(
-              index: i,
-              item: _map(items[i]),
-              goldColor: goldColor,
+        else ...[
+          // Filtre horizontal : aucune modification des articles Firebase.
+          SizedBox(
+            height: 42,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final category in <String>[
+                  'Tous',
+                  ...{for (final item in items) _menuCategory(_map(item))},
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(category),
+                      selected: _selectedMenuCategory == category,
+                      onSelected: (_) =>
+                          setState(() => _selectedMenuCategory = category),
+                      selectedColor: primaryGold,
+                      backgroundColor: cardGreen,
+                      labelStyle: TextStyle(
+                        color: _selectedMenuCategory == category
+                            ? primaryDarkGreen
+                            : Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      side: BorderSide(
+                        color: primaryGold.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 200,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: [
+                for (int i = 0; i < items.length; i++)
+                  if (_selectedMenuCategory == 'Tous' ||
+                      _menuCategory(_map(items[i])) == _selectedMenuCategory)
+                    i,
+              ].length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, visibleIndex) {
+                final indices = <int>[
+                  for (int i = 0; i < items.length; i++)
+                    if (_selectedMenuCategory == 'Tous' ||
+                        _menuCategory(_map(items[i])) == _selectedMenuCategory)
+                      i,
+                ];
+                final index = indices[visibleIndex];
+                final item = _map(items[index]);
+                return SizedBox(
+                  width: 285,
+                  child: _buildMenuItem(
+                    index: index,
+                    item: item,
+                    goldColor: goldColor,
+                    allowOrdering: allowOrdering,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+
+        if (!allowOrdering && items.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Pour ces articles, contactez le professionnel. '
+            'La commande et le paiement en ligne seront disponibles ultérieurement.',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ],
         if (totalItems > 0) ...[
           const SizedBox(height: 10),
+
           Container(
             padding: const EdgeInsets.all(14),
+
             decoration: BoxDecoration(
               color: cardGreen,
+
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: goldColor.withValues(
-                  alpha: 0.35,
-                ),
-              ),
+
+              border: Border.all(color: goldColor.withValues(alpha: 0.35)),
             ),
+
             child: Row(
               children: [
-                Icon(
-                  Icons.shopping_cart_outlined,
-                  color: goldColor,
-                ),
+                Icon(Icons.shopping_cart_outlined, color: goldColor),
+
                 const SizedBox(width: 8),
+
                 Expanded(
                   child: Text(
                     '$totalItems article${totalItems > 1 ? 's' : ''}',
+
                     style: const TextStyle(
                       color: Colors.white,
+
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
+
                 Text(
                   '€${totalPrice.toStringAsFixed(2)}',
+
                   style: TextStyle(
                     color: goldColor,
+
                     fontWeight: FontWeight.bold,
+
                     fontSize: 17,
                   ),
                 ),
@@ -1564,8 +2087,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildMenuItem({
     required int index,
+
     required Map<String, dynamic> item,
+
     required Color goldColor,
+
+    required bool allowOrdering,
   }) {
     final String name = _text(item['name'], 'Article');
 
@@ -1581,96 +2108,130 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
     return Opacity(
       opacity: available ? 1 : 0.55,
+
       child: Container(
-        margin: const EdgeInsets.only(
-          bottom: 12,
-        ),
-        padding: const EdgeInsets.all(10),
+        margin: const EdgeInsets.only(bottom: 8),
+
+        padding: const EdgeInsets.all(8),
+
         decoration: BoxDecoration(
           color: cardGreen,
+
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: goldColor.withValues(
-              alpha: 0.25,
-            ),
-          ),
+
+          border: Border.all(color: goldColor.withValues(alpha: 0.25)),
         ),
+
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
+
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(11),
+
               child: imageUrl.isNotEmpty
                   ? Image.network(
                       imageUrl,
-                      width: 82,
-                      height: 82,
+
+                      width: 66,
+
+                      height: 66,
+
                       fit: BoxFit.cover,
-                      errorBuilder: (
-                        context,
-                        error,
-                        stackTrace,
-                      ) {
+
+                      errorBuilder: (context, error, stackTrace) {
                         return _menuPlaceholder();
                       },
                     )
                   : _menuPlaceholder(),
             ),
-            const SizedBox(width: 12),
+
+            const SizedBox(width: 9),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
                   Text(
                     name,
+
                     style: const TextStyle(
                       color: Colors.white,
+
                       fontWeight: FontWeight.bold,
+
                       fontSize: 14,
                     ),
                   ),
+
+                  const SizedBox(height: 3),
+                  Text(
+                    _productLabel(item),
+                    style: const TextStyle(color: primaryGold, fontSize: 11),
+                  ),
+
                   if (description.isNotEmpty) ...[
                     const SizedBox(height: 3),
+
                     Text(
                       description,
+
                       maxLines: 2,
+
                       overflow: TextOverflow.ellipsis,
+
                       style: const TextStyle(
                         color: Colors.white60,
+
                         fontSize: 11,
                       ),
                     ),
                   ],
+
                   const SizedBox(height: 6),
+
                   Row(
                     children: [
                       Text(
                         '€${price.toStringAsFixed(2)}',
+
                         style: TextStyle(
                           color: goldColor,
+
                           fontWeight: FontWeight.bold,
+
                           fontSize: 14,
                         ),
                       ),
+
                       const Spacer(),
+
                       if (!available)
                         const Text(
                           'Indisponible',
+
                           style: TextStyle(
                             color: Colors.redAccent,
+
                             fontSize: 11,
+
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                     ],
                   ),
+
                   if (available) ...[
                     const SizedBox(height: 7),
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
+
                       children: [
                         IconButton(
                           visualDensity: VisualDensity.compact,
+
                           onPressed: quantity <= 0
                               ? null
                               : () {
@@ -1682,29 +2243,35 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                     }
                                   });
                                 },
-                          icon: const Icon(
-                            Icons.remove_circle_outline,
-                          ),
+
+                          icon: const Icon(Icons.remove_circle_outline),
+
                           color: goldColor,
+
                           disabledColor: Colors.white24,
                         ),
+
                         Text(
                           '$quantity',
+
                           style: const TextStyle(
                             color: Colors.white,
+
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+
                         IconButton(
                           visualDensity: VisualDensity.compact,
+
                           onPressed: () {
                             setState(() {
                               _cartQuantities[index] = quantity + 1;
                             });
                           },
-                          icon: const Icon(
-                            Icons.add_circle,
-                          ),
+
+                          icon: const Icon(Icons.add_circle),
+
                           color: goldColor,
                         ),
                       ],
@@ -1722,25 +2289,30 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget _menuPlaceholder() {
     return Container(
       width: 82,
+
       height: 82,
+
       color: const Color(0xFF073C31),
+
       alignment: Alignment.center,
-      child: const Icon(
-        Icons.restaurant_menu,
-        color: primaryGold,
-        size: 31,
-      ),
+
+      child: const Icon(Icons.restaurant_menu, color: primaryGold, size: 31),
     );
   }
 }
 
 // ── 💡 አዲሱ እና እውነተኛው የቻት መጻፊያ ገጽ (Direct Chat Screen) ──
+
 class DirectChatScreen extends StatefulWidget {
   final String chatName;
+
   final IconData iconData;
 
-  const DirectChatScreen(
-      {super.key, required this.chatName, required this.iconData});
+  const DirectChatScreen({
+    super.key,
+    required this.chatName,
+    required this.iconData,
+  });
 
   @override
   State<DirectChatScreen> createState() => _DirectChatScreenState();
@@ -1748,18 +2320,23 @@ class DirectChatScreen extends StatefulWidget {
 
 class _DirectChatScreenState extends State<DirectChatScreen> {
   final Color primaryDarkGreen = const Color(0xFF061E12);
+
   final Color primaryGold = const Color(0xFFFFD700);
+
   final Color cardGreen = const Color(0xFF004D40);
 
   final TextEditingController _messageController = TextEditingController();
 
   // የቻት ታሪኮች
+
   final List<Map<String, dynamic>> _messages = [
     {
       'text': 'Hello! How can I help you today?',
+
       'isMe': false,
+
       'time': '10:00 AM',
-    }
+    },
   ];
 
   void _sendMessage() {
@@ -1768,20 +2345,26 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     setState(() {
       _messages.add({
         'text': _messageController.text.trim(),
+
         'isMe': true,
+
         'time': 'Now',
       });
     });
+
     _messageController.clear();
 
     // (እንደ ምሳሌ፣ መልስ እየተጻፈ መሆኑን ለማሳየት)
+
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
           _messages.add({
             'text':
                 'Thank you for reaching out! I will get back to you shortly.',
+
             'isMe': false,
+
             'time': 'Now',
           });
         });
@@ -1793,79 +2376,119 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
+
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
+
         iconTheme: IconThemeData(color: primaryGold),
+
         title: Row(
           children: [
             CircleAvatar(
               backgroundColor: cardGreen,
+
               child: Icon(widget.iconData, color: primaryGold, size: 20),
             ),
+
             const SizedBox(width: 10),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
-                  Text(widget.chatName,
-                      style: TextStyle(
-                          color: primaryGold,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
-                  const Text('Online',
-                      style:
-                          TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                  Text(
+                    widget.chatName,
+
+                    style: TextStyle(
+                      color: primaryGold,
+
+                      fontSize: 16,
+
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const Text(
+                    'Online',
+
+                    style: TextStyle(color: Colors.greenAccent, fontSize: 12),
+                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
+
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
+
               itemCount: _messages.length,
+
               itemBuilder: (context, index) {
                 final msg = _messages[index];
+
                 final isMe = msg['isMe'];
 
                 return Align(
-                  alignment:
-                      isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 10),
+
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+
                     constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.75),
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
+
                     decoration: BoxDecoration(
                       color: isMe ? primaryGold : cardGreen,
+
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(15),
+
                         topRight: const Radius.circular(15),
+
                         bottomLeft: Radius.circular(isMe ? 15 : 0),
+
                         bottomRight: Radius.circular(isMe ? 0 : 15),
                       ),
                     ),
+
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+
                       children: [
                         Text(
                           msg['text'],
+
                           style: TextStyle(
                             color: isMe ? primaryDarkGreen : Colors.white,
+
                             fontSize: 14,
                           ),
                         ),
+
                         const SizedBox(height: 5),
+
                         Text(
                           msg['time'],
+
                           style: TextStyle(
                             color: isMe
                                 ? primaryDarkGreen.withValues(alpha: 0.6)
                                 : Colors.white54,
+
                             fontSize: 10,
                           ),
                         ),
@@ -1876,41 +2499,62 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
               },
             ),
           ),
+
           // ── የጽሁፍ መጻፊያ (Keyboard Input) ──
           Container(
             padding: const EdgeInsets.all(12),
+
             decoration: BoxDecoration(
               color: cardGreen,
+
               border: Border(
-                  top: BorderSide(color: primaryGold.withValues(alpha: 0.2))),
+                top: BorderSide(color: primaryGold.withValues(alpha: 0.2)),
+              ),
             ),
+
             child: Row(
               children: [
                 Icon(Icons.attach_file, color: primaryGold),
+
                 const SizedBox(width: 10),
+
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+
                     style: const TextStyle(color: Colors.white),
+
                     decoration: InputDecoration(
                       hintText: 'Type a message...',
+
                       hintStyle: const TextStyle(color: Colors.white54),
+
                       filled: true,
+
                       fillColor: primaryDarkGreen,
+
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
+
                         borderSide: BorderSide.none,
                       ),
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
                 GestureDetector(
                   onTap: _sendMessage,
+
                   child: CircleAvatar(
                     backgroundColor: primaryGold,
+
                     child: Icon(Icons.send, color: primaryDarkGreen, size: 20),
                   ),
                 ),

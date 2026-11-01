@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'professional_profile_sync_service.dart';
+import 'table_reservation_option.dart';
+import 'professional_capabilities.dart';
 
 class BusinessEditProfileScreen extends StatefulWidget {
   final String businessId;
@@ -34,6 +36,12 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
   String _country = '';
   bool _loading = true;
   bool _saving = false;
+  bool _tablesEnabled = false;
+  bool _appointmentsEnabled = false;
+  bool _ordersEnabled = false;
+  bool _contactEnabled = true;
+  bool _chatEnabled = false;
+  bool _profileLoaded = false;
 
   DocumentReference<Map<String, dynamic>> get _documentReference =>
       FirebaseFirestore.instance
@@ -66,6 +74,8 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
         throw Exception('Profil professionnel introuvable.');
       }
 
+      if (!mounted) return;
+
       final fields = Map<String, dynamic>.from(
         data['fields'] ?? <String, dynamic>{},
       );
@@ -88,9 +98,30 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
         _categoryController.text = fields['businessCategory']?.toString() ?? '';
       }
 
+      if (supportsTableReservations(widget.sourceCollection)) {
+        final layout = await _documentReference.collection('roomLayouts')
+            .doc('main').get();
+        if (!mounted) return;
+        final rooms = layout.data()?['rooms'];
+        _tablesEnabled = layout.data()?['reservationsEnabled'] != false &&
+            initialTableReservationOption(data,
+          category: _categoryController.text,
+          hasLayout: rooms is List && rooms.isNotEmpty);
+      }
+      final category = _categoryController.text.toLowerCase();
+      final legacyOrders = widget.sourceCollection == 'businessSubmissions' ||
+          ['cater', 'traiteur', 'design'].any(category.contains);
+      final capabilities = ProfessionalCapabilities.fromData(data,
+          legacyOrders: legacyOrders,
+          legacyChat: widget.sourceCollection == 'jobSubmissions');
+      _appointmentsEnabled = capabilities.appointments;
+      _ordersEnabled = capabilities.orders;
+      _contactEnabled = capabilities.contact;
+      _chatEnabled = capabilities.chat;
       if (!mounted) return;
 
       setState(() {
+        _profileLoaded = true;
         _loading = false;
       });
     } catch (e) {
@@ -109,6 +140,16 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
       );
     }
   }
+
+  Widget _functionSwitch(String title, String subtitle, bool value,
+      void Function(bool) update) => SwitchListTile.adaptive(
+    contentPadding: EdgeInsets.zero,
+    title: Text(title, style: const TextStyle(color: Colors.white,
+        fontWeight: FontWeight.bold)),
+    subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70)),
+    value: value, activeThumbColor: primaryGold,
+    onChanged: _saving ? null : (v) => setState(() => update(v)),
+  );
 
   Future<void> _saveProfile() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -136,7 +177,22 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
         updates['fields.businessCategory'] = _categoryController.text.trim();
       }
 
-      await _documentReference.update(updates);
+      if (supportsTableReservations(widget.sourceCollection)) {
+        updates['tableReservationsEnabled'] = _tablesEnabled;
+        updates['appointmentsEnabled'] = _appointmentsEnabled;
+        updates['ordersEnabled'] = _ordersEnabled;
+        updates['contactEnabled'] = _contactEnabled;
+        updates['chatEnabled'] = _chatEnabled;
+      }
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final layoutRef = _documentReference.collection('roomLayouts').doc('main');
+        final supported = supportsTableReservations(widget.sourceCollection);
+        final layout = supported ? await transaction.get(layoutRef) : null;
+        transaction.update(_documentReference, updates);
+        if (layout != null && layout.exists) {
+          transaction.update(layoutRef, {'reservationsEnabled': _tablesEnabled});
+        }
+      });
       await ProfessionalProfileSyncService.syncPublishedProfile(
         sourceCollection: widget.sourceCollection,
         sourceId: widget.businessId,
@@ -375,11 +431,54 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
                     icon: Icons.language,
                     keyboardType: TextInputType.url,
                   ),
+                  const SizedBox(height: 22),
+                  if (supportsTableReservations(widget.sourceCollection))
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: cardGreen,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: primaryGold.withValues(alpha: .35))),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Fonctions de mon établissement',
+                            style: TextStyle(color: primaryGold, fontSize: 18,
+                              fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('Réservation de tables',
+                              style: TextStyle(color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                            subtitle: const Text('Recevoir des clients sur place',
+                              style: TextStyle(color: Colors.white70)),
+                            value: _tablesEnabled,
+                            activeThumbColor: primaryGold,
+                            onChanged: _saving ? null :
+                              (value) => setState(() => _tablesEnabled = value),
+                          ),
+                          _functionSwitch('Prise de rendez-vous',
+                            'Configurer vos prestations et horaires dans Gérer les rendez-vous.',
+                            _appointmentsEnabled, (v) => _appointmentsEnabled = v),
+                          _functionSwitch('Commandes',
+                            'Proposer la commande de vos produits, repas ou prestations.',
+                            _ordersEnabled, (v) => _ordersEnabled = v),
+                          _functionSwitch('Coordonnées de contact',
+                            'Afficher les boutons téléphone, e-mail, site et WhatsApp disponibles.',
+                            _contactEnabled, (v) => _contactEnabled = v),
+                          _functionSwitch('Discussion dans l’application',
+                            'Permettre aux clients de vous écrire avec le bouton Discuter.',
+                            _chatEnabled, (v) => _chatEnabled = v),
+                          const Text('Chaque option concerne uniquement cette fiche. '
+                            'Les tables nécessitent un plan configuré ; les rendez-vous '
+                            'nécessitent au moins une prestation active.',
+                            style: TextStyle(color: Colors.white70, height: 1.4)),
+                        ]),
+                    ),
                   const SizedBox(height: 26),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _saving ? null : _saveProfile,
+                      onPressed: _saving || !_profileLoaded ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryGold,
                         foregroundColor: primaryDarkGreen,

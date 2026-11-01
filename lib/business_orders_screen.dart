@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'business_order_detail_screen.dart';
+import 'business_checkout_screen.dart';
+import 'professional_sales_summary.dart';
 
 class BusinessOrdersScreen extends StatelessWidget {
   final String businessId;
+  final String sourceCollection;
+  final bool embedded;
 
   const BusinessOrdersScreen({
     super.key,
     required this.businessId,
+    this.sourceCollection = '',
+    this.embedded = false,
   });
 
   static const Color primaryDarkGreen = Color(0xFF061E12);
@@ -17,6 +23,103 @@ class BusinessOrdersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      initialData: FirebaseAuth.instance.currentUser,
+      builder: (context, auth) {
+        if (auth.data == null || auth.data!.isAnonymous) {
+          return const Scaffold(
+            backgroundColor: primaryDarkGreen,
+            body: Center(
+              child: Text(
+                'Connectez-vous à votre compte professionnel.',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+          );
+        }
+        return KeyedSubtree(
+          key: ValueKey(auth.data!.uid),
+          child: _signedIn(context),
+        );
+      },
+    );
+  }
+
+  Widget _signedIn(BuildContext context) {
+    const tabs = TabBar(
+      indicatorColor: primaryGold,
+      labelColor: primaryGold,
+      unselectedLabelColor: Colors.white70,
+      tabs: [
+        Tab(text: 'En attente'),
+        Tab(text: 'En cours'),
+        Tab(text: 'Terminées'),
+      ],
+    );
+    final content = Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Column(
+            children: [
+              Text(
+                sourceCollection.isEmpty
+                    ? 'Toutes les commandes de ce compte, y compris les anciennes sans établissement identifié.'
+                    : embedded
+                    ? 'Tout l’historique de cet établissement'
+                    : 'Commandes liées précisément à cet établissement.',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              if (sourceCollection.isNotEmpty)
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: primaryGold),
+                  onPressed: () => Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          BusinessOrdersScreen(businessId: businessId),
+                    ),
+                  ),
+                  child: const Text(
+                    'Commandes de tout mon compte',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            children: [
+              _PendingOrders(
+                businessId: businessId,
+                sourceCollection: sourceCollection,
+              ),
+              _ActiveOrders(
+                businessId: businessId,
+                sourceCollection: sourceCollection,
+              ),
+              _CompletedOrders(
+                businessId: businessId,
+                sourceCollection: sourceCollection,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (embedded) {
+      return DefaultTabController(
+        length: 3,
+        child: Column(
+          children: [
+            const Material(color: primaryDarkGreen, child: tabs),
+            Expanded(child: content),
+          ],
+        ),
+      );
+    }
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -24,37 +127,16 @@ class BusinessOrdersScreen extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: primaryDarkGreen,
           foregroundColor: primaryGold,
-          title: const Text(
-            'Mes commandes',
-            style: TextStyle(
+          title: Text(
+            sourceCollection.isEmpty ? 'Commandes du compte' : 'Mes commandes',
+            style: const TextStyle(
               color: primaryGold,
               fontWeight: FontWeight.bold,
             ),
           ),
-          bottom: const TabBar(
-            indicatorColor: primaryGold,
-            labelColor: primaryGold,
-            unselectedLabelColor: Colors.white54,
-            tabs: [
-              Tab(text: 'En attente'),
-              Tab(text: 'En cours'),
-              Tab(text: 'Terminées'),
-            ],
-          ),
+          bottom: tabs,
         ),
-        body: TabBarView(
-          children: [
-            _PendingOrders(
-              businessId: businessId,
-            ),
-            _ActiveOrders(
-              businessId: businessId,
-            ),
-            _CompletedOrders(
-              businessId: businessId,
-            ),
-          ],
-        ),
+        body: content,
       ),
     );
   }
@@ -62,10 +144,9 @@ class BusinessOrdersScreen extends StatelessWidget {
 
 class _PendingOrders extends StatelessWidget {
   final String businessId;
+  final String sourceCollection;
 
-  const _PendingOrders({
-    required this.businessId,
-  });
+  const _PendingOrders({required this.businessId, this.sourceCollection = ''});
 
   @override
   Widget build(BuildContext context) {
@@ -94,15 +175,23 @@ class _PendingOrders extends StatelessWidget {
               child: Text(
                 'Impossible de charger les commandes.\n${snapshot.error}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                ),
+                style: const TextStyle(color: Colors.white70),
               ),
             ),
           );
         }
 
-        final orders = snapshot.data?.docs ?? [];
+        final orders = (snapshot.data?.docs ?? [])
+            .where(
+              (order) =>
+                  sourceCollection.isEmpty ||
+                  orderMatchesProfessional(
+                    order.data(),
+                    sourceCollection,
+                    businessId,
+                  ),
+            )
+            .toList();
 
         if (orders.isEmpty) {
           return const _EmptyOrders(
@@ -133,22 +222,18 @@ class _PendingOrders extends StatelessWidget {
 
             final List<Map<String, dynamic>> cartItems = rawCartItems is List
                 ? rawCartItems
-                    .whereType<Map>()
-                    .map(
-                      (item) => Map<String, dynamic>.from(item),
-                    )
-                    .toList()
+                      .whereType<Map>()
+                      .map((item) => Map<String, dynamic>.from(item))
+                      .toList()
                 : <Map<String, dynamic>>[];
 
-            final rawTotal = data['orderTotal'] ?? data['cartTotal'];
-
-            final double? total = rawTotal is num
-                ? rawTotal.toDouble()
-                : double.tryParse(rawTotal?.toString() ?? '');
-
-            final totalText = total == null
-                ? 'Total non disponible'
-                : '${total.toStringAsFixed(2)} €';
+            final money = OrderMoneySnapshot.fromOrder(data);
+            final totalText = savedOrderMoney(
+              money.consistent ? money.customerTotal : null,
+              currency: orderText(data['currency']).isEmpty
+                  ? '€'
+                  : orderText(data['currency']).toUpperCase(),
+            );
 
             final shortOrderId = order.id.length > 8
                 ? order.id.substring(0, 8).toUpperCase()
@@ -159,9 +244,7 @@ class _PendingOrders extends StatelessWidget {
               decoration: BoxDecoration(
                 color: BusinessOrdersScreen.cardGreen,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white10,
-                ),
+                border: Border.all(color: Colors.white10),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,9 +307,7 @@ class _PendingOrders extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           buyerPhone,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                          ),
+                          style: const TextStyle(color: Colors.white70),
                         ),
                       ],
                     ),
@@ -245,9 +326,7 @@ class _PendingOrders extends StatelessWidget {
                         Expanded(
                           child: Text(
                             deliveryAddress,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                            ),
+                            style: const TextStyle(color: Colors.white70),
                           ),
                         ),
                       ],
@@ -268,9 +347,7 @@ class _PendingOrders extends StatelessWidget {
                   if (cartItems.isEmpty)
                     const Text(
                       'Aucun détail disponible.',
-                      style: TextStyle(
-                        color: Colors.white60,
-                      ),
+                      style: TextStyle(color: Colors.white60),
                     )
                   else
                     ...cartItems.map((item) {
@@ -282,10 +359,8 @@ class _PendingOrders extends StatelessWidget {
 
                       final lineTotal = rawLineTotal is num
                           ? rawLineTotal.toDouble()
-                          : double.tryParse(
-                                rawLineTotal?.toString() ?? '',
-                              ) ??
-                              0;
+                          : double.tryParse(rawLineTotal?.toString() ?? '') ??
+                                0;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 9),
@@ -302,9 +377,7 @@ class _PendingOrders extends StatelessWidget {
                             ),
                             Text(
                               '× $quantity',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                              ),
+                              style: const TextStyle(color: Colors.white70),
                             ),
                             const SizedBox(width: 16),
                             SizedBox(
@@ -344,9 +417,7 @@ class _PendingOrders extends StatelessWidget {
                           const SizedBox(height: 5),
                           Text(
                             notes,
-                            style: const TextStyle(
-                              color: Colors.white,
-                            ),
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ],
                       ),
@@ -381,6 +452,14 @@ class _PendingOrders extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
+                            if (data['paymentProvider'] ==
+                                'stripe_connect_live') {
+                              await requestBusinessOrderRefund(
+                                context,
+                                order.id,
+                              );
+                              return;
+                            }
                             await order.reference.update({
                               'status': 'rejected',
                               'updatedAt': FieldValue.serverTimestamp(),
@@ -395,12 +474,17 @@ class _PendingOrders extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () async {
-                            await order.reference.update({
-                              'status': 'accepted',
-                              'updatedAt': FieldValue.serverTimestamp(),
-                            });
-                          },
+                          onPressed:
+                              data['paymentProvider'] ==
+                                      'stripe_connect_live' &&
+                                  data['paymentStatus'] != 'paid'
+                              ? null
+                              : () async {
+                                  await order.reference.update({
+                                    'status': 'accepted',
+                                    'updatedAt': FieldValue.serverTimestamp(),
+                                  });
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: BusinessOrdersScreen.primaryGold,
                             foregroundColor:
@@ -408,9 +492,7 @@ class _PendingOrders extends StatelessWidget {
                           ),
                           child: const Text(
                             'Accepter',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -440,8 +522,8 @@ class _EmptyOrders extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -487,10 +569,9 @@ class _EmptyOrders extends StatelessWidget {
 
 class _ActiveOrders extends StatelessWidget {
   final String businessId;
+  final String sourceCollection;
 
-  const _ActiveOrders({
-    required this.businessId,
-  });
+  const _ActiveOrders({required this.businessId, this.sourceCollection = ''});
 
   @override
   Widget build(BuildContext context) {
@@ -501,10 +582,8 @@ class _ActiveOrders extends StatelessWidget {
             'sellerId',
             isEqualTo: FirebaseAuth.instance.currentUser?.uid ?? '',
           )
-          .where(
-        'status',
-        whereIn: ['accepted', 'preparing', 'ready'],
-      ).snapshots(),
+          .where('status', whereIn: ['accepted', 'preparing', 'ready'])
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -521,15 +600,23 @@ class _ActiveOrders extends StatelessWidget {
               child: Text(
                 'Impossible de charger les commandes.\n${snapshot.error}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                ),
+                style: const TextStyle(color: Colors.white70),
               ),
             ),
           );
         }
 
-        final orders = snapshot.data?.docs ?? [];
+        final orders = (snapshot.data?.docs ?? [])
+            .where(
+              (order) =>
+                  sourceCollection.isEmpty ||
+                  orderMatchesProfessional(
+                    order.data(),
+                    sourceCollection,
+                    businessId,
+                  ),
+            )
+            .toList();
 
         if (orders.isEmpty) {
           return const _EmptyOrders(
@@ -548,7 +635,10 @@ class _ActiveOrders extends StatelessWidget {
             final order = orders[index];
             final data = order.data();
 
-            final customerName = data['customerName']?.toString() ?? 'Client';
+            final customerName =
+                data['buyerName']?.toString() ??
+                data['customerName']?.toString() ??
+                'Client';
 
             final status = data['status']?.toString() ?? 'accepted';
 
@@ -605,36 +695,34 @@ class _ActiveOrders extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Type : $orderType',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                    ),
+                    style: const TextStyle(color: Colors.white70),
                   ),
                   if (status == 'accepted') ...[
                     const SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          await order.reference.update({
-                            'status': 'preparing',
-                            'preparingAt': FieldValue.serverTimestamp(),
-                            'updatedAt': FieldValue.serverTimestamp(),
-                          });
-                        },
+                        onPressed:
+                            data['paymentProvider'] == 'stripe_connect_live' &&
+                                data['paymentStatus'] != 'paid'
+                            ? null
+                            : () async {
+                                await order.reference.update({
+                                  'status': 'preparing',
+                                  'preparingAt': FieldValue.serverTimestamp(),
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                });
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BusinessOrdersScreen.primaryGold,
                           foregroundColor:
                               BusinessOrdersScreen.primaryDarkGreen,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 13,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         icon: const Icon(Icons.restaurant_menu),
                         label: const Text(
                           'Commencer la préparation',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -644,27 +732,27 @@ class _ActiveOrders extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          await order.reference.update({
-                            'status': 'ready',
-                            'readyAt': FieldValue.serverTimestamp(),
-                            'updatedAt': FieldValue.serverTimestamp(),
-                          });
-                        },
+                        onPressed:
+                            data['paymentProvider'] == 'stripe_connect_live' &&
+                                data['paymentStatus'] != 'paid'
+                            ? null
+                            : () async {
+                                await order.reference.update({
+                                  'status': 'ready',
+                                  'readyAt': FieldValue.serverTimestamp(),
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                });
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BusinessOrdersScreen.primaryGold,
                           foregroundColor:
                               BusinessOrdersScreen.primaryDarkGreen,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 13,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         icon: const Icon(Icons.check_circle_outline),
                         label: const Text(
                           'Marquer comme prête',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -674,27 +762,27 @@ class _ActiveOrders extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          await order.reference.update({
-                            'status': 'completed',
-                            'completedAt': FieldValue.serverTimestamp(),
-                            'updatedAt': FieldValue.serverTimestamp(),
-                          });
-                        },
+                        onPressed:
+                            data['paymentProvider'] == 'stripe_connect_live' &&
+                                data['paymentStatus'] != 'paid'
+                            ? null
+                            : () async {
+                                await order.reference.update({
+                                  'status': 'completed',
+                                  'completedAt': FieldValue.serverTimestamp(),
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                });
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BusinessOrdersScreen.primaryGold,
                           foregroundColor:
                               BusinessOrdersScreen.primaryDarkGreen,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 13,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         icon: const Icon(Icons.done_all),
                         label: const Text(
                           'Terminer la commande',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -711,9 +799,11 @@ class _ActiveOrders extends StatelessWidget {
 
 class _CompletedOrders extends StatelessWidget {
   final String businessId;
+  final String sourceCollection;
 
   const _CompletedOrders({
     required this.businessId,
+    this.sourceCollection = '',
   });
 
   @override
@@ -744,15 +834,23 @@ class _CompletedOrders extends StatelessWidget {
                 'Impossible de charger les commandes terminées.\n'
                 '${snapshot.error}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                ),
+                style: const TextStyle(color: Colors.white70),
               ),
             ),
           );
         }
 
-        final orders = snapshot.data?.docs ?? [];
+        final orders = (snapshot.data?.docs ?? [])
+            .where(
+              (order) =>
+                  sourceCollection.isEmpty ||
+                  orderMatchesProfessional(
+                    order.data(),
+                    sourceCollection,
+                    businessId,
+                  ),
+            )
+            .toList();
 
         if (orders.isEmpty) {
           return const _EmptyOrders(
@@ -770,11 +868,15 @@ class _CompletedOrders extends StatelessWidget {
             final order = orders[index];
             final data = order.data();
 
-            final customerName = data['customerName']?.toString() ?? 'Client';
+            final customerName =
+                data['buyerName']?.toString() ??
+                data['customerName']?.toString() ??
+                'Client';
 
             final orderType = data['orderType']?.toString() ?? 'Commande';
 
-            final total = data['total'];
+            final money = OrderMoneySnapshot.fromOrder(data);
+            final total = money.consistent ? money.customerTotal : null;
 
             return InkWell(
               borderRadius: BorderRadius.circular(16),
@@ -782,9 +884,8 @@ class _CompletedOrders extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => BusinessOrderDetailScreen(
-                      orderId: order.id,
-                    ),
+                    builder: (_) =>
+                        BusinessOrderDetailScreen(orderId: order.id),
                   ),
                 );
               },
@@ -826,14 +927,12 @@ class _CompletedOrders extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Type : $orderType',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                      ),
+                      style: const TextStyle(color: Colors.white70),
                     ),
                     if (total != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Total : $total €',
+                        'Total client : ${savedOrderMoney(total, currency: orderText(data['currency']).isEmpty ? '€' : orderText(data['currency']).toUpperCase())}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

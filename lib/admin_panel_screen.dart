@@ -1,15 +1,26 @@
+import 'l10n/app_ui.dart';
+import 'etape10/job_pages.dart';
+import 'etape10/explore_pages.dart';
+import 'etape10/workspace_ui.dart';
+import 'habesha_connect/connect_space_admin.dart';
+import 'admin_private_verification_inbox.dart';
+import 'admin_submission_workflow.dart';
 import 'admin_professional_subscriptions_screen.dart';
 import 'notifications_screen.dart';
 import 'promotion_request_service.dart';
 import 'promotion_settings.dart';
 import 'admin_local_campaigns_screen.dart';
+
 import 'dart:io';
+
 import 'admin_fees_settings_screen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'advertisement_request_screen.dart';
 import 'app_session.dart';
 import 'admin_banner_screen.dart';
@@ -332,7 +343,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 28),
-            Text(
+            AppText(
               'Administrateurs actifs',
               style: TextStyle(
                 color: primaryGold,
@@ -398,7 +409,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 5),
-            Text(
+            AppText(
               'Catégorie : $scope',
               style: const TextStyle(
                 color: Colors.white,
@@ -417,7 +428,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: cardGreen,
-          title: const Text(
+          title: const AppText(
             'Désactiver cet administrateur ?',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
@@ -428,14 +439,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Annuler'),
+              child: const AppText('Annuler'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
               ),
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
+              child: const AppText(
                 'Désactiver',
                 style: TextStyle(color: Colors.white),
               ),
@@ -512,7 +523,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            AppText(
               'Habesha Connect — Demandes en attente',
               style: TextStyle(
                 color: primaryGold,
@@ -521,7 +532,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            const AppText(
               'Les demandes restent invisibles au public jusqu’à leur approbation.',
               style: TextStyle(color: Colors.white70, height: 1.4),
             ),
@@ -637,7 +648,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               ),
             ],
             const SizedBox(height: 6),
-            Text(
+            AppText(
               'Demandé par : $authorName',
               style: const TextStyle(color: Colors.white60, fontSize: 12),
             ),
@@ -665,7 +676,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 ),
                 onPressed: () => _deleteConnectRequest(doc),
                 icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
-                label: const Text(
+                label: const AppText(
                   'Supprimer',
                   style: TextStyle(
                     color: Colors.redAccent,
@@ -685,7 +696,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
       onPressed: () => _reviewConnectRequest(doc, approved: true),
       icon: Icon(Icons.check_circle, color: primaryDarkGreen),
-      label: Text(
+      label: AppText(
         'APPROUVER',
         style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold),
       ),
@@ -697,7 +708,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
       onPressed: () => _reviewConnectRequest(doc, approved: false),
       icon: const Icon(Icons.cancel, color: Colors.white),
-      label: const Text(
+      label: const AppText(
         'REFUSER',
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
@@ -824,28 +835,28 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: cardGreen,
-          title: const Text(
+          title: const AppText(
             'Supprimer cette demande ?',
             style: TextStyle(
               color: Colors.redAccent,
               fontWeight: FontWeight.bold,
             ),
           ),
-          content: const Text(
+          content: const AppText(
             'La demande sera supprimée définitivement.',
             style: TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Annuler'),
+              child: const AppText('Annuler'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
               ),
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
+              child: const AppText(
                 'Supprimer',
                 style: TextStyle(color: Colors.white),
               ),
@@ -902,7 +913,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       Icon(Icons.groups, color: primaryGold, size: 30),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Habesha Connect',
                           style: TextStyle(
                             color: primaryGold,
@@ -1141,7 +1152,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      AppText(
                         'Publicités des professionnels',
                         style: TextStyle(
                           color: primaryGold,
@@ -1150,7 +1161,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         ),
                       ),
                       const SizedBox(height: 7),
-                      const Text(
+                      const AppText(
                         'Vérifiez la photo, l’offre et les dates avant de publier.',
                         style: TextStyle(
                           color: Colors.white70,
@@ -1222,7 +1233,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             ),
                             const SizedBox(width: 9),
                             Expanded(
-                              child: Text(
+                              child: AppText(
                                 '${requests.length} demande(s) à valider',
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -1241,7 +1252,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(24),
-                    child: Text(
+                    child: AppText(
                       'Impossible de charger les demandes. Vérifiez votre '
                       'connexion et vos droits administrateur.',
                       textAlign: TextAlign.center,
@@ -1272,7 +1283,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       children: [
                         Icon(Icons.task_alt, color: primaryGold, size: 38),
                         const SizedBox(height: 14),
-                        const Text(
+                        const AppText(
                           'Aucune demande en attente',
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -1282,7 +1293,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        const AppText(
                           'Les demandes déjà traitées restent disponibles dans l’historique.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -1344,7 +1355,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                       color: primaryGold,
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: Text(
+                                    child: AppText(
                                       'À VALIDER',
                                       style: TextStyle(
                                         color: primaryDarkGreen,
@@ -1358,7 +1369,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                       padding: EdgeInsets.symmetric(
                                         vertical: 5,
                                       ),
-                                      child: Text(
+                                      child: AppText(
                                         'Sans paiement',
                                         style: TextStyle(
                                           color: Colors.white,
@@ -1379,15 +1390,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                       child: Image.network(
                                         url,
                                         fit: BoxFit.contain,
-                                        errorBuilder: (_, __, ___) => const Center(
-                                          child: Text(
-                                            'Photo momentanément indisponible.',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.white70,
+                                        errorBuilder: (_, __, ___) =>
+                                            const Center(
+                                              child: AppText(
+                                                'Photo momentanément indisponible.',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.white70,
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
                                       ),
                                     ),
                                   ),
@@ -1529,9 +1541,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Décision impossible : $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: AppText('Décision impossible : $error')),
+      );
     } finally {
       if (mounted) {
         setState(() => _reviewingPromotions.remove(requestId));
@@ -1602,6 +1614,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         iconTheme: IconThemeData(color: primaryGold),
         actions: [
           _buildAdminNotificationButton(),
+          PopupMenuButton<String>(
+            tooltip: 'Gestion étape 10',
+            icon: const Icon(Icons.more_vert),
+            onSelected: (v) => ehOpen<void>(
+              context,
+              v == 'jobs' ? const EhEmployerPicker() : const EhReviewPage(),
+            ),
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'jobs',
+                child: AppText('Emplois et candidatures'),
+              ),
+              if (isSuperAdmin)
+                const PopupMenuItem(
+                  value: 'review',
+                  child: AppText('Voyages et signalements'),
+                ),
+            ],
+          ),
           if (isSuperAdmin)
             IconButton(
               tooltip: 'Synchroniser À proximité',
@@ -1659,6 +1690,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   const _ReviewCollection(
                     'Business Submissions',
                     'businessSubmissions',
+                  ),
+                  const _ReviewCollection(
+                    'Fiches employeur',
+                    'employerSubmissions',
+                  ),
+                  const _ReviewCollection(
+                    'Groupes et associations',
+                    'communitySubmissions',
                   ),
                   const _ReviewCollection(
                     'Job / Service Submissions',
@@ -1749,7 +1788,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AppText(
                   'Euro Habesha',
                   style: TextStyle(
                     color: primaryGold,
@@ -1758,7 +1797,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                const AppText(
                   'Super Admin Control Center',
                   style: TextStyle(color: Colors.white70),
                 ),
@@ -1775,7 +1814,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 25),
-        Text(
+        AppText(
           'Contrôle de la plateforme',
           style: TextStyle(
             color: primaryGold,
@@ -1908,11 +1947,60 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         16,
         MediaQuery.of(context).padding.bottom + 32,
       ),
-      itemCount: collections.length,
+      itemCount: collections.length + (AppSession.isSuperAdmin ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 18),
       itemBuilder: (context, index) {
+        final hasPrivateInbox = verificationMode && AppSession.isSuperAdmin;
+        final hasSpaceInbox = !verificationMode && AppSession.isSuperAdmin;
+        if (hasSpaceInbox && index == 0) {
+          return Card(
+            color: cardGreen,
+            child: ListTile(
+              leading: Icon(Icons.groups_outlined, color: primaryGold),
+              title: const AppText(
+                'Groupes et associations proposés',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const AppText(
+                'Demandes de création à examiner',
+                style: TextStyle(color: Colors.white70),
+              ),
+              trailing: Icon(Icons.chevron_right, color: primaryGold),
+              onTap: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(builder: (_) => const ConnectSpaceAdmin()),
+              ),
+            ),
+          );
+        }
+        if (hasPrivateInbox && index == 0) {
+          return Card(
+            color: cardGreen,
+            child: ListTile(
+              leading: Icon(Icons.folder_shared_outlined, color: primaryGold),
+              title: const AppText(
+                'Dossiers privés professionnels',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: const AppText(
+                'Justificatifs, identité et demandes de badge',
+                style: TextStyle(color: Colors.white70),
+              ),
+              trailing: Icon(Icons.chevron_right, color: primaryGold),
+              onTap: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminPrivateVerificationInbox(),
+                ),
+              ),
+            ),
+          );
+        }
         return _buildFirestoreReviewSection(
-          collections[index],
+          collections[index - ((hasPrivateInbox || hasSpaceInbox) ? 1 : 0)],
           verificationMode: verificationMode,
         );
       },
@@ -1945,11 +2033,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           final data = doc.data();
           final status = data['status']?.toString() ?? 'pendingApproval';
 
-          final isPending =
-              status == 'pendingApproval' ||
-              status == 'pendingAdminReview' ||
-              status == 'pendingPaymentAndReview' ||
-              status == 'pending';
+          final isPending = adminReviewPending(status);
 
           if (!isPending) {
             return false;
@@ -2028,12 +2112,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     bool verificationMode = false,
   }) {
     final data = doc.data();
-    if (!verificationMode && isProfessionalReviewSource(doc.reference.parent.id)) {
+    if (!verificationMode &&
+        isProfessionalReviewSource(doc.reference.parent.id)) {
       return AdminProfessionalSubmissionTile(
-        model: AdminProfessionalReviewData(data,doc.reference.parent.id),
-        onOpen: () => _showSubmissionDetails(doc,verificationMode: false));
+        model: AdminProfessionalReviewData(data, doc.reference.parent.id),
+        onOpen: () => _showSubmissionDetails(doc, verificationMode: false),
+      );
     }
-
 
     final fields = Map<String, dynamic>.from(data['fields'] ?? {});
 
@@ -2116,7 +2201,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   ),
                 ),
                 icon: Icon(Icons.visibility_outlined, color: primaryGold),
-                label: const Text(
+                label: const AppText(
                   'View Details',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -2142,7 +2227,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 ),
                 onPressed: () => _deleteSubmission(doc),
                 icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
-                label: const Text(
+                label: const AppText(
                   'Delete Permanently',
                   style: TextStyle(
                     color: Colors.redAccent,
@@ -2158,43 +2243,96 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   }
 
   // EH_ADMIN_ONGLETS_V1
-  Future<void> _openProfessionalReviewTabs(DocumentSnapshot<Map<String,dynamic>> doc) async {
+  Future<void> _openProfessionalReviewTabs(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) async {
     if (!_canManageSubmission(doc)) {
-      _showMessage('Vous n’avez pas la permission de consulter cette modération.', backgroundColor: Colors.redAccent);
+      _showMessage(
+        'Vous n’avez pas la permission de consulter cette modération.',
+        backgroundColor: Colors.redAccent,
+      );
       return;
     }
     try {
-      final current = await doc.reference.get(const GetOptions(source: Source.server));
-      if (!mounted) { return; }
-      if (!current.exists) { _showMessage('Cette demande n’existe plus.', backgroundColor: Colors.orange); return; }
+      final current = await doc.reference.get(
+        const GetOptions(source: Source.server),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (!current.exists) {
+        _showMessage(
+          'Cette demande n’existe plus.',
+          backgroundColor: Colors.orange,
+        );
+        return;
+      }
       final source = current.reference.parent.id;
-      final model = AdminProfessionalReviewData(current.data() ?? <String,dynamic>{}, source);
+      final model = AdminProfessionalReviewData(
+        current.data() ?? <String, dynamic>{},
+        source,
+      );
       final initialFingerprint = reviewPresentationFingerprint(model);
-      await showModalBottomSheet<void>(context: context,isScrollControlled: true,
-        backgroundColor: Colors.transparent,builder: (sheetContext) => AdminProfessionalReviewSheet(
-          model: model, referenceLabel: current.reference.path,
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => AdminProfessionalReviewSheet(
+          model: model,
+          referenceLabel: current.reference.path,
           onReview: (approved) async {
-            final latest = await current.reference.get(const GetOptions(source: Source.server));
-            if (!latest.exists) { return false; }
-            final latestModel = AdminProfessionalReviewData(latest.data() ?? <String,dynamic>{},source);
-            if (reviewPresentationFingerprint(latestModel) != initialFingerprint) { return false; }
-            await _reviewSubmission(latest,approved: approved,verificationMode: false);
-            final saved = await current.reference.get(const GetOptions(source: Source.server));
-            return saved.exists && saved.data()?['status'] == (approved ? 'approved' : 'rejected');
+            final latest = await current.reference.get(
+              const GetOptions(source: Source.server),
+            );
+            if (!latest.exists) {
+              return false;
+            }
+            final latestModel = AdminProfessionalReviewData(
+              latest.data() ?? <String, dynamic>{},
+              source,
+            );
+            if (reviewPresentationFingerprint(latestModel) !=
+                initialFingerprint) {
+              return false;
+            }
+            await _reviewSubmission(
+              latest,
+              approved: approved,
+              verificationMode: false,
+            );
+            final saved = await current.reference.get(
+              const GetOptions(source: Source.server),
+            );
+            return saved.exists &&
+                saved.data()?['status'] == (approved ? 'approved' : 'rejected');
           },
           onDelete: () async {
             await _deleteSubmission(current);
-            final remaining = await current.reference.get(const GetOptions(source: Source.server));
+            final remaining = await current.reference.get(
+              const GetOptions(source: Source.server),
+            );
             return !remaining.exists;
           },
-          onOpenVerification: AppSession.isSuperAdmin ? () {
-            if (!mounted) { return; }
-            Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const AdminProfessionalModerationScreen()));
-          } : null,
-        ));
+          onOpenVerification: AppSession.isSuperAdmin
+              ? () {
+                  if (!mounted) {
+                    return;
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AdminProfessionalModerationScreen(),
+                    ),
+                  );
+                }
+              : null,
+        ),
+      );
     } catch (_) {
-      if (mounted) _showMessage('Impossible d’ouvrir le dossier. Vérifiez la connexion et vos droits.', backgroundColor: Colors.redAccent);
+      if (mounted)
+        _showMessage(
+          'Impossible d’ouvrir le dossier. Vérifiez la connexion et vos droits.',
+          backgroundColor: Colors.redAccent,
+        );
     }
   }
 
@@ -2202,7 +2340,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     DocumentSnapshot<Map<String, dynamic>> doc, {
     required bool verificationMode,
   }) async {
-    if (!verificationMode && isProfessionalReviewSource(doc.reference.parent.id)) {
+    if (!verificationMode &&
+        isProfessionalReviewSource(doc.reference.parent.id)) {
       await _openProfessionalReviewTabs(doc);
       return;
     }
@@ -2288,7 +2427,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
+                              const AppText(
                                 'Consultez les informations avant de décider.',
                                 style: TextStyle(
                                   color: Colors.white70,
@@ -2330,14 +2469,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           ),
                           collapsedIconColor: Colors.white70,
                           iconColor: primaryGold,
-                          title: const Text(
+                          title: const AppText(
                             'Informations techniques',
                             style: TextStyle(
                               color: Colors.white70,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          subtitle: const Text(
+                          subtitle: const AppText(
                             'Identifiants et coordonnées GPS',
                             style: TextStyle(
                               color: Colors.white54,
@@ -2559,7 +2698,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                               Icons.delete_forever,
                               color: Colors.redAccent,
                             ),
-                            label: const Text(
+                            label: const AppText(
                               'Delete Permanently',
                               style: TextStyle(
                                 color: Colors.redAccent,
@@ -2732,7 +2871,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ),
           ),
           const SizedBox(height: 5),
-          Text(
+          AppText(
             'Capacity: $capacity   •   Sold: $sold',
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
@@ -2853,7 +2992,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         verificationMode: verificationMode,
       ),
       icon: Icon(Icons.check_circle, color: primaryDarkGreen),
-      label: Text(
+      label: AppText(
         'Approve',
         style: TextStyle(color: primaryDarkGreen, fontWeight: FontWeight.bold),
       ),
@@ -2872,7 +3011,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         verificationMode: verificationMode,
       ),
       icon: const Icon(Icons.cancel, color: Colors.white),
-      label: const Text(
+      label: const AppText(
         'Reject',
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
@@ -2960,7 +3099,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         'reviewedByEmail': reviewer.email ?? AppSession.email,
       });
 
-      if (approved) {
+      if (approved && adminPublishesConsumerListing(doc.reference.parent.id)) {
         await _publishApprovedSubmission(
           doc,
           data,
@@ -3013,26 +3152,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardGreen,
-        title: const Text(
+        title: const AppText(
           'Delete submission?',
           style: TextStyle(
             color: Colors.redAccent,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: const Text(
+        content: const AppText(
           'This removes the submission and hides any published feed/category copy.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: const AppText('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
+            child: const AppText(
               'Delete',
               style: TextStyle(
                 color: Colors.white,
@@ -3062,6 +3201,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       };
 
       await doc.reference.delete();
+      if (!adminPublishesConsumerListing(sourceCollection)) {
+        _showMessage('Fiche employeur supprimée.');
+        return;
+      }
 
       await _firestore
           .collection('publicFeed')
@@ -3281,7 +3424,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text(
+          child: AppText(
             'Seul le Super Admin peut gérer les administrateurs.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70),
@@ -3300,7 +3443,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText(
             'Gestion des administrateurs',
             style: TextStyle(
               color: primaryGold,
@@ -3309,7 +3452,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ),
           ),
           const SizedBox(height: 7),
-          const Text(
+          const AppText(
             'Le Super Admin attribue un administrateur à une catégorie précise. Un seul administrateur actif peut être associé à une catégorie.',
             style: TextStyle(color: Colors.white70, height: 1.45),
           ),
@@ -3394,7 +3537,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Icon(Icons.security, color: primaryGold),
                 const SizedBox(width: 10),
                 const Expanded(
-                  child: Text(
+                  child: AppText(
                     'L’administrateur sera limité à la catégorie sélectionnée. Les permissions sont enregistrées automatiquement dans adminInvites.',
                     style: TextStyle(
                       color: Colors.white70,
@@ -3417,7 +3560,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ),
             onPressed: _sendAdminInvite,
             icon: Icon(Icons.person_add_alt_1, color: primaryDarkGreen),
-            label: Text(
+            label: AppText(
               'Créer l’administrateur',
               style: TextStyle(
                 color: primaryDarkGreen,
@@ -3599,7 +3742,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText(
             'Create Official Post / Business Listing',
             style: TextStyle(
               color: primaryGold,
@@ -3608,7 +3751,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ),
           ),
           const SizedBox(height: 15),
-          Text(
+          AppText(
             'Business Logo / Profile Picture',
             style: TextStyle(
               color: primaryGold,
@@ -3640,7 +3783,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         children: [
                           Icon(Icons.camera_alt, color: primaryGold, size: 30),
                           const SizedBox(height: 4),
-                          const Text(
+                          const AppText(
                             'Add Logo',
                             style: TextStyle(
                               color: Colors.white70,
@@ -3698,7 +3841,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             _cityController,
           ),
           const SizedBox(height: 15),
-          Text(
+          AppText(
             'Phone Number *',
             style: TextStyle(
               color: primaryGold,
@@ -3758,7 +3901,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               ),
             ),
             onPressed: _submitAdminListing,
-            child: Text(
+            child: AppText(
               'Publish Listing Instantly',
               style: TextStyle(
                 color: primaryDarkGreen,

@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 import 'professional_membership.dart';
 import 'professional_subscription_price_widgets.dart';
@@ -49,12 +52,14 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
       appBar: AppBar(
         backgroundColor: ProVipSubscriptionScreen.dark,
         foregroundColor: ProVipSubscriptionScreen.gold,
-        title: const Text('Visibilité & abonnements'),
+        title: const AppText('Visibilité & abonnements'),
       ),
       body: user == null || user.isAnonymous
           ? const Center(
-              child: Text('Connectez-vous pour consulter les formules.',
-                  style: TextStyle(color: Colors.white)),
+              child: AppText(
+                'Connectez-vous pour consulter les formules.',
+                style: TextStyle(color: Colors.white),
+              ),
             )
           : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
@@ -66,25 +71,30 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text('Les formules sont momentanément indisponibles.',
-                          style: TextStyle(color: Colors.white),
-                          textAlign: TextAlign.center),
+                      child: AppText(
+                        'Les formules sont momentanément indisponibles.',
+                        style: TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   );
                 }
                 if (!snapshot.hasData) {
                   return const Center(
-                      child: CircularProgressIndicator(
-                          color: ProVipSubscriptionScreen.gold));
+                    child: CircularProgressIndicator(
+                      color: ProVipSubscriptionScreen.gold,
+                    ),
+                  );
                 }
                 final settings = ProfessionalMembershipSettings.fromMap(
-                    snapshot.data!.data());
+                  snapshot.data!.data(),
+                );
                 if (!settings.compatible ||
                     (!preview && !settings.displayEnabled)) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text(
+                      child: AppText(
                         'Les formules Silver, Gold et VIP ne sont pas encore ouvertes. '
                         'Les services habituels restent disponibles.',
                         style: TextStyle(color: Colors.white),
@@ -112,16 +122,19 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                         ),
                         const SizedBox(height: 8),
                         if ((widget.businessName ?? '').isNotEmpty)
-                          Text(widget.businessName!,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 17)),
+                          Text(
+                            widget.businessName!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                            ),
+                          ),
                         const SizedBox(height: 8),
-                        const Text(
+                        const AppText(
                           'Offres en préparation : aucun achat disponible. '
                           'Les prix affichés par la boutique sont indicatifs '
                           'jusqu’à l’ouverture des souscriptions.',
-                          style: TextStyle(
-                              color: Colors.white70, height: 1.5),
+                          style: TextStyle(color: Colors.white70, height: 1.5),
                         ),
                         const SizedBox(height: 18),
                         for (final plan in settings.plans)
@@ -133,15 +146,19 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.verified_user_outlined,
-                                    color: ProVipSubscriptionScreen.gold),
+                                Icon(
+                                  Icons.verified_user_outlined,
+                                  color: ProVipSubscriptionScreen.gold,
+                                ),
                                 SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(
+                                  child: AppText(
                                     'La vérification professionnelle reste indépendante. '
                                     'Un abonnement ne valide pas l’identité de l’établissement.',
                                     style: TextStyle(
-                                        color: Colors.white70, height: 1.4),
+                                      color: Colors.white70,
+                                      height: 1.4,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -149,14 +166,13 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        const AppText(
                           'Les avantages affichés sont proposés pour le futur lancement. '
                           'La rotation dépendra de la proximité, de la pertinence '
                           'et des places disponibles. Les promotions resteront '
                           'soumises à validation admin. Aucun classement ni '
                           'nombre de clients n’est garanti.',
-                          style: TextStyle(
-                              color: Colors.white70, height: 1.5),
+                          style: TextStyle(color: Colors.white70, height: 1.5),
                         ),
                         const SizedBox(height: 18),
                         FilledButton.icon(
@@ -168,10 +184,12 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                             minimumSize: const Size.fromHeight(52),
                           ),
                           icon: const Icon(Icons.lock_outline),
-                          label: const Text('Souscriptions bientôt disponibles'),
+                          label: const AppText(
+                            'Souscriptions bientôt disponibles',
+                          ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        const AppText(
                           'Aucun paiement, badge actif ou quota n’est accordé par cet écran.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white70),
@@ -185,8 +203,11 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
     );
   }
 
-  Widget _plan(ProfessionalMembershipPlan plan,
-      StoreSubscriptionCatalog? catalog, ConnectionState state) {
+  Widget _plan(
+    ProfessionalMembershipPlan plan,
+    StoreSubscriptionCatalog? catalog,
+    ConnectionState state,
+  ) {
     final accent = plan.id == 'silver'
         ? const Color(0xFFDEE4E8)
         : ProVipSubscriptionScreen.gold;
@@ -207,8 +228,7 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
       decoration: BoxDecoration(
         color: ProVipSubscriptionScreen.green,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: accent, width: plan.id == 'gold' ? 2 : 1),
+        border: Border.all(color: accent, width: plan.id == 'gold' ? 2 : 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,36 +241,47 @@ class _ProVipSubscriptionScreenState extends State<ProVipSubscriptionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(plan.title,
-                        style: TextStyle(
-                            color: accent,
-                            fontSize: 23,
-                            fontWeight: FontWeight.w900)),
-                    Text(plan.description,
-                        style: const TextStyle(color: Colors.white70)),
+                    Text(
+                      plan.title,
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      plan.description,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 18),
-          Text(
+          AppText(
             '${plan.monthlyPromotions} promotion(s) incluse(s) par mois — proposition',
             style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600),
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
-          Text(plan.rotation,
-              style: const TextStyle(color: Colors.white70)),
+          Text(plan.rotation, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 14),
-          Text(storeMessage,
-              style: const TextStyle(
-                  color: ProVipSubscriptionScreen.gold,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            storeMessage,
+            style: const TextStyle(
+              color: ProVipSubscriptionScreen.gold,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Tarif de préparation défini dans l’administration :',
-              style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const AppText(
+            'Tarif de préparation défini dans l’administration :',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
           ProfessionalSubscriptionPricePreview(tier: plan.id),
         ],
       ),
@@ -281,8 +312,9 @@ class ProfessionalMembershipAction extends StatelessWidget {
         if (snapshot.hasError || !snapshot.hasData) {
           return const SizedBox.shrink();
         }
-        final settings =
-            ProfessionalMembershipSettings.fromMap(snapshot.data!.data());
+        final settings = ProfessionalMembershipSettings.fromMap(
+          snapshot.data!.data(),
+        );
         if (!settings.compatible || !settings.displayEnabled) {
           return const SizedBox.shrink();
         }
@@ -293,7 +325,9 @@ class ProfessionalMembershipAction extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: const BorderSide(
-                  color: ProVipSubscriptionScreen.gold, width: 1.5),
+                color: ProVipSubscriptionScreen.gold,
+                width: 1.5,
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
@@ -311,28 +345,40 @@ class ProfessionalMembershipAction extends StatelessWidget {
                 padding: EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(Icons.workspace_premium_outlined,
-                        color: ProVipSubscriptionScreen.gold, size: 32),
+                    Icon(
+                      Icons.workspace_premium_outlined,
+                      color: ProVipSubscriptionScreen.gold,
+                      size: 32,
+                    ),
                     SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Visibilité & abonnements',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold)),
+                          AppText(
+                            'Visibilité & abonnements',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           SizedBox(height: 4),
-                          Text('Silver · Gold · VIP — bientôt disponible',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 12)),
+                          AppText(
+                            'Silver · Gold · VIP — bientôt disponible',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     SizedBox(width: 8),
-                    Icon(Icons.chevron_right,
-                        color: ProVipSubscriptionScreen.gold),
+                    Icon(
+                      Icons.chevron_right,
+                      color: ProVipSubscriptionScreen.gold,
+                    ),
                   ],
                 ),
               ),

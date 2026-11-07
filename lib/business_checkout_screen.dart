@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:async';
 import 'dart:math';
 
@@ -82,7 +84,7 @@ Future<bool> _confirm(BuildContext context, String title, String body) async =>
           TextButton(
             style: TextButton.styleFrom(foregroundColor: _gold),
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Retour'),
+            child: const AppText('Retour'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -90,7 +92,7 @@ Future<bool> _confirm(BuildContext context, String title, String body) async =>
               foregroundColor: _dark,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Confirmer'),
+            child: const AppText('Confirmer'),
           ),
         ],
       ),
@@ -131,9 +133,8 @@ Future<void> requestBusinessOrderRefund(
     if (!context.mounted || FirebaseAuth.instance.currentUser?.uid != uid) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(_message(error))));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(_message(error))));
   }
 }
 
@@ -380,14 +381,14 @@ class _BusinessCheckoutState extends _GuardedState<BusinessCheckoutScreen> {
       style: const TextStyle(color: _gold, fontSize: 22),
     ),
     const SizedBox(height: 12),
-    const Text(
+    const AppText(
       'Paiement réel des articles physiques du menu. Les prix et frais '
       'définitifs sont vérifiés sur le serveur avant de payer.',
       style: TextStyle(color: Colors.white70),
     ),
     if (pendingId != null) ...[
       const SizedBox(height: 16),
-      const Text(
+      const AppText(
         'Une commande est en attente. Consultez-la avant de recommencer.',
         style: TextStyle(color: Colors.white),
       ),
@@ -411,7 +412,7 @@ class _BusinessCheckoutState extends _GuardedState<BusinessCheckoutScreen> {
         max: 40,
         keyboard: TextInputType.phone,
       ),
-      const Text(
+      const AppText(
         'Ce numéro sert à la commande ; aucun SMS de vérification '
         'supplémentaire n’est demandé ici.',
         style: TextStyle(color: Colors.white60),
@@ -432,7 +433,7 @@ class _BusinessCheckoutState extends _GuardedState<BusinessCheckoutScreen> {
         _line('Sous-total', quote!['subtotalCents']),
         _line('Frais Euro Habesha côté client', quote!['customerFeeCents']),
         _line('Total à payer', quote!['customerTotalCents']),
-        const Text(
+        const AppText(
           'Stripe ouvrira sa page sécurisée. Le retour dans '
           'l’application ne vaut pas confirmation de paiement.',
           style: TextStyle(color: Colors.white70),
@@ -578,7 +579,7 @@ class _OrderStatusState
       ),
     ],
     button('Actualiser le paiement', refresh),
-    const Text(
+    const AppText(
       'Le professionnel reçoit la commande après confirmation du '
       'paiement. Un paiement confirmé ne signifie pas que le virement bancaire '
       'a déjà été effectué.',
@@ -647,12 +648,12 @@ class _OrderPaymentAdminState extends _GuardedState<OrderPaymentAdminScreen> {
 
   @override
   Widget build(BuildContext context) => frame('Paiements des commandes', [
-    const Text(
+    const AppText(
       'Contrôle Super Admin',
       style: TextStyle(color: _gold, fontSize: 22),
     ),
     const SizedBox(height: 12),
-    const Text(
+    const AppText(
       'Articles physiques du menu uniquement. Les tickets, devis, '
       'ebooks et abonnements utilisent des parcours séparés.',
       style: TextStyle(color: Colors.white70),
@@ -660,7 +661,7 @@ class _OrderPaymentAdminState extends _GuardedState<OrderPaymentAdminScreen> {
     if (config != null) ...[
       SwitchListTile(
         activeThumbColor: _gold,
-        title: const Text(
+        title: const AppText(
           'Ouvrir les paiements réels',
           style: TextStyle(color: Colors.white),
         ),
@@ -671,7 +672,7 @@ class _OrderPaymentAdminState extends _GuardedState<OrderPaymentAdminScreen> {
       ),
       SwitchListTile(
         activeThumbColor: _gold,
-        title: const Text(
+        title: const AppText(
           'Appliquer les frais Euro Habesha',
           style: TextStyle(color: Colors.white),
         ),
@@ -684,7 +685,7 @@ class _OrderPaymentAdminState extends _GuardedState<OrderPaymentAdminScreen> {
         value: fees,
         onChanged: busy ? null : (v) => setState(() => fees = v),
       ),
-      const Text(
+      const AppText(
         'Les frais de traitement Stripe restent distincts et sont '
         'prélevés sur le compte du professionnel. Les réductions Silver, Gold '
         'et VIP restent des offres prévues tant que les abonnements ne sont '
@@ -694,7 +695,7 @@ class _OrderPaymentAdminState extends _GuardedState<OrderPaymentAdminScreen> {
       CheckboxListTile(
         activeColor: _gold,
         checkColor: _dark,
-        title: const Text(
+        title: const AppText(
           'J’ai configuré et vérifié la réception du webhook '
           'Stripe pour les comptes connectés.',
           style: TextStyle(color: Colors.white),
@@ -705,7 +706,7 @@ class _OrderPaymentAdminState extends _GuardedState<OrderPaymentAdminScreen> {
             : (v) => setState(() => acknowledged = v == true),
       ),
       if (config!['ready'] != true)
-        const Text(
+        const AppText(
           'Connect et le secret de signature du webhook doivent être '
           'configurés avant ouverture.',
           style: TextStyle(color: Colors.orangeAccent),

@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'professional_profile_sync_service.dart';
 
 class BusinessMenuManagementScreen extends StatefulWidget {
@@ -50,10 +53,10 @@ class _BusinessMenuManagementScreenState
         value.contains('pastry');
   }
 
-  DocumentReference<Map<String, dynamic>> get _businessRef =>
-      FirebaseFirestore.instance
-          .collection(widget.sourceCollection)
-          .doc(widget.businessId);
+  DocumentReference<Map<String, dynamic>> get _businessRef => FirebaseFirestore
+      .instance
+      .collection(widget.sourceCollection)
+      .doc(widget.businessId);
 
   @override
   void initState() {
@@ -97,7 +100,8 @@ class _BusinessMenuManagementScreenState
             ? fields['title'].toString()
             : 'Services / Menu';
 
-        _category = fields['jobCategory']?.toString() ??
+        _category =
+            fields['jobCategory']?.toString() ??
             fields['businessCategory']?.toString() ??
             '';
 
@@ -114,11 +118,7 @@ class _BusinessMenuManagementScreenState
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible de charger le menu : $error',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible de charger le menu : $error')),
       );
     }
   }
@@ -162,9 +162,7 @@ class _BusinessMenuManagementScreenState
     return FirebaseFirestore.instance.collection('_ids').doc().id;
   }
 
-  Future<void> _openProductEditor({
-    Map<String, dynamic>? existingItem,
-  }) async {
+  Future<void> _openProductEditor({Map<String, dynamic>? existingItem}) async {
     final nameController = TextEditingController(
       text: existingItem?['name']?.toString() ?? '',
     );
@@ -196,7 +194,8 @@ class _BusinessMenuManagementScreenState
       'book': 'Livre papier',
       'ebook': 'Ebook (numérique)',
     };
-    String productType = existingItem?['productType']?.toString() ??
+    String productType =
+        existingItem?['productType']?.toString() ??
         (_isCatering ? 'food' : 'service');
     if (!productTypes.containsKey(productType)) productType = 'physical';
 
@@ -225,7 +224,8 @@ class _BusinessMenuManagementScreenState
     String selectedCategory = originalCategory.isEmpty
         ? 'Autres'
         : originalCategory;
-    bool customCategory = originalCategory.isNotEmpty &&
+    bool customCategory =
+        originalCategory.isNotEmpty &&
         !menuCategories.contains(originalCategory) &&
         !(_jobMenuItems.any((e) => e['menuCategory'] == originalCategory));
     if (customCategory) selectedCategory = '__custom__';
@@ -255,9 +255,7 @@ class _BusinessMenuManagementScreenState
               ),
               decoration: const BoxDecoration(
                 color: darkGreen,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: SafeArea(
                 top: false,
@@ -293,11 +291,9 @@ class _BusinessMenuManagementScreenState
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      const AppText(
                         'Ajoutez une photo et les informations utiles au client.',
-                        style: TextStyle(
-                          color: Colors.white60,
-                        ),
+                        style: TextStyle(color: Colors.white60),
                       ),
                       const SizedBox(height: 22),
                       GestureDetector(
@@ -330,9 +326,7 @@ class _BusinessMenuManagementScreenState
                             children: [
                               if (selectedImage != null)
                                 Image.file(
-                                  File(
-                                    selectedImage!.path,
-                                  ),
+                                  File(selectedImage!.path),
                                   fit: BoxFit.cover,
                                 )
                               else if (currentImageUrl.isNotEmpty)
@@ -358,7 +352,7 @@ class _BusinessMenuManagementScreenState
                                         size: 42,
                                       ),
                                       SizedBox(height: 10),
-                                      Text(
+                                      AppText(
                                         'Ajouter une photo',
                                         style: TextStyle(
                                           color: gold,
@@ -372,9 +366,7 @@ class _BusinessMenuManagementScreenState
                                 right: 12,
                                 bottom: 12,
                                 child: Container(
-                                  padding: const EdgeInsets.all(
-                                    9,
-                                  ),
+                                  padding: const EdgeInsets.all(9),
                                   decoration: const BoxDecoration(
                                     color: gold,
                                     shape: BoxShape.circle,
@@ -404,12 +396,14 @@ class _BusinessMenuManagementScreenState
                           ),
                         ),
                         style: const TextStyle(color: Colors.white),
-                        items: productTypes.entries.map((entry) =>
-                          DropdownMenuItem<String>(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ),
-                        ).toList(),
+                        items: productTypes.entries
+                            .map(
+                              (entry) => DropdownMenuItem<String>(
+                                value: entry.key,
+                                child: Text(entry.value),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           if (value != null) {
                             setSheetState(() => productType = value);
@@ -437,13 +431,18 @@ class _BusinessMenuManagementScreenState
                         ),
                         style: const TextStyle(color: gold),
                         items: [
-                          ...categoryChoices.map((value) => DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value, overflow: TextOverflow.ellipsis),
-                          )),
+                          ...categoryChoices.map(
+                            (value) => DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                           const DropdownMenuItem<String>(
                             value: '__custom__',
-                            child: Text('+ Nouvelle catégorie'),
+                            child: AppText('+ Nouvelle catégorie'),
                           ),
                         ],
                         onChanged: (value) {
@@ -495,13 +494,14 @@ class _BusinessMenuManagementScreenState
                       ),
                       if (productType == 'ebook') ...[
                         const SizedBox(height: 12),
-                        const Text(
+                        const AppText(
                           'Le fichier ebook sera distribué par un accès sécurisé '
                           'après confirmation du paiement, dans une prochaine étape.',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
-                      if (productType == 'book' || productType == 'physical') ...[
+                      if (productType == 'book' ||
+                          productType == 'physical') ...[
                         const SizedBox(height: 13),
                         _EditorField(
                           controller: stockController,
@@ -513,7 +513,7 @@ class _BusinessMenuManagementScreenState
                       ],
                       if (_isCatering && productType == 'food') ...[
                         const SizedBox(height: 20),
-                        const Text(
+                        const AppText(
                           'Options du plat',
                           style: TextStyle(
                             color: gold,
@@ -525,13 +525,11 @@ class _BusinessMenuManagementScreenState
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           activeThumbColor: gold,
-                          title: const Text(
+                          title: const AppText(
                             'Plat épicé',
-                            style: TextStyle(
-                              color: Colors.white,
-                            ),
+                            style: TextStyle(color: Colors.white),
                           ),
-                          subtitle: const Text(
+                          subtitle: const AppText(
                             'Indique au client que ce plat est épicé',
                             style: TextStyle(
                               color: Colors.white54,
@@ -564,7 +562,7 @@ class _BusinessMenuManagementScreenState
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         activeThumbColor: gold,
-                        title: const Text(
+                        title: const AppText(
                           'Disponible',
                           style: TextStyle(
                             color: Colors.white,
@@ -596,9 +594,7 @@ class _BusinessMenuManagementScreenState
                             backgroundColor: gold,
                             foregroundColor: darkGreen,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                16,
-                              ),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           onPressed: () {
@@ -609,11 +605,9 @@ class _BusinessMenuManagementScreenState
                             );
 
                             if (name.isEmpty || price == null || price < 0) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(
+                              ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
+                                  content: AppText(
                                     'Ajoutez un nom et un prix valide.',
                                   ),
                                 ),
@@ -623,42 +617,52 @@ class _BusinessMenuManagementScreenState
 
                             final stockText = stockController.text.trim();
                             final stock = stockText.isEmpty
-                                ? null : int.tryParse(stockText);
-                            if ((productType == 'book' || productType == 'physical') &&
-                                stockText.isNotEmpty && (stock == null || stock < 0)) {
+                                ? null
+                                : int.tryParse(stockText);
+                            if ((productType == 'book' ||
+                                    productType == 'physical') &&
+                                stockText.isNotEmpty &&
+                                (stock == null || stock < 0)) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Stock invalide.')),
+                                const SnackBar(
+                                  content: AppText('Stock invalide.'),
+                                ),
                               );
                               return;
                             }
-                             final menuCategory = menuCategoryController.text.trim();
-                             if (menuCategory.isEmpty) {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 const SnackBar(content: Text('Choisissez ou créez une catégorie.')),
-                               );
-                               return;
-                             }
-                            Navigator.pop(
-                              sheetContext,
-                              {
-                                'id': existingItem?['id']?.toString() ??
-                                    _newItemId(),
-                                'name': name,
-                                 'menuCategory': menuCategory,
-                                'productType': productType,
-                                'stock': (productType == 'book' || productType == 'physical')
-                                    ? stock : null,
-                                'description':
-                                    descriptionController.text.trim(),
-                                'price': price,
-                                'isAvailable': isAvailable,
-                                'isSpicy': isSpicy,
-                                'portion': portionController.text.trim(),
-                                'drinkOption': drinkController.text.trim(),
-                                'oldImageUrl': currentImageUrl,
-                                'selectedImage': selectedImage,
-                              },
-                            );
+                            final menuCategory = menuCategoryController.text
+                                .trim();
+                            if (menuCategory.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: AppText(
+                                    'Choisissez ou créez une catégorie.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            Navigator.pop(sheetContext, {
+                              'id':
+                                  existingItem?['id']?.toString() ??
+                                  _newItemId(),
+                              'name': name,
+                              'menuCategory': menuCategory,
+                              'productType': productType,
+                              'stock':
+                                  (productType == 'book' ||
+                                      productType == 'physical')
+                                  ? stock
+                                  : null,
+                              'description': descriptionController.text.trim(),
+                              'price': price,
+                              'isAvailable': isAvailable,
+                              'isSpicy': isSpicy,
+                              'portion': portionController.text.trim(),
+                              'drinkOption': drinkController.text.trim(),
+                              'oldImageUrl': currentImageUrl,
+                              'selectedImage': selectedImage,
+                            });
                           },
                           icon: Icon(
                             existingItem == null
@@ -701,10 +705,7 @@ class _BusinessMenuManagementScreenState
       return;
     }
 
-    await _saveProduct(
-      product: result,
-      existingItem: existingItem,
-    );
+    await _saveProduct(product: result, existingItem: existingItem);
   }
 
   Future<void> _saveProduct({
@@ -738,7 +739,10 @@ class _BusinessMenuManagementScreenState
       final item = <String, dynamic>{
         'id': product['id'],
         'name': product['name'],
-         'menuCategory': product['menuCategory'] ?? existingItem?['menuCategory'] ?? 'Autres',
+        'menuCategory':
+            product['menuCategory'] ??
+            existingItem?['menuCategory'] ??
+            'Autres',
         'productType': product['productType'],
         'stock': product['stock'],
         'description': product['description'],
@@ -805,10 +809,7 @@ class _BusinessMenuManagementScreenState
           item['createdAt'] = FieldValue.serverTimestamp();
         }
 
-        await menuCollection.doc(itemId).set(
-              item,
-              SetOptions(merge: true),
-            );
+        await menuCollection.doc(itemId).set(item, SetOptions(merge: true));
       }
 
       if (!mounted) {
@@ -830,11 +831,7 @@ class _BusinessMenuManagementScreenState
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible d’enregistrer : $error',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible d’enregistrer : $error')),
       );
     } finally {
       if (mounted) {
@@ -897,23 +894,19 @@ class _BusinessMenuManagementScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Impossible de modifier la disponibilité : $error',
-          ),
+          content: AppText('Impossible de modifier la disponibilité : $error'),
         ),
       );
     }
   }
 
-  Future<void> _deleteProduct(
-    Map<String, dynamic> item,
-  ) async {
+  Future<void> _deleteProduct(Map<String, dynamic> item) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: cardGreen,
-          title: const Text(
+          title: const AppText(
             'Supprimer ce produit ?',
             style: TextStyle(color: Colors.white),
           ),
@@ -923,25 +916,17 @@ class _BusinessMenuManagementScreenState
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                false,
-              ),
-              child: const Text(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const AppText(
                 'Annuler',
                 style: TextStyle(color: Colors.white70),
               ),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                true,
-              ),
-              child: const Text(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const AppText(
                 'Supprimer',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                ),
+                style: TextStyle(color: Colors.redAccent),
               ),
             ),
           ],
@@ -958,12 +943,8 @@ class _BusinessMenuManagementScreenState
         final itemId = item['id']?.toString();
 
         final updated = _jobMenuItems
-            .where(
-              (element) => element['id']?.toString() != itemId,
-            )
-            .map(
-              (e) => Map<String, dynamic>.from(e),
-            )
+            .where((element) => element['id']?.toString() != itemId)
+            .map((e) => Map<String, dynamic>.from(e))
             .toList();
 
         await _businessRef.update({
@@ -984,30 +965,21 @@ class _BusinessMenuManagementScreenState
         }
       }
 
-      await _deleteStorageImage(
-        item['imageUrl']?.toString() ?? '',
-      );
+      await _deleteStorageImage(item['imageUrl']?.toString() ?? '');
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Produit supprimé.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: AppText('Produit supprimé.')));
     } catch (error) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible de supprimer : $error',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible de supprimer : $error')),
       );
     }
   }
@@ -1054,29 +1026,34 @@ class _BusinessMenuManagementScreenState
 
   Widget _filteredMenuList(List<Map<String, dynamic>> items) {
     final categories = items.map(_menuCategoryOf).toSet();
-    final active = _selectedMenuCategory == 'Tous' ||
-        categories.contains(_selectedMenuCategory)
-        ? _selectedMenuCategory : 'Tous';
-    final visible = active == 'Tous' ? items : items.where(
-      (item) => _menuCategoryOf(item) == active,
-    ).toList();
+    final active =
+        _selectedMenuCategory == 'Tous' ||
+            categories.contains(_selectedMenuCategory)
+        ? _selectedMenuCategory
+        : 'Tous';
+    final visible = active == 'Tous'
+        ? items
+        : items.where((item) => _menuCategoryOf(item) == active).toList();
     return Column(
       children: [
         _menuCategoryFilters(items),
         Expanded(
-          child: visible.isEmpty ? _emptyMenu() : ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-            itemCount: visible.length,
-            itemBuilder: (context, index) {
-              final item = visible[index];
-              return _ProductCard(
-                item: item,
-                onEdit: () => _openProductEditor(existingItem: item),
-                onDelete: () => _deleteProduct(item),
-                onAvailabilityChanged: (value) => _toggleAvailability(item, value),
-              );
-            },
-          ),
+          child: visible.isEmpty
+              ? _emptyMenu()
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                  itemCount: visible.length,
+                  itemBuilder: (context, index) {
+                    final item = visible[index];
+                    return _ProductCard(
+                      item: item,
+                      onEdit: () => _openProductEditor(existingItem: item),
+                      onDelete: () => _deleteProduct(item),
+                      onAvailabilityChanged: (value) =>
+                          _toggleAvailability(item, value),
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -1084,12 +1061,7 @@ class _BusinessMenuManagementScreenState
 
   Widget _emptyMenu() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        70,
-        24,
-        20,
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 70, 24, 20),
       child: Column(
         children: [
           Container(
@@ -1098,18 +1070,12 @@ class _BusinessMenuManagementScreenState
             decoration: BoxDecoration(
               color: cardGreen,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: gold.withValues(alpha: 0.4),
-              ),
+              border: Border.all(color: gold.withValues(alpha: 0.4)),
             ),
-            child: const Icon(
-              Icons.restaurant_menu,
-              color: gold,
-              size: 42,
-            ),
+            child: const Icon(Icons.restaurant_menu, color: gold, size: 42),
           ),
           const SizedBox(height: 20),
-          const Text(
+          const AppText(
             'Aucun produit ou service',
             style: TextStyle(
               color: Colors.white,
@@ -1118,13 +1084,10 @@ class _BusinessMenuManagementScreenState
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          const AppText(
             'Ajoutez vos plats, produits ou services avec photo, description et prix.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white60,
-              height: 1.4,
-            ),
+            style: TextStyle(color: Colors.white60, height: 1.4),
           ),
         ],
       ),
@@ -1139,11 +1102,9 @@ class _BusinessMenuManagementScreenState
         backgroundColor: darkGreen,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: const AppText(
           'Services / Menu',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -1160,36 +1121,23 @@ class _BusinessMenuManagementScreenState
                 ),
               )
             : const Icon(Icons.add),
-        label: const Text(
+        label: const AppText(
           'Ajouter un produit',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: gold,
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(color: gold))
           : Column(
               children: [
                 Container(
                   width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(
-                    16,
-                    4,
-                    16,
-                    12,
-                  ),
+                  margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: cardGreen,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: gold.withValues(alpha: 0.22),
-                    ),
+                    border: Border.all(color: gold.withValues(alpha: 0.22)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1219,21 +1167,33 @@ class _BusinessMenuManagementScreenState
                   child: _usesArray
                       ? _filteredMenuList(_jobMenuItems)
                       : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                          stream: _businessRef.collection('menuItems').snapshots(),
+                          stream: _businessRef
+                              .collection('menuItems')
+                              .snapshots(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator(color: gold));
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(color: gold),
+                              );
                             }
                             if (snapshot.hasError) {
-                              return Center(child: Text(
-                                'Impossible de charger le menu.\n${snapshot.error}',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.white70),
-                              ));
+                              return Center(
+                                child: AppText(
+                                  'Impossible de charger le menu.\n${snapshot.error}',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                              );
                             }
-                            final items = (snapshot.data?.docs ?? []).map((doc) =>
-                              <String, dynamic>{...doc.data(), 'id': doc.id},
-                            ).toList();
+                            final items = (snapshot.data?.docs ?? [])
+                                .map(
+                                  (doc) => <String, dynamic>{
+                                    ...doc.data(),
+                                    'id': doc.id,
+                                  },
+                                )
+                                .toList();
                             return _filteredMenuList(items);
                           },
                         ),
@@ -1266,8 +1226,17 @@ class _ProductCard extends StatelessWidget {
     final category = item['menuCategory']?.toString().trim() ?? '';
     final available = item['isAvailable'] != false;
     final priceValue = item['price'];
-    final price = priceValue is num ? priceValue.toDouble() :
-      double.tryParse(priceValue?.toString().replaceAll('€', '').replaceAll(',', '.').trim() ?? '') ?? 0.0;
+    final price = priceValue is num
+        ? priceValue.toDouble()
+        : double.tryParse(
+                priceValue
+                        ?.toString()
+                        .replaceAll('€', '')
+                        .replaceAll(',', '.')
+                        .trim() ??
+                    '',
+              ) ??
+              0.0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1287,8 +1256,12 @@ class _ProductCard extends StatelessWidget {
               height: 74,
               child: imageUrl.isEmpty
                   ? const _MenuImagePlaceholder()
-                  : Image.network(imageUrl, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const _MenuImagePlaceholder()),
+                  : Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const _MenuImagePlaceholder(),
+                    ),
             ),
           ),
           const SizedBox(width: 10),
@@ -1297,26 +1270,55 @@ class _ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                if (category.isNotEmpty) Text(category, maxLines: 1,
+                Text(
+                  name,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (category.isNotEmpty)
+                  Text(
+                    category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white60, fontSize: 10),
+                  ),
                 const SizedBox(height: 3),
-                Text('${price.toStringAsFixed(2)} €',
-                  style: const TextStyle(color: gold, fontSize: 14, fontWeight: FontWeight.bold)),
+                AppText(
+                  '${price.toStringAsFixed(2)} €',
+                  style: const TextStyle(
+                    color: gold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Row(
                   children: [
                     Transform.scale(
                       scale: 0.75,
                       alignment: Alignment.centerLeft,
-                      child: Switch(value: available, activeThumbColor: gold,
+                      child: Switch(
+                        value: available,
+                        activeThumbColor: gold,
                         activeTrackColor: gold.withValues(alpha: 0.45),
-                        onChanged: onAvailabilityChanged),
+                        onChanged: onAvailabilityChanged,
+                      ),
                     ),
-                    Expanded(child: Text(available ? 'Disponible' : 'Indisponible',
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white70, fontSize: 10))),
+                    Expanded(
+                      child: Text(
+                        available ? 'Disponible' : 'Indisponible',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1325,11 +1327,22 @@ class _ProductCard extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(tooltip: 'Modifier', visualDensity: VisualDensity.compact,
-                onPressed: onEdit, icon: const Icon(Icons.edit_outlined, color: gold, size: 21)),
-              IconButton(tooltip: 'Supprimer', visualDensity: VisualDensity.compact,
+              IconButton(
+                tooltip: 'Modifier',
+                visualDensity: VisualDensity.compact,
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined, color: gold, size: 21),
+              ),
+              IconButton(
+                tooltip: 'Supprimer',
+                visualDensity: VisualDensity.compact,
                 onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 21)),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                  size: 21,
+                ),
+              ),
             ],
           ),
         ],
@@ -1349,12 +1362,7 @@ class _MenuImagePlaceholder extends StatelessWidget {
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.restaurant_menu,
-            color: Color(0xFFFFD700),
-            size: 42,
-          ),
-
+          Icon(Icons.restaurant_menu, color: Color(0xFFFFD700), size: 42),
         ],
       ),
     );
@@ -1384,18 +1392,13 @@ class _EditorField extends StatelessWidget {
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         labelStyle: const TextStyle(color: Colors.white70),
         hintStyle: const TextStyle(color: Colors.white30),
-        prefixIcon: Icon(
-          icon,
-          color: const Color(0xFFFFD700),
-        ),
+        prefixIcon: Icon(icon, color: const Color(0xFFFFD700)),
         filled: true,
         fillColor: const Color(0xFF0C3022),
         border: OutlineInputBorder(
@@ -1410,9 +1413,7 @@ class _EditorField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(
-            color: Color(0xFFFFD700),
-          ),
+          borderSide: const BorderSide(color: Color(0xFFFFD700)),
         ),
       ),
     );

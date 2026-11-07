@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 import 'order_receipt_screen.dart';
 import 'business_checkout_screen.dart';
@@ -158,7 +161,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
         _feeCategory.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Frais indisponibles : commande non envoyée.'),
+          content: AppText('Frais indisponibles : commande non envoyée.'),
         ),
       );
       return;
@@ -168,7 +171,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Please sign in or continue with an account before placing an order.',
           ),
         ),
@@ -181,7 +184,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
         _buyerPhoneController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter your name and phone number.'),
+          content: AppText('Please enter your name and phone number.'),
         ),
       );
       return;
@@ -191,7 +194,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
     if (orderTotal == null || orderTotal <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Indiquez un montant de commande valide.'),
+          content: AppText('Indiquez un montant de commande valide.'),
         ),
       );
       return;
@@ -203,7 +206,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
     if (sellerNet < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Commission supérieure au montant de la commande.'),
+          content: AppText('Commission supérieure au montant de la commande.'),
         ),
       );
       return;
@@ -213,7 +216,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
     if (_payDepositInApp && widget.depositPercentage <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Enter a valid order total before requesting the deposit payment.',
           ),
         ),
@@ -304,9 +307,8 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Order failed: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: AppText('Order failed: $e')));
       }
     } finally {
       if (mounted) {
@@ -320,7 +322,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'Cash on Delivery',
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
@@ -353,18 +355,18 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                AppText(
                   '${widget.price} • ${widget.sellerName}',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                const AppText(
                   'No card or online payment will be requested. You will pay directly to the seller upon receiving your item or service.',
                   style: TextStyle(color: Colors.white, height: 1.4),
                 ),
                 if (widget.depositPercentage > 0) ...[
                   const SizedBox(height: 10),
-                  Text(
+                  AppText(
                     'This caterer accepts a ${widget.depositPercentage.toStringAsFixed(0)}% deposit for app orders.',
                     style: const TextStyle(
                       color: Colors.greenAccent,
@@ -392,7 +394,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
           else if (_feeCategory.isEmpty)
             const Padding(
               padding: EdgeInsets.all(12),
-              child: Text(
+              child: AppText(
                 'Catégorie inconnue : commande indisponible.',
                 style: TextStyle(color: Colors.orangeAccent),
               ),
@@ -441,7 +443,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  const AppText(
                     'Your order',
                     style: TextStyle(
                       color: primaryGold,
@@ -462,12 +464,12 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
                             ),
                           ),
                         ),
-                        Text(
+                        AppText(
                           '${item['quantity']} × €${(item['unitPrice'] as num).toDouble().toStringAsFixed(2)}',
                           style: const TextStyle(color: Colors.white70),
                         ),
                         const SizedBox(width: 12),
-                        Text(
+                        AppText(
                           '€${(item['total'] as num).toDouble().toStringAsFixed(2)}',
                           style: const TextStyle(
                             color: primaryGold,
@@ -483,7 +485,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
                   Row(
                     children: [
                       const Expanded(
-                        child: Text(
+                        child: AppText(
                           'Total',
                           style: TextStyle(
                             color: Colors.white,
@@ -492,7 +494,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
                           ),
                         ),
                       ),
-                      Text(
+                      AppText(
                         '€${widget.cartTotal.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: primaryGold,
@@ -538,7 +540,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
               builder: (context, value, child) {
                 final total = _baseTotal ?? 0;
                 final deposit = total * widget.depositPercentage / 100;
-                return Text(
+                return AppText(
                   'Acompte indicatif : €${deposit.toStringAsFixed(2)} (${widget.depositPercentage.toStringAsFixed(0)}% de €${total.toStringAsFixed(2)}). Paiement dans l’application indisponible.',
                   style: const TextStyle(
                     color: primaryGold,
@@ -549,11 +551,11 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text(
+              title: const AppText(
                 'Payer l’acompte dans l’application (indisponible)',
                 style: TextStyle(color: Colors.white),
               ),
-              subtitle: const Text(
+              subtitle: const AppText(
                 'Les acomptes nécessitent un parcours dédié. Ce formulaire conserve le paiement à la livraison.',
                 style: TextStyle(color: Colors.white60, fontSize: 12),
               ),
@@ -606,7 +608,7 @@ class _CashOnDeliveryOrderScreenState extends State<CashOnDeliveryOrderScreen> {
               ),
             ),
           ),
-          Text(
+          AppText(
             '€${amount.toStringAsFixed(2)}',
             style: TextStyle(
               color: highlight ? primaryGold : Colors.white,
@@ -653,7 +655,7 @@ class CashOnDeliveryConfirmationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF061E12),
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'Order Confirmed',
           style: TextStyle(
             color: Color(0xFFFFD700),
@@ -675,7 +677,7 @@ class CashOnDeliveryConfirmationScreen extends StatelessWidget {
                 size: 76,
               ),
               const SizedBox(height: 18),
-              const Text(
+              const AppText(
                 'Your order has been placed successfully.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -685,7 +687,7 @@ class CashOnDeliveryConfirmationScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
+              AppText(
                 'Order #${orderId.length > 8 ? orderId.substring(0, 8).toUpperCase() : orderId.toUpperCase()}',
                 style: const TextStyle(
                   color: Colors.white,
@@ -693,7 +695,7 @@ class CashOnDeliveryConfirmationScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const Text(
+              const AppText(
                 'You will pay directly to the seller upon receiving your item.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -721,7 +723,7 @@ class CashOnDeliveryConfirmationScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: const Icon(Icons.receipt_long),
-                  label: const Text(
+                  label: const AppText(
                     'View My Order',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
@@ -734,7 +736,7 @@ class CashOnDeliveryConfirmationScreen extends StatelessWidget {
                 ),
                 onPressed: () =>
                     Navigator.popUntil(context, (route) => route.isFirst),
-                child: const Text(
+                child: const AppText(
                   'Back to App',
                   style: TextStyle(
                     color: Color(0xFF061E12),
@@ -832,7 +834,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.warning_amber_rounded, color: gold, size: 52),
                 const SizedBox(height: 12),
-                const Text(
+                const AppText(
                   'Confirm cancellation',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -842,7 +844,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                const AppText(
                   'Do you really want to cancel this order?',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white70, fontSize: 15),
@@ -859,7 +861,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      const AppText(
                         'Reason for cancellation',
                         style: TextStyle(
                           color: gold,
@@ -916,7 +918,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                       Icon(Icons.info_outline, color: gold, size: 22),
                       SizedBox(width: 10),
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Warning: Repeated cancellations after a seller '
                           'accepts your order may restrict your ability to '
                           'place new orders.',
@@ -942,7 +944,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                       side: const BorderSide(color: gold),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text(
+                    child: const AppText(
                       'Keep order',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
@@ -972,12 +974,12 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
             side: BorderSide(color: gold.withValues(alpha: 0.55)),
           ),
           icon: const Icon(Icons.warning_amber_rounded, color: gold, size: 46),
-          title: const Text(
+          title: const AppText(
             'Cancel this order?',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          content: Text(
+          content: AppText(
             'Reason: $selectedReason\n\n'
             'Are you sure you want to continue?',
             textAlign: TextAlign.center,
@@ -993,7 +995,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                 foregroundColor: Colors.white,
                 side: const BorderSide(color: gold),
               ),
-              child: const Text('Keep order'),
+              child: const AppText('Keep order'),
             ),
             FilledButton(
               onPressed: () {
@@ -1003,7 +1005,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                 backgroundColor: cancelRed,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Cancel order'),
+              child: const AppText('Cancel order'),
             ),
           ],
         );
@@ -1049,9 +1051,8 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
 
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Order cancelled.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: AppText('Order cancelled.')));
     } catch (e) {
       if (!context.mounted) return;
 
@@ -1095,7 +1096,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'My Order',
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
@@ -1110,7 +1111,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(
-              child: Text(
+              child: AppText(
                 'Unable to load this order.',
                 style: TextStyle(color: Colors.white),
               ),
@@ -1125,7 +1126,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(
-              child: Text(
+              child: AppText(
                 'Order not found.',
                 style: TextStyle(color: Colors.white),
               ),
@@ -1169,7 +1170,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  child: const Text(
+                  child: const AppText(
                     'Suivre le paiement / demander une annulation',
                   ),
                 ),
@@ -1181,7 +1182,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Text(
+                    AppText(
                       'Order #$shortOrderId',
                       style: const TextStyle(
                         color: primaryGold,
@@ -1215,7 +1216,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      const AppText(
                         'Order details',
                         style: TextStyle(
                           color: primaryGold,
@@ -1233,12 +1234,12 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                                 style: const TextStyle(color: Colors.white),
                               ),
                             ),
-                            Text(
+                            AppText(
                               '× ${item['quantity'] ?? 0}',
                               style: const TextStyle(color: Colors.white70),
                             ),
                             const SizedBox(width: 14),
-                            Text(
+                            AppText(
                               '€${((item['total'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
                               style: const TextStyle(
                                 color: primaryGold,
@@ -1253,7 +1254,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                       Row(
                         children: [
                           const Expanded(
-                            child: Text(
+                            child: AppText(
                               'Total',
                               style: TextStyle(
                                 color: Colors.white,
@@ -1262,7 +1263,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Text(
+                          AppText(
                             '€${total.toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: primaryGold,
@@ -1289,7 +1290,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.receipt_long_outlined),
-                  label: const Text('Voir / télécharger le reçu'),
+                  label: const AppText('Voir / télécharger le reçu'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryGold,
                     foregroundColor: primaryDarkGreen,
@@ -1310,7 +1311,7 @@ class CashOnDeliveryOrderTrackingScreen extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.cancel_outlined),
-                    label: const Text('Cancel order'),
+                    label: const AppText('Cancel order'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.redAccent,
                       side: const BorderSide(color: Colors.redAccent),

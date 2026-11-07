@@ -1,7 +1,9 @@
+import 'l10n/app_ui.dart';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'firebase_options.dart';
 
 const darkGreen = Color(0xFF061E12);
@@ -10,17 +12,13 @@ const gold = Color(0xFFFFD700);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-final firestore = FirebaseFirestore.instance;
+  final firestore = FirebaseFirestore.instance;
 
-firestore.useFirestoreEmulator('localhost', 8080);
+  firestore.useFirestoreEmulator('localhost', 8080);
 
-firestore.settings = const Settings(
-  persistenceEnabled: false,
-);
+  firestore.settings = const Settings(persistenceEnabled: false);
 
   runApp(const RestaurantTestApp());
 }
@@ -58,14 +56,14 @@ class RestaurantTestScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: darkGreen,
         foregroundColor: gold,
-        title: const Text('Euro Habesha • TEST'),
+        title: const AppText('Euro Habesha • TEST'),
       ),
       body: FutureBuilder(
         future: restaurant.get(),
         builder: (context, restaurantSnapshot) {
           if (restaurantSnapshot.hasError) {
             return Center(
-              child: Text(
+              child: AppText(
                 'Erreur Firestore TEST : ${restaurantSnapshot.error}',
                 textAlign: TextAlign.center,
               ),
@@ -73,20 +71,15 @@ class RestaurantTestScreen extends StatelessWidget {
           }
 
           if (!restaurantSnapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: gold),
-            );
+            return const Center(child: CircularProgressIndicator(color: gold));
           }
 
           if (!restaurantSnapshot.data!.exists) {
-            return const Center(
-              child: Text('Restaurant TEST introuvable'),
-            );
+            return const Center(child: AppText('Restaurant TEST introuvable'));
           }
 
           final restaurantName =
-              restaurantSnapshot.data!.data()?['name'] ??
-              'Restaurant TEST';
+              restaurantSnapshot.data!.data()?['name'] ?? 'Restaurant TEST';
 
           return FutureBuilder(
             future: restaurant
@@ -95,9 +88,7 @@ class RestaurantTestScreen extends StatelessWidget {
                 .get(),
             builder: (context, mealSnapshot) {
               if (mealSnapshot.hasError) {
-                return Center(
-                  child: Text('Erreur : ${mealSnapshot.error}'),
-                );
+                return Center(child: AppText('Erreur : ${mealSnapshot.error}'));
               }
 
               if (!mealSnapshot.hasData) {
@@ -107,9 +98,7 @@ class RestaurantTestScreen extends StatelessWidget {
               }
 
               if (!mealSnapshot.data!.exists) {
-                return const Center(
-                  child: Text('Repas TEST introuvable'),
-                );
+                return const Center(child: AppText('Repas TEST introuvable'));
               }
 
               final meal = mealSnapshot.data!.data()!;
@@ -121,11 +110,7 @@ class RestaurantTestScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.restaurant,
-                        size: 80,
-                        color: gold,
-                      ),
+                      const Icon(Icons.restaurant, size: 80, color: gold),
                       const SizedBox(height: 20),
                       Text(
                         restaurantName.toString(),
@@ -151,7 +136,7 @@ class RestaurantTestScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Text(
+                              AppText(
                                 '${price.toStringAsFixed(2)} €',
                                 style: const TextStyle(
                                   fontSize: 26,
@@ -177,8 +162,8 @@ class RestaurantTestScreen extends StatelessWidget {
                           showDialog<void>(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: const Text('Commande TEST'),
-                              content: Text(
+                              title: const AppText('Commande TEST'),
+                              content: AppText(
                                 '1 × ${meal['name']}\n'
                                 'Total : ${price.toStringAsFixed(2)} €\n\n'
                                 'Simulation uniquement.\n'
@@ -186,18 +171,17 @@ class RestaurantTestScreen extends StatelessWidget {
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context),
-                                  child: const Text('Fermer'),
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const AppText('Fermer'),
                                 ),
                               ],
                             ),
                           );
                         },
-                        child: const Text('Simuler la commande'),
+                        child: const AppText('Simuler la commande'),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      const AppText(
                         'MODE TEST LOCAL • Aucun paiement réel',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white70),

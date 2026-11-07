@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'app_session.dart';
 
 /// Both admin entry points resolve and review the same original dossier.
@@ -86,9 +89,8 @@ class _AdminProfessionalVerificationReviewScreenState
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(text), backgroundColor: green));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(text), backgroundColor: green));
   }
 
   Future<void> _document(Map<String, dynamic> attachment) async {
@@ -147,7 +149,7 @@ class _AdminProfessionalVerificationReviewScreenState
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                const AppText(
                   'Le dossier d’origine, les fiches publiques liées et les index existants '
                   'seront mis à jour ensemble. Aucun paiement réel ne sera activé.',
                   style: TextStyle(color: Colors.white70, height: 1.4),
@@ -159,7 +161,7 @@ class _AdminProfessionalVerificationReviewScreenState
                     value: checked,
                     activeColor: gold,
                     checkColor: dark,
-                    title: const Text(
+                    title: const AppText(
                       'J’ai contrôlé les informations et les documents du dossier.',
                       style: TextStyle(color: Colors.white),
                     ),
@@ -183,7 +185,7 @@ class _AdminProfessionalVerificationReviewScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text(
+              child: const AppText(
                 'Annuler',
                 style: TextStyle(color: Colors.white70),
               ),
@@ -196,7 +198,7 @@ class _AdminProfessionalVerificationReviewScreenState
               onPressed: (approval ? checked : note.trim().length >= 5)
                   ? () => Navigator.pop(dialogContext, true)
                   : null,
-              child: const Text('Confirmer'),
+              child: const AppText('Confirmer'),
             ),
           ],
         ),
@@ -258,7 +260,7 @@ class _AdminProfessionalVerificationReviewScreenState
     appBar: AppBar(
       backgroundColor: dark,
       foregroundColor: gold,
-      title: const Text('Dossier professionnel d’origine'),
+      title: const AppText('Dossier professionnel d’origine'),
       actions: [
         IconButton(
           tooltip: 'Actualiser',
@@ -284,7 +286,7 @@ class _AdminProfessionalVerificationReviewScreenState
                   const SizedBox(height: 16),
                   OutlinedButton(
                     onPressed: _load,
-                    child: const Text(
+                    child: const AppText(
                       'Réessayer',
                       style: TextStyle(color: gold),
                     ),
@@ -362,7 +364,7 @@ class _AdminProfessionalVerificationReviewScreenState
                   'Référence',
                   '${data['sourceCollection']}/${data['businessId']}',
                 ),
-                const Text(
+                const AppText(
                   'Un badge public seul ne remplace pas l’examen du dossier professionnel.',
                   style: TextStyle(color: Colors.white70),
                 ),
@@ -396,7 +398,7 @@ class _AdminProfessionalVerificationReviewScreenState
           ),
         ),
         const SizedBox(height: 10),
-        const Text(
+        const AppText(
           'Documents à examiner',
           style: TextStyle(
             color: gold,
@@ -416,7 +418,7 @@ class _AdminProfessionalVerificationReviewScreenState
               ),
               subtitle: attachment['available'] == true
                   ? null
-                  : const Text(
+                  : const AppText(
                       'Lien non reconnu : nouveau dépôt nécessaire',
                       style: TextStyle(color: Colors.orangeAccent),
                     ),
@@ -430,13 +432,13 @@ class _AdminProfessionalVerificationReviewScreenState
             ),
           ),
         if (attachments.isEmpty)
-          const Text(
+          const AppText(
             'Aucun document déposé.',
             style: TextStyle(color: Colors.white70),
           ),
         if (missing.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const Text(
+          const AppText(
             'Éléments à compléter avant approbation',
             style: TextStyle(
               color: Colors.orangeAccent,
@@ -451,7 +453,7 @@ class _AdminProfessionalVerificationReviewScreenState
         if (data['stripeSupported'] != true)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text(
+            child: AppText(
               'Cette fiche publique ne possède pas de lien vers une soumission professionnelle. '
               'Stripe utilise la fiche d’origine ; ce lien doit être vérifié séparément.',
               style: TextStyle(color: Colors.orangeAccent, height: 1.4),
@@ -485,7 +487,7 @@ class _AdminProfessionalVerificationReviewScreenState
             outlined: true,
           ),
         const SizedBox(height: 12),
-        const Text(
+        const AppText(
           'La vérification reste indépendante des abonnements Silver, Gold et VIP. '
           'Stripe reste en mode TEST. Aucun paiement réel ne sera activé.',
           style: TextStyle(color: Colors.white70, height: 1.4),

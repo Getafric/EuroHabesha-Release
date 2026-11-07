@@ -1,17 +1,24 @@
+import 'l10n/app_ui.dart';
 // Euro Habesha: photos et publicites v1
 import 'job_banner_navigation.dart';
+
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'business_screen.dart';
+
 import 'package:easy_localization/easy_localization.dart';
+
 class TopSponsoredBanner extends StatefulWidget {
   const TopSponsoredBanner({super.key});
   @override
   State<TopSponsoredBanner> createState() => _TopSponsoredBannerState();
 }
+
 class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
   static const _darkGreen = Color(0xFF061E12);
   static const _cardGreen = Color(0xFF073B2B);
@@ -45,12 +52,14 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
         return en;
     }
   }
+
   @override
   void dispose() {
     _autoSlideTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
+
   bool _isActive(Map<String, dynamic> data) {
     final now = DateTime.now();
     final startsAt = data['startsAt'] ?? data['startDate'];
@@ -63,24 +72,24 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
     }
     return true;
   }
+
   void _startAutoSlide(int count) {
     if (_autoSlideCount == count && _autoSlideTimer?.isActive == true) return;
     _autoSlideTimer?.cancel();
     _autoSlideCount = count;
     if (count <= 1) return;
-    _autoSlideTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) {
-        if (!mounted || !_pageController.hasClients) return;
-        final nextPage = ((_pageController.page?.round() ?? _currentPage) + 1) % count;
-        _pageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 550),
-          curve: Curves.easeInOut,
-        );
-      },
-    );
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || !_pageController.hasClients) return;
+      final nextPage =
+          ((_pageController.page?.round() ?? _currentPage) + 1) % count;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 550),
+        curve: Curves.easeInOut,
+      );
+    });
   }
+
   // Opens an approved external destination, or shows legacy banner details.
   Future<void> _openSponsoredBanner(Map<String, dynamic> data) async {
     final link = (data['externalUrl'] ?? '').toString().trim();
@@ -96,47 +105,47 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
         uri.userInfo.isNotEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lien publicitaire invalide')),
+        const SnackBar(content: AppText('Lien publicitaire invalide')),
       );
       return;
     }
 
     try {
-      final opened = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened) throw StateError('Ouverture impossible');
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible d’ouvrir cette publicité')),
+        const SnackBar(content: AppText('Impossible d’ouvrir cette publicité')),
       );
     }
   }
 
   void _showBannerDetails(Map<String, dynamic> data) {
-      if (data['targetType'] == 'job') {
-        showJobBanner(context, data);
-        return;
-      }
+    if (data['targetType'] == 'job') {
+      showJobBanner(context, data);
+      return;
+    }
     final businessName =
         data['businessName']?.toString().trim().isNotEmpty == true
-            ? data['businessName'].toString()
-            : data['targetBusinessName']?.toString().trim().isNotEmpty == true
-                ? data['targetBusinessName'].toString()
-                : data['title']?.toString().trim().isNotEmpty == true
-                    ? data['title'].toString()
-                    : 'Offre spéciale';
+        ? data['businessName'].toString()
+        : data['targetBusinessName']?.toString().trim().isNotEmpty == true
+        ? data['targetBusinessName'].toString()
+        : data['title']?.toString().trim().isNotEmpty == true
+        ? data['title'].toString()
+        : 'Offre spéciale';
     final description =
         data['description']?.toString().trim().isNotEmpty == true
-            ? data['description'].toString()
-            : data['body']?.toString() ?? '';
+        ? data['description'].toString()
+        : data['body']?.toString() ?? '';
     final promotion = data['promotion']?.toString().trim().isNotEmpty == true
         ? data['promotion'].toString()
         : data['discountText']?.toString() ?? '';
     final promoCode = data['promoCode']?.toString().trim() ?? '';
-    final targetName = (data['targetBusinessName'] ?? data['businessName'] ?? '').toString().trim();
+    final targetName =
+        (data['targetBusinessName'] ?? data['businessName'] ?? '')
+            .toString()
+            .trim();
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -144,28 +153,18 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
           backgroundColor: _cardGreen,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(
-              color: _gold,
-            ),
+            side: const BorderSide(color: _gold),
           ),
           title: Text(
             businessName,
-            style: const TextStyle(
-              color: _gold,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(color: _gold, fontWeight: FontWeight.w900),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (description.isNotEmpty)
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
+                Text(description, style: const TextStyle(color: Colors.white)),
               if (promotion.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -181,8 +180,15 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: SelectableText('Code : $promoCode',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                    Expanded(
+                      child: SelectableText(
+                        'Code : $promoCode',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                     IconButton(
                       tooltip: 'Copier le code',
                       icon: const Icon(Icons.copy, color: _gold),
@@ -190,7 +196,10 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
                         await Clipboard.setData(ClipboardData(text: promoCode));
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Code promotionnel copié')));
+                          const SnackBar(
+                            content: AppText('Code promotionnel copié'),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -201,24 +210,28 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
           actions: [
             if (targetName.isNotEmpty)
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: _gold, foregroundColor: _darkGreen),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _gold,
+                  foregroundColor: _darkGreen,
+                ),
                 icon: const Icon(Icons.storefront),
-                label: const Text('Voir l’établissement'),
+                label: const AppText('Voir l’établissement'),
                 onPressed: () {
                   Navigator.pop(dialogContext);
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => BusinessDirectoryScreen(openBusinessName: targetName),
-                  ));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          BusinessDirectoryScreen(openBusinessName: targetName),
+                    ),
+                  );
                 },
               ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text(
+              child: const AppText(
                 'Fermer',
-                style: TextStyle(
-                  color: _gold,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: _gold, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -226,6 +239,7 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -241,12 +255,9 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
         if (!snapshot.hasData) {
           return _buildBannerArea(_buildBoostBanner());
         }
-        final banners = snapshot.data!.docs
-            .where((doc) {
-              return _isActive(doc.data()) &&
-                  !_dismissedBannerIds.contains(doc.id);
-            })
-            .toList();
+        final banners = snapshot.data!.docs.where((doc) {
+          return _isActive(doc.data()) && !_dismissedBannerIds.contains(doc.id);
+        }).toList();
         if (banners.isEmpty) {
           _autoSlideTimer?.cancel();
           _autoSlideTimer = null;
@@ -280,10 +291,7 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
                   },
                   itemBuilder: (context, index) {
                     final banner = banners[index];
-                    return _buildBanner(
-                      banner.id,
-                      banner.data(),
-                    );
+                    return _buildBanner(banner.id, banner.data());
                   },
                 ),
               ),
@@ -294,14 +302,10 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
                   children: List.generate(
                     banners.length,
                     (index) => AnimatedContainer(
-                      duration: const Duration(
-                        milliseconds: 250,
-                      ),
+                      duration: const Duration(milliseconds: 250),
                       width: index == _currentPage ? 22 : 7,
                       height: 7,
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 3,
-                      ),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
                       decoration: BoxDecoration(
                         color: index == _currentPage ? _gold : Colors.white24,
                         borderRadius: BorderRadius.circular(20),
@@ -316,20 +320,18 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
       },
     );
   }
-  Widget _buildBanner(
-    String bannerId,
-    Map<String, dynamic> data,
-  ) {
+
+  Widget _buildBanner(String bannerId, Map<String, dynamic> data) {
     final businessName =
         data['businessName']?.toString().trim().isNotEmpty == true
-            ? data['businessName'].toString()
-            : data['title']?.toString().trim().isNotEmpty == true
-                ? data['title'].toString()
-                : 'Boostez votre visibilité';
+        ? data['businessName'].toString()
+        : data['title']?.toString().trim().isNotEmpty == true
+        ? data['title'].toString()
+        : 'Boostez votre visibilité';
     final description =
         data['description']?.toString().trim().isNotEmpty == true
-            ? data['description'].toString()
-            : 'Faites découvrir votre activité à la communauté.';
+        ? data['description'].toString()
+        : 'Faites découvrir votre activité à la communauté.';
     final promotion = data['promotion']?.toString().trim() ?? '';
     final imageUrl = data['imageUrl']?.toString().trim() ?? '';
     return GestureDetector(
@@ -340,9 +342,7 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
         decoration: BoxDecoration(
           color: _cardGreen,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: _gold.withValues(alpha: 0.55),
-          ),
+          border: Border.all(color: _gold.withValues(alpha: 0.55)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.30),
@@ -359,15 +359,11 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
                 imageUrl,
                 fit: BoxFit.contain, // EH_CADRAGE_AVIS_V1
                 errorBuilder: (_, __, ___) {
-                  return const ColoredBox(
-                    color: _cardGreen,
-                  );
+                  return const ColoredBox(color: _cardGreen);
                 },
               )
             else
-              const ColoredBox(
-                color: _cardGreen,
-              ),
+              const ColoredBox(color: _cardGreen),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -382,24 +378,15 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                10,
-                46,
-                10,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 10, 46, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Row(
                     children: [
-                      Icon(
-                        Icons.campaign_rounded,
-                        color: _gold,
-                        size: 18,
-                      ),
+                      Icon(Icons.campaign_rounded, color: _gold, size: 18),
                       SizedBox(width: 6),
-                      Text(
+                      AppText(
                         'SPONSORED',
                         style: TextStyle(
                           color: _gold,
@@ -476,10 +463,7 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
                       }
                     });
                   },
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.close, color: Colors.white),
                 ),
               ),
             ),
@@ -488,6 +472,7 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
       ),
     );
   }
+
   // Conserve l'emplacement publicitaire même sans campagne active.
   Widget _buildBannerArea(Widget content) {
     return Container(
@@ -545,19 +530,14 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
     );
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/advertisement-request',
-        );
+        Navigator.pushNamed(context, '/advertisement-request');
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: _gold.withValues(alpha: 0.65),
-          ),
+          border: Border.all(color: _gold.withValues(alpha: 0.65)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.35),
@@ -596,16 +576,11 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
               right: 20,
               top: 17,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.38),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _gold.withValues(alpha: 0.35),
-                  ),
+                  border: Border.all(color: _gold.withValues(alpha: 0.35)),
                 ),
                 child: Text(
                   sponsoredText,
@@ -623,11 +598,7 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.auto_awesome,
-                    color: _gold,
-                    size: 18,
-                  ),
+                  const Icon(Icons.auto_awesome, color: _gold, size: 18),
                   const Spacer(),
                   Text(
                     title,
@@ -654,10 +625,7 @@ class _TopSponsoredBannerState extends State<TopSponsoredBanner> {
                     description,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                   const SizedBox(height: 7),
                   Container(

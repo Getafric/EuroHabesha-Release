@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 import 'professional_membership.dart';
 // EH_SUBSCRIPTION_PRICE_DRAFT_V1
@@ -75,8 +78,7 @@ class _AdminProfessionalSubscriptionsScreenState
     } catch (_) {
       if (mounted) {
         setState(
-          () => _error =
-              'Chargement impossible. Vérifiez la connexion et les règles Firestore.',
+          () => _error = 'Chargement impossible. Vérifiez la connexion et les règles Firestore.',
         );
       }
     } finally {
@@ -90,9 +92,8 @@ class _AdminProfessionalSubscriptionsScreenState
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(text), backgroundColor: green));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(text), backgroundColor: green));
   }
 
   Future<void> _save() async {
@@ -139,9 +140,7 @@ class _AdminProfessionalSubscriptionsScreenState
       _message('Présentation enregistrée. Les ventes restent fermées.');
     } catch (error) {
       _message(
-        error is StateError
-            ? error.message.toString()
-            : 'Enregistrement impossible. Vérifiez les autorisations et la connexion.',
+        error is StateError ? error.message.toString() : 'Enregistrement impossible. Vérifiez les autorisations et la connexion.',
       );
     } finally {
       if (mounted) {
@@ -175,7 +174,7 @@ class _AdminProfessionalSubscriptionsScreenState
               ],
             ),
             const SizedBox(height: 10),
-            const Text(
+            const AppText(
               'Promotions incluses par mois — proposition',
               style: TextStyle(color: Colors.white70),
             ),
@@ -193,7 +192,7 @@ class _AdminProfessionalSubscriptionsScreenState
                 ),
                 SizedBox(
                   width: 40,
-                  child: Text(
+                  child: AppText(
                     '$value',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 21),
@@ -220,7 +219,7 @@ class _AdminProfessionalSubscriptionsScreenState
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: dark,
     appBar: AppBar(
-      title: const Text('Abonnements professionnels'),
+      title: const AppText('Abonnements professionnels'),
       backgroundColor: dark,
       foregroundColor: gold,
       actions: [
@@ -247,7 +246,7 @@ class _AdminProfessionalSubscriptionsScreenState
         : ListView(
             padding: const EdgeInsets.all(18),
             children: [
-              const Text(
+              const AppText(
                 'Silver · Gold · VIP',
                 style: TextStyle(
                   color: gold,
@@ -256,7 +255,7 @@ class _AdminProfessionalSubscriptionsScreenState
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              const AppText(
                 'Vous préparez les offres. Aucun abonnement n’est vendu ou activé par cet écran.',
                 style: TextStyle(color: Colors.white70, height: 1.5),
               ),
@@ -269,14 +268,14 @@ class _AdminProfessionalSubscriptionsScreenState
                   onChanged: _busy
                       ? null
                       : (value) => setState(() => _display = value),
-                  title: const Text(
+                  title: const AppText(
                     'Afficher les formules',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  subtitle: const Text(
+                  subtitle: const AppText(
                     'Après enregistrement, une entrée apparaît dans l’espace professionnel. '
                     'Les achats restent désactivés.',
                     style: TextStyle(color: Colors.white70),
@@ -287,11 +286,11 @@ class _AdminProfessionalSubscriptionsScreenState
                 color: green,
                 child: ListTile(
                   leading: Icon(Icons.lock_outline, color: gold),
-                  title: Text(
+                  title: AppText(
                     'Ouvrir les souscriptions',
                     style: TextStyle(color: Colors.white),
                   ),
-                  subtitle: Text(
+                  subtitle: AppText(
                     'Verrouillé : produits des boutiques, vérification serveur et achats de test à configurer.',
                     style: TextStyle(color: Colors.white70),
                   ),
@@ -305,7 +304,7 @@ class _AdminProfessionalSubscriptionsScreenState
               _quota('gold', _gold, (value) => _gold = value),
               _quota('vip', _vip, (value) => _vip = value),
               const SizedBox(height: 12),
-              const Text(
+              const AppText(
                 'Tarifs et durée de facturation : à définir dans Google Play Console et App Store Connect. '
                 'Ces quantités préparent les futures offres ; elles ne limitent pas les demandes gratuites actuelles.',
                 style: TextStyle(color: Colors.white70, height: 1.5),
@@ -341,14 +340,14 @@ class _AdminProfessionalSubscriptionsScreenState
                   minimumSize: const Size.fromHeight(52),
                 ),
                 icon: const Icon(Icons.visibility_outlined),
-                label: const Text('Voir l’aperçu enregistré'),
+                label: const AppText('Voir l’aperçu enregistré'),
               ),
               const SizedBox(height: 18),
               const Card(
                 color: green,
                 child: Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text(
+                  child: AppText(
                     'Au lancement : une formule sera liée à un établissement précis. '
                     'Une pause des nouvelles ventes ne devra pas supprimer les droits déjà payés. '
                     'Les promotions resteront soumises à validation admin. '

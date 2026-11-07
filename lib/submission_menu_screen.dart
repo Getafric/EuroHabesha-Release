@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -76,7 +78,7 @@ class _AdvertisementRequestScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Your advertising request has been sent for admin approval.',
           ),
         ),
@@ -93,9 +95,8 @@ class _AdvertisementRequestScreenState
   void _showMessage(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   InputDecoration _decoration(String label) {
@@ -104,9 +105,7 @@ class _AdvertisementRequestScreenState
       labelStyle: const TextStyle(color: Colors.white70),
       filled: true,
       fillColor: Colors.white10,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.white24),
@@ -119,12 +118,9 @@ class _AdvertisementRequestScreenState
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'Request Sponsored Advertising',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: primaryGold),
@@ -134,7 +130,7 @@ class _AdvertisementRequestScreenState
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
+            const AppText(
               'Promote your business, service, event, or product on Euro Habesha.',
               style: TextStyle(color: Colors.white70),
             ),
@@ -163,26 +159,17 @@ class _AdvertisementRequestScreenState
               style: const TextStyle(color: Colors.white),
               decoration: _decoration('Advertisement type'),
               items: const [
-                DropdownMenuItem(
-                  value: 'Business',
-                  child: Text('Business'),
-                ),
+                DropdownMenuItem(value: 'Business', child: AppText('Business')),
                 DropdownMenuItem(
                   value: 'Professional',
-                  child: Text('Professional'),
+                  child: AppText('Professional'),
                 ),
                 DropdownMenuItem(
                   value: 'Marketplace',
-                  child: Text('Marketplace'),
+                  child: AppText('Marketplace'),
                 ),
-                DropdownMenuItem(
-                  value: 'Event',
-                  child: Text('Event'),
-                ),
-                DropdownMenuItem(
-                  value: 'Service',
-                  child: Text('Service'),
-                ),
+                DropdownMenuItem(value: 'Event', child: AppText('Event')),
+                DropdownMenuItem(value: 'Service', child: AppText('Service')),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -216,22 +203,10 @@ class _AdvertisementRequestScreenState
               style: const TextStyle(color: Colors.white),
               decoration: _decoration('Requested duration'),
               items: const [
-                DropdownMenuItem(
-                  value: '7 days',
-                  child: Text('7 days'),
-                ),
-                DropdownMenuItem(
-                  value: '30 days',
-                  child: Text('30 days'),
-                ),
-                DropdownMenuItem(
-                  value: '60 days',
-                  child: Text('60 days'),
-                ),
-                DropdownMenuItem(
-                  value: '90 days',
-                  child: Text('90 days'),
-                ),
+                DropdownMenuItem(value: '7 days', child: AppText('7 days')),
+                DropdownMenuItem(value: '30 days', child: AppText('30 days')),
+                DropdownMenuItem(value: '60 days', child: AppText('60 days')),
+                DropdownMenuItem(value: '90 days', child: AppText('90 days')),
               ],
               onChanged: (value) {
                 if (value != null) {

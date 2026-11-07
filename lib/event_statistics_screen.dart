@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -24,10 +26,7 @@ class EventStatisticsScreen extends StatelessWidget {
   double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
 
-    return double.tryParse(
-          value?.toString().replaceAll(',', '.') ?? '',
-        ) ??
-        0;
+    return double.tryParse(value?.toString().replaceAll(',', '.') ?? '') ?? 0;
   }
 
   String _money(double value) {
@@ -36,8 +35,9 @@ class EventStatisticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final eventRef =
-        FirebaseFirestore.instance.collection('events').doc(eventId);
+    final eventRef = FirebaseFirestore.instance
+        .collection('events')
+        .doc(eventId);
 
     final ticketsQuery = FirebaseFirestore.instance
         .collection('tickets')
@@ -48,11 +48,9 @@ class EventStatisticsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: darkGreen,
         foregroundColor: Colors.white,
-        title: const Text(
+        title: const AppText(
           'Statistiques',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w900),
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -65,11 +63,7 @@ class EventStatisticsScreen extends StatelessWidget {
           }
 
           if (!eventSnapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: gold,
-              ),
-            );
+            return const Center(child: CircularProgressIndicator(color: gold));
           }
 
           final eventData = eventSnapshot.data!.data() ?? <String, dynamic>{};
@@ -81,9 +75,7 @@ class EventStatisticsScreen extends StatelessWidget {
           if (rawTypes is List) {
             for (final raw in rawTypes) {
               if (raw is Map) {
-                ticketTypes.add(
-                  Map<String, dynamic>.from(raw),
-                );
+                ticketTypes.add(Map<String, dynamic>.from(raw));
               }
             }
           }
@@ -99,9 +91,7 @@ class EventStatisticsScreen extends StatelessWidget {
 
               if (!ticketSnapshot.hasData) {
                 return const Center(
-                  child: CircularProgressIndicator(
-                    color: gold,
-                  ),
+                  child: CircularProgressIndicator(color: gold),
                 );
               }
 
@@ -141,11 +131,9 @@ class EventStatisticsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  const AppText(
                     'Vue générale des performances de votre événement.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(color: Colors.white70),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -208,7 +196,7 @@ class EventStatisticsScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 26),
-                  const Text(
+                  const AppText(
                     'Par type de billet',
                     style: TextStyle(
                       color: gold,
@@ -218,9 +206,7 @@ class EventStatisticsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   if (ticketTypes.isEmpty)
-                    const _Message(
-                      text: 'Aucun type de billet configuré.',
-                    )
+                    const _Message(text: 'Aucun type de billet configuré.')
                   else
                     ...ticketTypes.map((type) {
                       final typeId = type['id']?.toString() ?? '';
@@ -241,11 +227,7 @@ class EventStatisticsScreen extends StatelessWidget {
 
                       final typeRevenue = typeTickets.fold<double>(
                         0,
-                        (total, doc) =>
-                            total +
-                            _toDouble(
-                              doc.data()['price'],
-                            ),
+                        (total, doc) => total + _toDouble(doc.data()['price']),
                       );
 
                       final typeRemaining = (typeCapacity - typeSold).clamp(
@@ -254,9 +236,7 @@ class EventStatisticsScreen extends StatelessWidget {
                       );
 
                       return Container(
-                        margin: const EdgeInsets.only(
-                          bottom: 12,
-                        ),
+                        margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: cardGreen,
@@ -274,26 +254,11 @@ class EventStatisticsScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 14),
-                            _Line(
-                              label: 'Capacité',
-                              value: '$typeCapacity',
-                            ),
-                            _Line(
-                              label: 'Vendus',
-                              value: '$typeSold',
-                            ),
-                            _Line(
-                              label: 'Restants',
-                              value: '$typeRemaining',
-                            ),
-                            _Line(
-                              label: 'Entrées QR',
-                              value: '$typeChecked',
-                            ),
-                            _Line(
-                              label: 'Revenus',
-                              value: _money(typeRevenue),
-                            ),
+                            _Line(label: 'Capacité', value: '$typeCapacity'),
+                            _Line(label: 'Vendus', value: '$typeSold'),
+                            _Line(label: 'Restants', value: '$typeRemaining'),
+                            _Line(label: 'Entrées QR', value: '$typeChecked'),
+                            _Line(label: 'Revenus', value: _money(typeRevenue)),
                           ],
                         ),
                       );
@@ -329,10 +294,7 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: EventStatisticsScreen.gold,
-          ),
+          Icon(icon, color: EventStatisticsScreen.gold),
           const SizedBox(height: 8),
           Text(
             value,
@@ -347,10 +309,7 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
       ),
@@ -359,10 +318,7 @@ class _StatCard extends StatelessWidget {
 }
 
 class _Line extends StatelessWidget {
-  const _Line({
-    required this.label,
-    required this.value,
-  });
+  const _Line({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -370,18 +326,11 @@ class _Line extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white70,
-              ),
-            ),
+            child: Text(label, style: const TextStyle(color: Colors.white70)),
           ),
           Text(
             value,
@@ -397,9 +346,7 @@ class _Line extends StatelessWidget {
 }
 
 class _Message extends StatelessWidget {
-  const _Message({
-    required this.text,
-  });
+  const _Message({required this.text});
 
   final String text;
 

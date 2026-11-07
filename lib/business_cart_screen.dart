@@ -1,4 +1,7 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
+
 import 'business_checkout_screen.dart';
 
 class BusinessCartScreen extends StatefulWidget {
@@ -138,7 +141,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
-        title: const Text(
+        title: const AppText(
           'Mon panier',
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
@@ -156,7 +159,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                       size: 64,
                     ),
                     SizedBox(height: 16),
-                    Text(
+                    AppText(
                       'Votre panier est vide',
                       style: TextStyle(
                         color: Colors.white,
@@ -230,7 +233,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  Text(
+                                  AppText(
                                     '${price.toStringAsFixed(2)} €',
                                     style: const TextStyle(
                                       color: primaryGold,
@@ -247,7 +250,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                                 color: Colors.white70,
                               ),
                             ),
-                            Text(
+                            AppText(
                               '$quantity',
                               style: const TextStyle(
                                 color: Colors.white,
@@ -290,7 +293,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            const AppText(
                               'Total',
                               style: TextStyle(
                                 color: Colors.white,
@@ -298,7 +301,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Text(
+                            AppText(
                               '${_total.toStringAsFixed(2)} €',
                               style: const TextStyle(
                                 color: primaryGold,
@@ -309,7 +312,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        const AppText(
                           'Ce total est indicatif. Le serveur vérifiera le prix des '
                           'articles physiques avant de payer sur Stripe. '
                           'Les ebooks et prestations sur devis ne sont pas payés ici.',
@@ -325,7 +328,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                                   'businessSubmissions') {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text(
+                                    content: AppText(
                                       'Le paiement des menus Services sera raccordé séparément.',
                                     ),
                                   ),
@@ -356,7 +359,7 @@ class _BusinessCartScreenState extends State<BusinessCartScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 15),
                             ),
                             icon: const Icon(Icons.arrow_forward),
-                            label: const Text(
+                            label: const AppText(
                               'Continuer la commande',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),

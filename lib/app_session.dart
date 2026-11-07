@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -50,9 +51,11 @@ class AppSession {
     isEmailVerified = verified;
 
     final user = FirebaseAuth.instance.currentUser;
-    isSuperAdmin = superAdminValidated &&
+    isSuperAdmin =
+        superAdminValidated &&
         normalizedEmail == superAdminEmail &&
-        user != null && user.emailVerified &&
+        user != null &&
+        user.emailVerified &&
         user.email?.trim().toLowerCase() == superAdminEmail;
     _validatedSuperAdminUid = isSuperAdmin ? user!.uid : null;
 
@@ -79,8 +82,10 @@ class AppSession {
     final normalizedEmail = emailAddress.trim().toLowerCase();
 
     final keepValidatedSuperAdmin =
-        isSuperAdmin && user.emailVerified &&
-        _validatedSuperAdminUid == user.uid && normalizedEmail == superAdminEmail;
+        isSuperAdmin &&
+        user.emailVerified &&
+        _validatedSuperAdminUid == user.uid &&
+        normalizedEmail == superAdminEmail;
 
     isGuest = false;
     isEmailVerified = user.emailVerified;
@@ -112,10 +117,12 @@ class AppSession {
       final inviteDocument = await FirebaseFirestore.instance
           .collection('adminInvites')
           .doc(normalizedEmail)
-          .get().timeout(const Duration(seconds: 8));
+          .get()
+          .timeout(const Duration(seconds: 8));
 
       if (revision != _sessionRevision ||
-          FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+          FirebaseAuth.instance.currentUser?.uid != user.uid)
+        return;
 
       if (!inviteDocument.exists) {
         return;
@@ -139,8 +146,9 @@ class AppSession {
 
       final permissions = data['permissions'] is List
           ? List<String>.from(
-              (data['permissions'] as List)
-                  .map((permission) => permission.toString()),
+              (data['permissions'] as List).map(
+                (permission) => permission.toString(),
+              ),
             )
           : <String>[];
 

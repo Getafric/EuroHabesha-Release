@@ -1,8 +1,13 @@
+import 'l10n/app_ui.dart';
+import 'professional_photo_decode.dart';
+
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+
 import 'professional_photo_selection.dart';
 
 // EH_CADRAGE_COINS_V3 — shared by banners, profiles, covers and service photos.
@@ -52,42 +57,20 @@ class _PhotoSelectionScreenState extends State<_PhotoSelectionScreen> {
   }
 
   Future<void> _load() async {
-    ui.ImmutableBuffer? buffer;
-    ui.ImageDescriptor? descriptor;
-    ui.Codec? codec;
     try {
-      if (widget.bytes.isEmpty || widget.bytes.length > 8 * 1024 * 1024) {
-        throw StateError('Choisissez une photo de 8 Mo maximum.');
-      }
-      buffer = await ui.ImmutableBuffer.fromUint8List(widget.bytes);
-      descriptor = await ui.ImageDescriptor.encoded(buffer);
-      final w = descriptor.width, h = descriptor.height;
-      if (w < 1 || h < 1 || w > 20000 || h > 20000 || w * h > 60000000) {
-        throw StateError('Dimensions trop grandes. Réduisez cette photo.');
-      }
-      final factor = math.min(1.0, 2000 / math.max(w, h));
-      codec = await descriptor.instantiateCodec(
-        targetWidth: math.max(1, (w * factor).round()),
-        targetHeight: math.max(1, (h * factor).round()),
-      );
-      final frame = await codec.getNextFrame();
+      final image = await decodeProfessionalPhotoForCrop(widget.bytes);
       if (!mounted) {
-        frame.image.dispose();
+        image.dispose();
         return;
       }
-      setState(() => _image = frame.image);
+      setState(() => _image = image);
     } catch (error) {
-      if (mounted) {
-        setState(
-          () => _error = error is StateError
-              ? error.message.toString()
-              : 'Photo illisible. Choisissez une image JPEG, PNG ou WebP.',
-        );
+      if (!mounted) {
+        return;
       }
-    } finally {
-      codec?.dispose();
-      descriptor?.dispose();
-      buffer?.dispose();
+      setState(
+        () => _error = error is StateError ? error.message.toString() : 'Photo illisible ou format non pris en charge. Essayez une image JPEG, PNG ou WebP.',
+      );
     }
   }
 
@@ -309,7 +292,7 @@ class _PhotoSelectionScreenState extends State<_PhotoSelectionScreen> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: AppText(
               'Recadrage impossible. Modifiez le cadre puis réessayez.',
             ),
           ),
@@ -454,7 +437,7 @@ class _PhotoSelectionScreenState extends State<_PhotoSelectionScreen> {
                 for (final label in formats.keys)
                   DropdownMenuItem(
                     value: label,
-                    child: Text('Format : $label'),
+                    child: AppText('Format : $label'),
                   ),
               ],
               onChanged: _saving
@@ -474,7 +457,10 @@ class _PhotoSelectionScreenState extends State<_PhotoSelectionScreen> {
           TextButton.icon(
             onPressed: _saving ? null : () => setState(_reset),
             icon: const Icon(Icons.restart_alt, color: _gold),
-            label: const Text('Réinitialiser', style: TextStyle(color: _gold)),
+            label: const AppText(
+              'Réinitialiser',
+              style: TextStyle(color: _gold),
+            ),
           ),
         ],
       ),
@@ -551,9 +537,23 @@ class _PhotoSelectionScreenState extends State<_PhotoSelectionScreen> {
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.white),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, style: const TextStyle(color: Colors.white)),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.photo_library_outlined,
+                        color: _gold,
+                      ),
+                      label: const AppText(
+                        'Retour pour choisir une autre photo',
+                        style: TextStyle(color: _gold),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
@@ -611,7 +611,7 @@ class _PhotoSelectionScreenState extends State<_PhotoSelectionScreen> {
                         if (!_preview && _logo)
                           const Padding(
                             padding: EdgeInsets.all(8),
-                            child: Text(
+                            child: AppText(
                               'Le cercle indique la partie visible sur le profil.',
                               style: TextStyle(
                                 color: Colors.white70,

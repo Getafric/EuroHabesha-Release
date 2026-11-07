@@ -1,13 +1,13 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 
 class AdminInvitationScreen extends StatefulWidget {
-  const AdminInvitationScreen({
-    super.key,
-    required this.invitationId,
-  });
+  const AdminInvitationScreen({super.key, required this.invitationId});
 
   final String invitationId;
 
@@ -28,9 +28,7 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
   DocumentReference<Map<String, dynamic>> get _inviteRef =>
       _firestore.collection('adminInvites').doc(widget.invitationId);
 
-  Future<void> _respondToInvitation({
-    required bool accept,
-  }) async {
+  Future<void> _respondToInvitation({required bool accept}) async {
     if (_isProcessing) return;
 
     final user = FirebaseAuth.instance.currentUser;
@@ -66,15 +64,11 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
         final status = data['status']?.toString().trim().toLowerCase() ?? '';
 
         if (invitedEmail != currentEmail) {
-          throw Exception(
-            'Cette invitation ne correspond pas à votre compte.',
-          );
+          throw Exception('Cette invitation ne correspond pas à votre compte.');
         }
 
         if (invitedUserId.isNotEmpty && invitedUserId != user.uid) {
-          throw Exception(
-            'Cette invitation appartient à un autre compte.',
-          );
+          throw Exception('Cette invitation appartient à un autre compte.');
         }
 
         if (status != 'pending') {
@@ -132,7 +126,7 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         foregroundColor: Colors.white,
-        title: const Text('Invitation administrateur'),
+        title: const AppText('Invitation administrateur'),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: _inviteRef.snapshots(),
@@ -145,9 +139,7 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
 
           if (!snapshot.hasData) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
+              child: CircularProgressIndicator(color: primaryGold),
             );
           }
 
@@ -175,8 +167,7 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
           if (status == 'active') {
             return const _MessageView(
               icon: Icons.verified_user_outlined,
-              message:
-                  'Cette invitation a déjà été acceptée. Votre accès administrateur est actif.',
+              message: 'Cette invitation a déjà été acceptée. Votre accès administrateur est actif.',
             );
           }
 
@@ -217,7 +208,7 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
                         size: 64,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      const AppText(
                         'Invitation administrateur',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -227,7 +218,7 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      AppText(
                         'Vous avez été invité à devenir administrateur Euro Habesha.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -236,18 +227,9 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      _InfoRow(
-                        label: 'E-mail',
-                        value: invitedEmail,
-                      ),
-                      _InfoRow(
-                        label: 'Rôle',
-                        value: role,
-                      ),
-                      _InfoRow(
-                        label: 'Catégorie',
-                        value: scope,
-                      ),
+                      _InfoRow(label: 'E-mail', value: invitedEmail),
+                      _InfoRow(label: 'Rôle', value: role),
+                      _InfoRow(label: 'Catégorie', value: scope),
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 16),
                         Text(
@@ -265,15 +247,11 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
                         child: ElevatedButton.icon(
                           onPressed: _isProcessing
                               ? null
-                              : () => _respondToInvitation(
-                                    accept: true,
-                                  ),
+                              : () => _respondToInvitation(accept: true),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryGold,
                             foregroundColor: primaryDarkGreen,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           icon: _isProcessing
                               ? const SizedBox(
@@ -285,11 +263,9 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
                                   ),
                                 )
                               : const Icon(Icons.check_circle_outline),
-                          label: const Text(
+                          label: const AppText(
                             'Accepter',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -299,20 +275,14 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _isProcessing
                               ? null
-                              : () => _respondToInvitation(
-                                    accept: false,
-                                  ),
+                              : () => _respondToInvitation(accept: false),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: const BorderSide(
-                              color: Colors.white54,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            side: const BorderSide(color: Colors.white54),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           icon: const Icon(Icons.close),
-                          label: const Text('Refuser'),
+                          label: const AppText('Refuser'),
                         ),
                       ),
                     ],
@@ -328,10 +298,7 @@ class _AdminInvitationScreenState extends State<AdminInvitationScreen> {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _InfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -369,10 +336,7 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _MessageView extends StatelessWidget {
-  const _MessageView({
-    required this.message,
-    this.icon = Icons.info_outline,
-  });
+  const _MessageView({required this.message, this.icon = Icons.info_outline});
 
   final String message;
   final IconData icon;
@@ -394,10 +358,7 @@ class _MessageView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
           ],
         ),

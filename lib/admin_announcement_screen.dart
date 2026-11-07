@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,10 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'app_session.dart';
 
 class AdminAnnouncementScreen extends StatefulWidget {
-  const AdminAnnouncementScreen({
-    super.key,
-    this.announcementId,
-  });
+  const AdminAnnouncementScreen({super.key, this.announcementId});
 
   final String? announcementId;
 
@@ -89,9 +88,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
         if (rawOptions is List) {
           final labels = rawOptions
               .whereType<Map>()
-              .map(
-                (option) => option['label']?.toString().trim() ?? '',
-              )
+              .map((option) => option['label']?.toString().trim() ?? '')
               .where((label) => label.isNotEmpty)
               .toList();
 
@@ -103,9 +100,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
             _pollOptionControllers.clear();
 
             for (final label in labels) {
-              _pollOptionControllers.add(
-                TextEditingController(text: label),
-              );
+              _pollOptionControllers.add(TextEditingController(text: label));
             }
           }
         }
@@ -117,11 +112,9 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not load update: $e'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: AppText('Could not load update: $e')));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -142,9 +135,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
   }
 
   Future<void> _pickImage() async {
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
+    final file = await _picker.pickImage(source: ImageSource.gallery);
 
     if (file != null) {
       setState(() {
@@ -177,17 +168,13 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
   void _addPollOption() {
     if (_pollOptionControllers.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Maximum 10 poll options.'),
-        ),
+        const SnackBar(content: AppText('Maximum 10 poll options.')),
       );
       return;
     }
 
     setState(() {
-      _pollOptionControllers.add(
-        TextEditingController(),
-      );
+      _pollOptionControllers.add(TextEditingController());
     });
   }
 
@@ -208,9 +195,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
   Future<void> _publish() async {
     if (!AppSession.isSuperAdmin) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Super Admin access required.'),
-        ),
+        const SnackBar(content: AppText('Super Admin access required.')),
       );
       return;
     }
@@ -226,18 +211,14 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
     if (_isPoll) {
       if (pollQuestion.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Add a poll question.'),
-          ),
+          const SnackBar(content: AppText('Add a poll question.')),
         );
         return;
       }
 
       if (pollOptions.length < 2) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Add at least 2 poll options.'),
-          ),
+          const SnackBar(content: AppText('Add at least 2 poll options.')),
         );
         return;
       }
@@ -246,9 +227,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
         (_existingMediaUrl == null || _existingMediaUrl!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Add text, photo, short video, or create a poll.',
-          ),
+          content: AppText('Add text, photo, short video, or create a poll.'),
         ),
       );
       return;
@@ -265,7 +244,8 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
       if (_mediaFile != null) {
         final oldStoragePath = _existingMediaStoragePath;
 
-        mediaStoragePath = 'announcements/${user?.uid}/'
+        mediaStoragePath =
+            'announcements/${user?.uid}/'
             '${DateTime.now().millisecondsSinceEpoch}_'
             '${_mediaFile!.uri.pathSegments.last}';
 
@@ -288,10 +268,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
       }
 
       final pollData = pollOptions.asMap().entries.map((entry) {
-        return {
-          'id': 'option_${entry.key + 1}',
-          'label': entry.value,
-        };
+        return {'id': 'option_${entry.key + 1}', 'label': entry.value};
       }).toList();
 
       final announcementData = <String, dynamic>{
@@ -345,8 +322,8 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
             widget.isEditing
                 ? 'Official update saved.'
                 : _isPoll
-                    ? 'Official poll published.'
-                    : 'Official announcement published.',
+                ? 'Official poll published.'
+                : 'Official announcement published.',
           ),
         ),
       );
@@ -372,11 +349,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: primaryDarkGreen,
-        body: Center(
-          child: CircularProgressIndicator(
-            color: primaryGold,
-          ),
-        ),
+        body: Center(child: CircularProgressIndicator(color: primaryGold)),
       );
     }
 
@@ -391,9 +364,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
           ),
         ),
         backgroundColor: primaryDarkGreen,
-        iconTheme: const IconThemeData(
-          color: primaryGold,
-        ),
+        iconTheme: const IconThemeData(color: primaryGold),
         actions: [
           TextButton(
             onPressed: _isPosting ? null : _publish,
@@ -422,16 +393,10 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
             minLines: 5,
             maxLines: null,
             keyboardType: TextInputType.multiline,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
-              hintText:
-                  'Write an official update, news, feedback request, or announcement...',
-              hintStyle: const TextStyle(
-                color: Colors.white38,
-              ),
+              hintText: 'Write an official update, news, feedback request, or announcement...',
+              hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: cardGreen,
               border: OutlineInputBorder(
@@ -458,9 +423,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
                   Expanded(
                     child: Text(
                       _mediaFile!.path.split(Platform.pathSeparator).last,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                      ),
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   ),
                   IconButton(
@@ -470,10 +433,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
                         _mediaType = 'text';
                       });
                     },
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white54,
-                    ),
+                    icon: const Icon(Icons.close, color: Colors.white54),
                   ),
                 ],
               ),
@@ -481,20 +441,10 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
           if (_mediaFile != null) const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: _mediaButton(
-                  Icons.image,
-                  'Photo',
-                  _pickImage,
-                ),
-              ),
+              Expanded(child: _mediaButton(Icons.image, 'Photo', _pickImage)),
               const SizedBox(width: 10),
               Expanded(
-                child: _mediaButton(
-                  Icons.videocam,
-                  'Short Video',
-                  _pickVideo,
-                ),
+                child: _mediaButton(Icons.videocam, 'Short Video', _pickVideo),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -513,21 +463,16 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
               decoration: BoxDecoration(
                 color: cardGreen,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: primaryGold.withValues(alpha: 0.65),
-                ),
+                border: Border.all(color: primaryGold.withValues(alpha: 0.65)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Row(
                     children: [
-                      Icon(
-                        Icons.poll_outlined,
-                        color: primaryGold,
-                      ),
+                      Icon(Icons.poll_outlined, color: primaryGold),
                       SizedBox(width: 8),
-                      Text(
+                      AppText(
                         'Create Poll',
                         style: TextStyle(
                           color: primaryGold,
@@ -540,12 +485,8 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: _pollQuestionController,
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
-                    decoration: _pollDecoration(
-                      'Poll question',
-                    ),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _pollDecoration('Poll question'),
                   ),
                   const SizedBox(height: 14),
                   for (int i = 0; i < _pollOptionControllers.length; i++) ...[
@@ -554,12 +495,8 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
                         Expanded(
                           child: TextField(
                             controller: _pollOptionControllers[i],
-                            style: const TextStyle(
-                              color: Colors.white,
-                            ),
-                            decoration: _pollDecoration(
-                              'Option ${i + 1}',
-                            ),
+                            style: const TextStyle(color: Colors.white),
+                            decoration: _pollDecoration('Option ${i + 1}'),
                           ),
                         ),
                         if (_pollOptionControllers.length > 2)
@@ -580,7 +517,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
                       Icons.add_circle_outline,
                       color: primaryGold,
                     ),
-                    label: const Text(
+                    label: const AppText(
                       'Add option',
                       style: TextStyle(
                         color: primaryGold,
@@ -589,12 +526,9 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  const AppText(
                     'Members can vote once and change their choice while the poll is open.',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ],
               ),
@@ -608,9 +542,7 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
   InputDecoration _pollDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(
-        color: Colors.white38,
-      ),
+      hintStyle: const TextStyle(color: Colors.white38),
       filled: true,
       fillColor: primaryDarkGreen,
       border: OutlineInputBorder(
@@ -620,31 +552,17 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
     );
   }
 
-  Widget _mediaButton(
-    IconData icon,
-    String label,
-    VoidCallback onTap,
-  ) {
+  Widget _mediaButton(IconData icon, String label, VoidCallback onTap) {
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(
-          color: primaryGold,
-        ),
-        padding: const EdgeInsets.symmetric(
-          vertical: 14,
-        ),
+        side: const BorderSide(color: primaryGold),
+        padding: const EdgeInsets.symmetric(vertical: 14),
       ),
       onPressed: onTap,
-      icon: Icon(
-        icon,
-        color: primaryGold,
-      ),
+      icon: Icon(icon, color: primaryGold),
       label: Text(
         label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 12),
       ),
     );
   }

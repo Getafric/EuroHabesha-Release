@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -11,9 +13,7 @@ class SponsoredInterstitialAd {
   // Maximum une publicité plein écran par session.
   static bool _shownThisSession = false;
 
-  static Future<void> showIfAvailable(
-    BuildContext context,
-  ) async {
+  static Future<void> showIfAvailable(BuildContext context) async {
     if (_shownThisSession) return;
 
     try {
@@ -57,9 +57,7 @@ class SponsoredInterstitialAd {
         context: context,
         barrierDismissible: true,
         builder: (dialogContext) {
-          return _SponsoredInterstitialDialog(
-            data: data,
-          );
+          return _SponsoredInterstitialDialog(data: data);
         },
       );
     } catch (_) {
@@ -69,9 +67,7 @@ class SponsoredInterstitialAd {
 }
 
 class _SponsoredInterstitialDialog extends StatelessWidget {
-  const _SponsoredInterstitialDialog({
-    required this.data,
-  });
+  const _SponsoredInterstitialDialog({required this.data});
 
   final Map<String, dynamic> data;
 
@@ -80,11 +76,14 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
   static const Color gold = Color(0xFFFFD700);
 
   void _openOffer(BuildContext context) {
-    final targetType =
-        (data['targetType'] ?? 'business').toString().toLowerCase();
+    final targetType = (data['targetType'] ?? 'business')
+        .toString()
+        .toLowerCase();
 
-    final targetRoute =
-        (data['targetRoute'] ?? '').toString().trim().toLowerCase();
+    final targetRoute = (data['targetRoute'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase();
 
     final rawTargetData = data['targetData'] ?? data['targetBusinessData'];
 
@@ -101,17 +100,12 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
       if (targetData.isNotEmpty) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => EventDetailScreen(
-              eventData: targetData,
-            ),
+            builder: (_) => EventDetailScreen(eventData: targetData),
           ),
         );
       } else {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const EventsScreen(),
-          ),
-        );
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const EventsScreen()));
       }
 
       return;
@@ -122,17 +116,12 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
       if (targetData.isNotEmpty) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ProductDetailScreen(
-              product: targetData,
-            ),
+            builder: (_) => ProductDetailScreen(product: targetData),
           ),
         );
       } else {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const MarketplaceScreen(),
-          ),
-        );
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const MarketplaceScreen()));
       }
 
       return;
@@ -142,37 +131,33 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
     if (targetData.isNotEmpty) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => BusinessDetailScreen(
-            businessData: targetData,
-          ),
+          builder: (_) => BusinessDetailScreen(businessData: targetData),
         ),
       );
 
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const BusinessDirectoryScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const BusinessDirectoryScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final businessName =
         data['businessName']?.toString().trim().isNotEmpty == true
-            ? data['businessName'].toString()
-            : data['targetBusinessName']?.toString().trim().isNotEmpty == true
-                ? data['targetBusinessName'].toString()
-                : data['title']?.toString().trim().isNotEmpty == true
-                    ? data['title'].toString()
-                    : 'Euro Habesha';
+        ? data['businessName'].toString()
+        : data['targetBusinessName']?.toString().trim().isNotEmpty == true
+        ? data['targetBusinessName'].toString()
+        : data['title']?.toString().trim().isNotEmpty == true
+        ? data['title'].toString()
+        : 'Euro Habesha';
 
     final description =
         data['description']?.toString().trim().isNotEmpty == true
-            ? data['description'].toString()
-            : data['body']?.toString() ?? '';
+        ? data['description'].toString()
+        : data['body']?.toString() ?? '';
 
     final promotion = data['promotion']?.toString().trim().isNotEmpty == true
         ? data['promotion'].toString()
@@ -184,23 +169,14 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 35,
-      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 35),
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 440,
-          maxHeight: 680,
-        ),
+        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 680),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: darkGreen,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: gold.withValues(alpha: 0.75),
-            width: 1.5,
-          ),
+          border: Border.all(color: gold.withValues(alpha: 0.75), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.55),
@@ -235,9 +211,7 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          darkGreen.withValues(
-                            alpha: 0.95,
-                          ),
+                          darkGreen.withValues(alpha: 0.95),
                         ],
                       ),
                     ),
@@ -255,7 +229,7 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
                       color: gold,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
+                    child: const AppText(
                       'SPONSORED',
                       style: TextStyle(
                         color: darkGreen,
@@ -269,17 +243,12 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
                   top: 10,
                   right: 10,
                   child: Material(
-                    color: Colors.black.withValues(
-                      alpha: 0.65,
-                    ),
+                    color: Colors.black.withValues(alpha: 0.65),
                     shape: const CircleBorder(),
                     child: IconButton(
                       tooltip: 'Close',
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                      ),
+                      icon: const Icon(Icons.close, color: Colors.white),
                     ),
                   ),
                 ),
@@ -287,12 +256,7 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  22,
-                  4,
-                  22,
-                  22,
-                ),
+                padding: const EdgeInsets.fromLTRB(22, 4, 22, 22),
                 child: Column(
                   children: [
                     Text(
@@ -338,12 +302,10 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
                           color: cardGreen,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: gold.withValues(
-                              alpha: 0.35,
-                            ),
+                            color: gold.withValues(alpha: 0.35),
                           ),
                         ),
-                        child: Text(
+                        child: AppText(
                           'CODE: $promoCode',
                           style: const TextStyle(
                             color: gold,
@@ -361,14 +323,12 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: gold,
                           foregroundColor: darkGreen,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
+                        child: const AppText(
                           'View Offer',
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
@@ -380,11 +340,9 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
                     const SizedBox(height: 6),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
+                      child: const AppText(
                         'Maybe later',
-                        style: TextStyle(
-                          color: Colors.white60,
-                        ),
+                        style: TextStyle(color: Colors.white60),
                       ),
                     ),
                   ],
@@ -401,11 +359,7 @@ class _SponsoredInterstitialDialog extends StatelessWidget {
     return Container(
       color: cardGreen,
       child: const Center(
-        child: Icon(
-          Icons.campaign_outlined,
-          color: gold,
-          size: 70,
-        ),
+        child: Icon(Icons.campaign_outlined, color: gold, size: 70),
       ),
     );
   }

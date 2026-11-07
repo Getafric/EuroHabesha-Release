@@ -1,17 +1,20 @@
+import 'l10n/app_ui.dart';
+import 'etape10/shop_pages.dart';
+import 'etape10/workspace_ui.dart';
+import 'member_interface_text.dart';
 // Euro Habesha: async profile contexts checked v1
 // Euro Habesha: photos et publicites v1
 import 'public_profile_photo.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 import 'package:flutter/material.dart';
+
 import 'business_reviews.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app_session.dart';
-
-import 'dynamic_submission_screen.dart';
 
 import 'status_badge_widget.dart';
 
@@ -271,8 +274,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
 
       'openingHours': 'Tue - Sun: 12:00 - 23:00',
 
-      'description':
-          'Experience the best authentic Ethiopian and Eritrean traditional food in Lyon. We offer Injera with various Wots, Tibs, and traditional coffee ceremonies. Officially registered and inspected.',
+      'description': 'Experience the best authentic Ethiopian and Eritrean traditional food in Lyon. We offer Injera with various Wots, Tibs, and traditional coffee ceremonies. Officially registered and inspected.',
 
       'icon': Icons.restaurant,
 
@@ -337,8 +339,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
 
       'openingHours': 'Mon - Sat: 09:30 - 19:30',
 
-      'description':
-          'Professional hair styling, braiding, coloring, and cosmetics store tailored for Habesha men and women. Officially registered salon in the heart of Paris.',
+      'description': 'Professional hair styling, braiding, coloring, and cosmetics store tailored for Habesha men and women. Officially registered salon in the heart of Paris.',
 
       'icon': Icons.spa,
 
@@ -352,8 +353,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
         {
           'user': 'Helen T.',
 
-          'comment':
-              'Love my new braids! The staff is officially certified and very polite.',
+          'comment': 'Love my new braids! The staff is officially certified and very polite.',
 
           'rating': '5.0',
         },
@@ -393,8 +393,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
 
       'openingHours': 'Mon - Sat: 09:00 - 20:00',
 
-      'description':
-          'Your one-stop shop for Teff, Berbere, Shiro, and imported traditional items. Fresh Injera available every Tuesday and Friday.',
+      'description': 'Your one-stop shop for Teff, Berbere, Shiro, and imported traditional items. Fresh Injera available every Tuesday and Friday.',
 
       'icon': Icons.storefront,
 
@@ -478,7 +477,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
 
       appBar: AppBar(
         title: Text(
-          'Découvrir',
+          memberText(context, 'Commerces', 'Businesses'),
 
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
@@ -486,26 +485,6 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
         backgroundColor: primaryDarkGreen,
 
         iconTheme: IconThemeData(color: primaryGold),
-
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_business_outlined, color: primaryGold),
-
-            tooltip: 'Ajouter un commerce',
-
-            onPressed: () {
-              Navigator.push(
-                context,
-
-                MaterialPageRoute(
-                  builder: (_) => const DynamicSubmissionScreen(
-                    type: SubmissionType.business,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
       ),
 
       body: Column(
@@ -515,7 +494,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AppText(
                   'Découvrir',
                   style: TextStyle(
                     color: Colors.white,
@@ -524,7 +503,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
                   ),
                 ),
                 SizedBox(height: 4),
-                Text(
+                AppText(
                   'Trouvez des restaurants, commerces et services près de vous.',
                   style: TextStyle(color: Colors.white60, fontSize: 13),
                 ),
@@ -722,7 +701,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
 
                           const SizedBox(height: 12),
 
-                          const Text(
+                          const AppText(
                             'Aucun résultat trouvé.',
 
                             style: TextStyle(
@@ -736,7 +715,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
 
                           const SizedBox(height: 6),
 
-                          const Text(
+                          const AppText(
                             'Essayez une autre catégorie ou une autre recherche.',
 
                             style: TextStyle(
@@ -746,39 +725,6 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
                           ),
 
                           const SizedBox(height: 16),
-
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryGold,
-                            ),
-
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-
-                                MaterialPageRoute(
-                                  builder: (_) => const DynamicSubmissionScreen(
-                                    type: SubmissionType.business,
-                                  ),
-                                ),
-                              );
-                            },
-
-                            icon: Icon(
-                              Icons.add_circle,
-                              color: primaryDarkGreen,
-                            ),
-
-                            label: Text(
-                              'Ajouter un commerce',
-
-                              style: TextStyle(
-                                color: primaryDarkGreen,
-
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -941,7 +887,7 @@ class _BusinessDirectoryScreenState extends State<BusinessDirectoryScreen> {
 
                                     const SizedBox(height: 4),
 
-                                    Text(
+                                    AppText(
                                       '📍 ${biz['location']} • ⭐ ${biz['rating']}',
 
                                       style: const TextStyle(
@@ -1011,15 +957,14 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not launch $urlString')),
+            SnackBar(content: AppText('Could not launch $urlString')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: AppText('Error: $e')));
       }
     }
   }
@@ -1038,16 +983,15 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen> {
         await launchUrl(mapUri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Could not open map.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: AppText('Could not open map.')),
+          );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Map error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: AppText('Map error: $e')));
       }
     }
   }
@@ -1069,7 +1013,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen> {
     final galleryImages = media.gallery;
     final cover = media.cover;
 
-final String address =
+    final String address =
         biz['address']?.toString() ??
         biz['location']?.toString() ??
         'Address available upon contact';
@@ -1143,7 +1087,7 @@ final String address =
                     builder: (ctx) => AlertDialog(
                       backgroundColor: cardGreen,
 
-                      title: const Text(
+                      title: const AppText(
                         'Delete Business?',
 
                         style: TextStyle(
@@ -1153,7 +1097,7 @@ final String address =
                         ),
                       ),
 
-                      content: const Text(
+                      content: const AppText(
                         'This will remove this business profile from the directory.',
 
                         style: TextStyle(color: Colors.white70),
@@ -1163,7 +1107,7 @@ final String address =
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
 
-                          child: const Text('Cancel'),
+                          child: const AppText('Cancel'),
                         ),
 
                         ElevatedButton(
@@ -1173,7 +1117,7 @@ final String address =
 
                           onPressed: () => Navigator.pop(ctx, true),
 
-                          child: const Text(
+                          child: const AppText(
                             'Delete',
 
                             style: TextStyle(color: Colors.white),
@@ -1196,7 +1140,7 @@ final String address =
                       final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
                       messenger.showSnackBar(
-                        const SnackBar(content: Text('Business deleted.')),
+                        const SnackBar(content: AppText('Business deleted.')),
                       );
                     }
                   }
@@ -1370,6 +1314,29 @@ final String address =
 
               const SizedBox(height: 24),
 
+              if (bookingId.isNotEmpty)
+                ehButton(
+                  'Voir les produits de cette boutique',
+                  () => ehRun(context, () async {
+                    final stores = await ehCall('stores');
+                    final matches = ehRows(stores['items']).where(
+                      (s) =>
+                          s['sourceCollection'] == bookingCollection &&
+                          s['sourceId'] == bookingId,
+                    );
+                    if (matches.isEmpty)
+                      throw const FormatException(
+                        'Cette activité n’a pas activé son catalogue de produits.',
+                      );
+                    if (context.mounted)
+                      await ehOpen<void>(
+                        context,
+                        EhStorePage(id: matches.first['id']),
+                      );
+                  }),
+                  icon: Icons.shopping_basket_outlined,
+                ),
+
               PublicTableReservationAction(
                 sourceCollection: bookingCollection,
                 businessId: bookingId,
@@ -1392,7 +1359,7 @@ final String address =
                         foregroundColor: primaryDarkGreen,
                       ),
                       icon: const Icon(Icons.chat_bubble_outline),
-                      label: const Text('Discuter'),
+                      label: const AppText('Discuter'),
                       onPressed: () => openDirectChat(
                         context: context,
                         otherUserId:
@@ -1410,6 +1377,13 @@ final String address =
                             biz['name']?.toString() ?? 'Professionnel',
                         professionalSourceCollection: sourceLink?.collection,
                         professionalBusinessId: sourceLink?.id,
+                        publicContactCollection:
+                            (biz['docRef'] is DocumentReference)
+                            ? (biz['docRef'] as DocumentReference).parent.id
+                            : null,
+                        publicContactId: (biz['docRef'] is DocumentReference)
+                            ? (biz['docRef'] as DocumentReference).id
+                            : null,
                       ),
                     ),
                   ),
@@ -1509,7 +1483,7 @@ final String address =
                       ),
                       onPressed: () => _openMap(address),
                       icon: const Icon(Icons.map_outlined),
-                      label: const Text('Itinéraire'),
+                      label: const AppText('Itinéraire'),
                     ),
                   ],
                 ),
@@ -1523,7 +1497,7 @@ final String address =
                 crossAxisAlignment: WrapCrossAlignment.center,
 
                 children: [
-                  Text(
+                  AppText(
                     'Avis clients',
 
                     style: TextStyle(
@@ -1545,7 +1519,7 @@ final String address =
                       size: 16,
                     ),
 
-                    label: const Text(
+                    label: const AppText(
                       'Donner un avis',
 
                       style: TextStyle(

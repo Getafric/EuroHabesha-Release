@@ -1,4 +1,7 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 import 'promotion_settings.dart';
 
@@ -32,7 +35,7 @@ class PromotionPauseInfo extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
             const SizedBox(height: 12),
-            const Text(
+            const AppText(
               'Vos demandes déjà envoyées restent conservées. '
               'L’historique reste accessible en haut de l’écran.',
               textAlign: TextAlign.center,
@@ -46,7 +49,7 @@ class PromotionPauseInfo extends StatelessWidget {
                   foregroundColor: const Color(0xFF061E12),
                 ),
                 icon: const Icon(Icons.tune),
-                label: const Text('Ouvrir les réglages'),
+                label: const AppText('Ouvrir les réglages'),
                 onPressed: () => Navigator.push<void>(
                   context,
                   MaterialPageRoute<void>(

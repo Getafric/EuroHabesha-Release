@@ -1,8 +1,11 @@
+import 'l10n/app_ui.dart';
 // EH_MODERATION_MATERIAL_V1
 import 'professional_moderation_surface.dart';
 import 'admin_professional_verification_review_screen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 import 'services/nearby_sync_service.dart';
 
@@ -48,7 +51,7 @@ class _AdminProfessionalModerationScreenState
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text(
+                child: const AppText(
                   'Annuler',
                   style: TextStyle(color: Colors.white70),
                 ),
@@ -59,7 +62,7 @@ class _AdminProfessionalModerationScreenState
                   foregroundColor: _dark,
                 ),
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Confirmer'),
+                child: const AppText('Confirmer'),
               ),
             ],
           ),
@@ -128,7 +131,7 @@ class _AdminProfessionalModerationScreenState
       return const ColoredBox(
         color: _dark,
         child: Center(
-          child: Text(
+          child: AppText(
             'Accès administrateur requis',
             style: TextStyle(color: Colors.white70),
           ),
@@ -142,12 +145,10 @@ class _AdminProfessionalModerationScreenState
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(
+              child: AppText(
                 'Modération professionnelle',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: _gold,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(color: _gold, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -190,7 +191,7 @@ class _AdminProfessionalModerationScreenState
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text(
+                    child: AppText(
                       'Erreur de lecture : ${snapshot.error}',
                       style: const TextStyle(color: Colors.white70),
                     ),
@@ -204,7 +205,7 @@ class _AdminProfessionalModerationScreenState
                 final docs = snapshot.data!.docs;
                 if (docs.isEmpty) {
                   return const Center(
-                    child: Text(
+                    child: AppText(
                       'Aucune fiche pour cette catégorie',
                       style: TextStyle(color: Colors.white70),
                     ),
@@ -245,12 +246,12 @@ class _AdminProfessionalModerationScreenState
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
+                            AppText(
                               'Publication : $status  •  Vérifié : ${verified ? "Oui" : "Non"}',
                               style: const TextStyle(color: Colors.white70),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            const AppText(
                               'Le dossier professionnel est consulté sur la fiche d’origine.',
                               style: TextStyle(color: Colors.white70),
                             ),
@@ -277,7 +278,7 @@ class _AdminProfessionalModerationScreenState
                                         ),
                                       ),
                                 icon: const Icon(Icons.folder_open_outlined),
-                                label: const Text(
+                                label: const AppText(
                                   'Examiner le dossier professionnel',
                                 ),
                               ),
@@ -298,7 +299,7 @@ class _AdminProfessionalModerationScreenState
                                     foregroundColor: _gold,
                                     side: const BorderSide(color: _gold),
                                   ),
-                                  child: const Text('Publier'),
+                                  child: const AppText('Publier'),
                                 ),
                                 OutlinedButton(
                                   onPressed: _busy
@@ -313,7 +314,7 @@ class _AdminProfessionalModerationScreenState
                                       color: Colors.white54,
                                     ),
                                   ),
-                                  child: const Text('Suspendre'),
+                                  child: const AppText('Suspendre'),
                                 ),
                               ],
                             ),

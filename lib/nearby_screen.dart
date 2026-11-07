@@ -1,7 +1,10 @@
+import 'l10n/app_ui.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+
 import 'business_screen.dart';
 import 'habesha_connect_feed_screen.dart';
 import 'events_screen.dart';
@@ -9,14 +12,19 @@ import 'jobs_screen.dart';
 import 'marketplace_screen.dart';
 import 'professionals_screen.dart';
 import 'status_badge_widget.dart';
+
 class NearbyScreen extends StatefulWidget {
   final String initialCategory;
   final bool useSavedCampaignCity;
-  const NearbyScreen({super.key, this.initialCategory = 'Tous',
-    this.useSavedCampaignCity = false});
+  const NearbyScreen({
+    super.key,
+    this.initialCategory = 'Tous',
+    this.useSavedCampaignCity = false,
+  });
   @override
   State<NearbyScreen> createState() => _NearbyScreenState();
 }
+
 class _NearbyScreenState extends State<NearbyScreen> {
   static const Color primaryDarkGreen = Color(0xFF061E12);
   static const Color primaryGold = Color(0xFFFFD700);
@@ -32,11 +40,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
     'Restaurants',
     'Connect',
   ];
-  final List<String> _sortOptions = const [
-    'Proximité',
-    'Récent',
-    'Populaire',
-  ];
+  final List<String> _sortOptions = const ['Proximité', 'Récent', 'Populaire'];
   final Map<String, _CityCoord> _cityCoordinates = const {
     'Lyon, France': _CityCoord(45.7640, 4.8357),
     'Vaulx-en-Velin, France': _CityCoord(45.7769, 4.9186),
@@ -75,12 +79,15 @@ class _NearbyScreenState extends State<NearbyScreen> {
       _initUserLocation();
     }
   }
+
   Future<void> _restoreCampaignCity() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null && !user.isAnonymous) {
         final snapshot = await FirebaseFirestore.instance
-            .collection('localCampaignSubscriptions').doc(user.uid).get();
+            .collection('localCampaignSubscriptions')
+            .doc(user.uid)
+            .get();
         if (!mounted) return;
         final city = snapshot.data()?['city'];
         if (city is String && _cityCoordinates.containsKey(city)) {
@@ -96,6 +103,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     if (mounted) await _initUserLocation();
   }
+
   Future<void> _initUserLocation() async {
     if (_isLocating) return;
     setState(() {
@@ -148,45 +156,37 @@ class _NearbyScreenState extends State<NearbyScreen> {
       });
     }
   }
+
   _CityCoord? get _center {
     if (_selectedLocation == 'GPS') {
       final position = _currentPosition;
       if (position == null) return null;
-      return _CityCoord(
-        position.latitude,
-        position.longitude,
-      );
+      return _CityCoord(position.latitude, position.longitude);
     }
     return _cityCoordinates[_selectedLocation];
   }
+
   double? _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
     if (value is String) {
-      return double.tryParse(
-        value.trim().replaceAll(',', '.'),
-      );
+      return double.tryParse(value.trim().replaceAll(',', '.'));
     }
     return null;
   }
-  Map<String, dynamic> _fields(
-    Map<String, dynamic> data,
-  ) {
+
+  Map<String, dynamic> _fields(Map<String, dynamic> data) {
     final raw = data['fields'];
     if (raw is Map) {
       return Map<String, dynamic>.from(raw);
     }
     return <String, dynamic>{};
   }
-  _CityCoord? _coordinates(
-    Map<String, dynamic> data,
-  ) {
+
+  _CityCoord? _coordinates(Map<String, dynamic> data) {
     final fields = _fields(data);
     final geo = data['geoPoint'] ?? fields['geoPoint'];
     if (geo is GeoPoint) {
-      return _CityCoord(
-        geo.latitude,
-        geo.longitude,
-      );
+      return _CityCoord(geo.latitude, geo.longitude);
     }
     final latitude = _toDouble(
       data['latitude'] ?? fields['latitude'] ?? data['lat'] ?? fields['lat'],
@@ -210,13 +210,22 @@ class _NearbyScreenState extends State<NearbyScreen> {
   // Ne jamais inventer des coordonnées GPS exactes pour une entreprise.
   _CityCoord? _cityFallback(Map<String, dynamic> data) {
     final fields = _fields(data);
-    final locationText = [
-      data['city'], fields['city'], data['cityAddress'],
-      fields['cityAddress'], data['location'], fields['location'],
-      data['address'], fields['address'], data['venue'], fields['venue'],
-    ].where((value) => value != null)
-     .map((value) => value.toString().toLowerCase())
-     .join(' ');
+    final locationText =
+        [
+              data['city'],
+              fields['city'],
+              data['cityAddress'],
+              fields['cityAddress'],
+              data['location'],
+              fields['location'],
+              data['address'],
+              fields['address'],
+              data['venue'],
+              fields['venue'],
+            ]
+            .where((value) => value != null)
+            .map((value) => value.toString().toLowerCase())
+            .join(' ');
     if (locationText.isEmpty) return null;
     for (final entry in _cityCoordinates.entries) {
       final city = entry.key.split(',').first.toLowerCase();
@@ -226,16 +235,27 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     return null;
   }
+
   String _categoryFor(Map<String, dynamic> data) {
     // La collection d'origine prime sur les mots de la description.
-    final source = (data['sourceCollection'] ?? '').toString().trim().toLowerCase();
+    final source = (data['sourceCollection'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase();
     const byCollection = <String, String>{
-      'events': 'Événements', 'eventsubmissions': 'Événements',
-      'jobs': 'Emplois', 'jobsubmissions': 'Emplois',
-      'marketplace': 'Marché', 'marketplacesubmissions': 'Marché', 'products': 'Marché',
-      'professionals': 'Pros', 'professionalprofiles': 'Pros',
-      'businesses': 'Commerces', 'businesssubmissions': 'Commerces',
-      'posts': 'Connect', 'habeshaconnectrequests': 'Connect',
+      'events': 'Événements',
+      'eventsubmissions': 'Événements',
+      'jobs': 'Emplois',
+      'jobsubmissions': 'Emplois',
+      'marketplace': 'Marché',
+      'marketplacesubmissions': 'Marché',
+      'products': 'Marché',
+      'professionals': 'Pros',
+      'professionalprofiles': 'Pros',
+      'businesses': 'Commerces',
+      'businesssubmissions': 'Commerces',
+      'posts': 'Connect',
+      'habeshaconnectrequests': 'Connect',
     };
     if (source == 'jobsubmissions') {
       final submissionType = (data['type'] ?? '').toString().toLowerCase();
@@ -244,22 +264,32 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     if (byCollection.containsKey(source)) return byCollection[source]!;
     final fields = _fields(data);
-    final raw = [data['category'], fields['category'], data['type'],
-      fields['type'], data['businessCategory'], fields['businessCategory']]
-        .where((value) => value != null).join(' ').toLowerCase();
+    final raw = [
+      data['category'],
+      fields['category'],
+      data['type'],
+      fields['type'],
+      data['businessCategory'],
+      fields['businessCategory'],
+    ].where((value) => value != null).join(' ').toLowerCase();
     if (raw.contains('event') || raw.contains('concert')) return 'Événements';
-    if (raw.contains('job') || raw.contains('emploi') || raw.contains('recrut')) return 'Emplois';
-    if (raw.contains('market') || raw.contains('product') || raw.contains('produit')) return 'Marché';
+    if (raw.contains('job') || raw.contains('emploi') || raw.contains('recrut'))
+      return 'Emplois';
+    if (raw.contains('market') ||
+        raw.contains('product') ||
+        raw.contains('produit'))
+      return 'Marché';
     if (raw.contains('community') || raw.contains('connect')) return 'Connect';
-    if (raw.contains('professional') || raw.contains('professionnel') ||
-        raw.contains('photograph') || raw.contains('videograph')) {
+    if (raw.contains('professional') ||
+        raw.contains('professionnel') ||
+        raw.contains('photograph') ||
+        raw.contains('videograph')) {
       return 'Pros';
     }
     return 'Commerces';
   }
-  String _titleFor(
-    Map<String, dynamic> data,
-  ) {
+
+  String _titleFor(Map<String, dynamic> data) {
     final fields = _fields(data);
     final candidates = [
       data['name'],
@@ -281,9 +311,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     return 'Euro Habesha';
   }
-  String _descriptionFor(
-    Map<String, dynamic> data,
-  ) {
+
+  String _descriptionFor(Map<String, dynamic> data) {
     final fields = _fields(data);
     final candidates = [
       data['description'],
@@ -298,17 +327,13 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     return _categoryFor(data);
   }
-  String _locationFor(
-    Map<String, dynamic> data,
-  ) {
+
+  String _locationFor(Map<String, dynamic> data) {
     final fields = _fields(data);
     final exactAddressVisible =
         fields['showExactAddress'] == true || data['showExactAddress'] == true;
     if (exactAddressVisible) {
-      final exact = [
-        fields['address'],
-        data['address'],
-      ];
+      final exact = [fields['address'], data['address']];
       for (final value in exact) {
         final text = value?.toString().trim() ?? '';
         if (text.isNotEmpty) return text;
@@ -329,9 +354,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     return 'Localisation disponible';
   }
-  String? _imageFor(
-    Map<String, dynamic> data,
-  ) {
+
+  String? _imageFor(Map<String, dynamic> data) {
     final fields = _fields(data);
     final direct = [
       data['imageUrl'],
@@ -358,9 +382,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     return null;
   }
-  double _ratingFor(
-    Map<String, dynamic> data,
-  ) {
+
+  double _ratingFor(Map<String, dynamic> data) {
     final fields = _fields(data);
     final value = data['rating'] ?? fields['rating'];
     if (value is num) {
@@ -369,31 +392,25 @@ class _NearbyScreenState extends State<NearbyScreen> {
     if (value is String) {
       final match = RegExp(r'\d+(?:[.,]\d+)?').firstMatch(value);
       if (match != null) {
-        return double.tryParse(
-              match.group(0)!.replaceAll(',', '.'),
-            ) ??
-            0;
+        return double.tryParse(match.group(0)!.replaceAll(',', '.')) ?? 0;
       }
     }
     return 0;
   }
-  int _reviewCountFor(
-    Map<String, dynamic> data,
-  ) {
+
+  int _reviewCountFor(Map<String, dynamic> data) {
     final fields = _fields(data);
     final value = data['reviewCount'] ?? fields['reviewCount'];
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
-  bool _isVerified(
-    Map<String, dynamic> data,
-  ) {
+
+  bool _isVerified(Map<String, dynamic> data) {
     final fields = _fields(data);
     return data['isVerified'] == true || fields['isVerified'] == true;
   }
-  String? _subscriptionTier(
-    Map<String, dynamic> data,
-  ) {
+
+  String? _subscriptionTier(Map<String, dynamic> data) {
     final fields = _fields(data);
     final value =
         data['subscriptionTier'] ?? fields['subscriptionTier'] ?? data['tier'];
@@ -401,9 +418,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
     if (tier == null || tier.isEmpty) return null;
     return tier;
   }
-  int _priorityScore(
-    Map<String, dynamic> data,
-  ) {
+
+  int _priorityScore(Map<String, dynamic> data) {
     var score = 0;
     final tier = _subscriptionTier(data);
     if (tier == 'vip') {
@@ -420,15 +436,15 @@ class _NearbyScreenState extends State<NearbyScreen> {
     score += _reviewCountFor(data).clamp(0, 100);
     return score;
   }
-  DateTime _dateFor(
-    Map<String, dynamic> data,
-  ) {
+
+  DateTime _dateFor(Map<String, dynamic> data) {
     final value = data['publishedAt'] ?? data['updatedAt'] ?? data['createdAt'];
     if (value is Timestamp) {
       return value.toDate();
     }
     return DateTime.fromMillisecondsSinceEpoch(0);
   }
+
   List<Map<String, dynamic>> _prepareItems(
     List<Map<String, dynamic>> documents,
   ) {
@@ -470,14 +486,24 @@ class _NearbyScreenState extends State<NearbyScreen> {
       if (_selectedCategory == 'Restaurants') {
         final fields = _fields(original);
         final category = _categoryFor(original);
-        final kinds = [original['businessCategory'], fields['businessCategory'],
-          original['jobCategory'], fields['jobCategory'],
-          original['professionalCategory'], fields['professionalCategory'],
-          original['category'], fields['category']]
-            .whereType<String>().join(' ').toLowerCase();
+        final kinds = [
+          original['businessCategory'],
+          fields['businessCategory'],
+          original['jobCategory'],
+          fields['jobCategory'],
+          original['professionalCategory'],
+          fields['professionalCategory'],
+          original['category'],
+          fields['category'],
+        ].whereType<String>().join(' ').toLowerCase();
         if (!['Commerces', 'Pros'].contains(category) ||
-            !['restaurant', 'café', 'cafe', 'coffee', 'brasserie']
-                .any(kinds.contains)) {
+            ![
+              'restaurant',
+              'café',
+              'cafe',
+              'coffee',
+              'brasserie',
+            ].any(kinds.contains)) {
           continue;
         }
       } else if (_selectedCategory != 'Tous' &&
@@ -487,9 +513,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       items.add(item);
     }
     if (_selectedSort == 'Récent') {
-      items.sort(
-        (a, b) => _dateFor(b).compareTo(_dateFor(a)),
-      );
+      items.sort((a, b) => _dateFor(b).compareTo(_dateFor(a)));
     } else if (_selectedSort == 'Populaire') {
       items.sort((a, b) {
         final scoreCompare = (b['_priorityScore'] as int).compareTo(
@@ -519,9 +543,8 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
     return items;
   }
-  Future<Map<String, dynamic>?> _loadSource(
-    Map<String, dynamic> item,
-  ) async {
+
+  Future<Map<String, dynamic>?> _loadSource(Map<String, dynamic> item) async {
     final sourceCollection = item['sourceCollection']?.toString().trim();
     final sourceId = item['sourceId']?.toString().trim();
     if (sourceCollection == null ||
@@ -536,14 +559,12 @@ class _NearbyScreenState extends State<NearbyScreen> {
           .doc(sourceId)
           .get();
       if (!snapshot.exists) return null;
-      return {
-        ...?snapshot.data(),
-        'id': snapshot.id,
-      };
+      return {...?snapshot.data(), 'id': snapshot.id};
     } catch (_) {
       return null;
     }
   }
+
   // Adapte un événement Firestore au format attendu par EventDetailScreen.
   Map<String, dynamic> _eventDetailData(Map<String, dynamic> data) {
     final fields = _fields(data);
@@ -554,69 +575,79 @@ class _NearbyScreenState extends State<NearbyScreen> {
       }
       return fallback;
     }
+
     final eventMedia = data['eventMedia'];
     final media = data['media'];
     String image = pick([
-      data['image'], data['imageUrl'], data['coverUrl'],
+      data['image'],
+      data['imageUrl'],
+      data['coverUrl'],
       if (eventMedia is Map) eventMedia['coverUrl'],
-      if (eventMedia is Map && eventMedia['photoUrls'] is List &&
+      if (eventMedia is Map &&
+          eventMedia['photoUrls'] is List &&
           (eventMedia['photoUrls'] as List).isNotEmpty)
         (eventMedia['photoUrls'] as List).first,
-      if (media is Map && media['photoUrls'] is List &&
+      if (media is Map &&
+          media['photoUrls'] is List &&
           (media['photoUrls'] as List).isNotEmpty)
         (media['photoUrls'] as List).first,
     ], '');
-    final performer = pick([fields['performer'], data['performerDj']], 'Live Show');
+    final performer = pick([
+      fields['performer'],
+      data['performerDj'],
+    ], 'Live Show');
     final rawPrice = pick([fields['ticketPrice'], data['price']], '');
     return {
       ...data,
       'id': pick([data['id'], data['sourceId']], ''),
-      'title': pick([fields['title'], data['title'], data['eventName']], 'Event'),
+      'title': pick([
+        fields['title'],
+        data['title'],
+        data['eventName'],
+      ], 'Event'),
       'type': pick([fields['eventType'], data['type']], 'Concert & Party'),
       'audience': pick([fields['audience'], data['audience']], 'General'),
       'date': pick([fields['eventDate'], data['date']], 'Upcoming'),
       'time': pick([fields['eventTime'], data['time']], ''),
       'endTime': pick([fields['endTime'], data['endTime']], ''),
-      'location': pick([fields['cityAddress'], data['location'], data['city']], 'Europe'),
+      'location': pick([
+        fields['cityAddress'],
+        data['location'],
+        data['city'],
+      ], 'Europe'),
       'price': rawPrice,
       'description': pick([fields['description'], data['description']], ''),
       'performerDj': performer,
       'artists': data['artists'] is List ? data['artists'] : [performer],
       'image': image,
-      'nonRefundable': data['nonRefundable'] == true ||
-          (data['eventDetails'] is Map && data['eventDetails']['nonRefundable'] == true),
-      'nonTransferable': data['nonTransferable'] == true ||
-          (data['eventDetails'] is Map && data['eventDetails']['nonTransferable'] == true),
+      'nonRefundable':
+          data['nonRefundable'] == true ||
+          (data['eventDetails'] is Map &&
+              data['eventDetails']['nonRefundable'] == true),
+      'nonTransferable':
+          data['nonTransferable'] == true ||
+          (data['eventDetails'] is Map &&
+              data['eventDetails']['nonTransferable'] == true),
     };
   }
 
-  Future<void> _openItem(
-    Map<String, dynamic> item,
-  ) async {
+  Future<void> _openItem(Map<String, dynamic> item) async {
     final category = item['_category']?.toString() ?? _categoryFor(item);
     final sourceData = await _loadSource(item) ?? item;
     if (!mounted) return;
     Widget screen;
     switch (category) {
       case 'Événements':
-        screen = EventDetailScreen(
-          eventData: _eventDetailData(sourceData),
-        );
+        screen = EventDetailScreen(eventData: _eventDetailData(sourceData));
         break;
       case 'Emplois':
-        screen = JobDetailScreen(
-          jobData: sourceData,
-        );
+        screen = JobDetailScreen(jobData: sourceData);
         break;
       case 'Marché':
-        screen = ProductDetailScreen(
-          product: sourceData,
-        );
+        screen = ProductDetailScreen(product: sourceData);
         break;
       case 'Pros':
-        screen = ProDetailScreen(
-          proData: sourceData,
-        );
+        screen = ProDetailScreen(proData: sourceData);
         break;
       case 'Connect':
         final collection = (item['sourceCollection'] ?? '').toString();
@@ -629,17 +660,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
         break;
       case 'Commerces':
       default:
-        screen = BusinessDetailScreen(
-          businessData: sourceData,
-        );
+        screen = BusinessDetailScreen(businessData: sourceData);
     }
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => screen,
-      ),
-    );
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
+
   IconData _categoryIcon(String category) {
     switch (category) {
       case 'Restaurants':
@@ -660,11 +685,9 @@ class _NearbyScreenState extends State<NearbyScreen> {
         return Icons.explore_outlined;
     }
   }
+
   Widget _locationSelector() {
-    final options = <String>[
-      'GPS',
-      ..._cityCoordinates.keys,
-    ];
+    final options = <String>['GPS', ..._cityCoordinates.keys];
     return Container(
       padding: const EdgeInsets.all(14),
       color: cardGreen,
@@ -673,11 +696,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.my_location,
-                color: primaryGold,
-                size: 20,
-              ),
+              const Icon(Icons.my_location, color: primaryGold, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonHideUnderline(
@@ -717,15 +736,12 @@ class _NearbyScreenState extends State<NearbyScreen> {
             _selectedLocation == 'GPS'
                 ? _locationMessage
                 : 'Recherche autour de $_selectedLocation',
-            style: const TextStyle(
-              color: Colors.white60,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white60, fontSize: 12),
           ),
           const SizedBox(height: 14),
           Row(
             children: [
-              const Text(
+              const AppText(
                 'Rayon',
                 style: TextStyle(
                   color: Colors.white70,
@@ -733,7 +749,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
                 ),
               ),
               const Spacer(),
-              Text(
+              AppText(
                 '${_selectedRadiusKm.toInt()} km',
                 style: const TextStyle(
                   color: primaryGold,
@@ -751,7 +767,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 7),
                   child: ChoiceChip(
-                    label: Text('${radius.toInt()} km'),
+                    label: AppText('${radius.toInt()} km'),
                     selected: selected,
                     selectedColor: primaryGold,
                     backgroundColor: primaryDarkGreen,
@@ -773,6 +789,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       ),
     );
   }
+
   Widget _filters() {
     return Column(
       children: [
@@ -846,17 +863,14 @@ class _NearbyScreenState extends State<NearbyScreen> {
       ],
     );
   }
-  Widget _radarCard(
-    List<Map<String, dynamic>> items,
-  ) {
+
+  Widget _radarCard(List<Map<String, dynamic>> items) {
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 12, 14, 6),
       height: 105,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.35)),
         gradient: RadialGradient(
           colors: [
             primaryGold.withValues(alpha: 0.15),
@@ -879,13 +893,9 @@ class _NearbyScreenState extends State<NearbyScreen> {
             top: 13,
             child: Row(
               children: [
-                const Icon(
-                  Icons.explore,
-                  color: primaryGold,
-                  size: 18,
-                ),
+                const Icon(Icons.explore, color: primaryGold, size: 18),
                 const SizedBox(width: 7),
-                Text(
+                AppText(
                   '${items.length} résultat${items.length > 1 ? 's' : ''} '
                   'dans ${_selectedRadiusKm.toInt()} km',
                   style: const TextStyle(
@@ -903,19 +913,15 @@ class _NearbyScreenState extends State<NearbyScreen> {
               _selectedLocation == 'GPS'
                   ? 'Autour de votre position'
                   : 'Autour de $_selectedLocation',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ),
         ],
       ),
     );
   }
-  Widget _resultCard(
-    Map<String, dynamic> item,
-  ) {
+
+  Widget _resultCard(Map<String, dynamic> item) {
     final title = _titleFor(item);
     final description = _descriptionFor(item);
     final location = _locationFor(item);
@@ -930,9 +936,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: primaryGold.withValues(alpha: 0.25),
-        ),
+        side: BorderSide(color: primaryGold.withValues(alpha: 0.25)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -995,7 +999,9 @@ class _NearbyScreenState extends State<NearbyScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            approximate ? '≈ $distance km (ville)' : '$distance km',
+                            approximate
+                                ? '≈ $distance km (ville)'
+                                : '$distance km',
                             style: const TextStyle(
                               color: primaryGold,
                               fontSize: 11,
@@ -1019,11 +1025,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
                     Row(
                       children: [
                         if (rating > 0) ...[
-                          const Icon(
-                            Icons.star,
-                            color: primaryGold,
-                            size: 14,
-                          ),
+                          const Icon(Icons.star, color: primaryGold, size: 14),
                           const SizedBox(width: 3),
                           Text(
                             rating.toStringAsFixed(1),
@@ -1077,6 +1079,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1084,21 +1087,15 @@ class _NearbyScreenState extends State<NearbyScreen> {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: primaryGold),
-        title: const Text(
+        title: const AppText(
           'À proximité',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
             tooltip: 'Actualiser ma position',
             onPressed: _initUserLocation,
-            icon: const Icon(
-              Icons.gps_fixed,
-              color: primaryGold,
-            ),
+            icon: const Icon(Icons.gps_fixed, color: primaryGold),
           ),
         ],
       ),
@@ -1108,161 +1105,399 @@ class _NearbyScreenState extends State<NearbyScreen> {
           _filters(),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-               stream: FirebaseFirestore.instance.collection('professionals').limit(500).snapshots(),
-               builder: (context, proSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-               stream: FirebaseFirestore.instance.collection('professionalProfiles').limit(500).snapshots(),
-               builder: (context, proProfileSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-               stream: FirebaseFirestore.instance.collection('marketplaceSubmissions').limit(500).snapshots(),
-               builder: (context, marketSubSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-               stream: FirebaseFirestore.instance.collection('communitySubmissions').limit(500).snapshots(),
-               builder: (context, communitySubSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-               stream: FirebaseFirestore.instance.collection('communityPosts').limit(500).snapshots(),
-               builder: (context, communityPostSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance.collection('publicFeed').limit(500).snapshots(),
-              builder: (context, feedSnapshot) {
-                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                  stream: FirebaseFirestore.instance.collection('businesses').limit(500).snapshots(),
-                  builder: (context, businessSnapshot) {
-                    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                      stream: FirebaseFirestore.instance.collection('businessSubmissions').limit(500).snapshots(),
-                      builder: (context, businessSubSnapshot) {
-                        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                          stream: FirebaseFirestore.instance.collection('jobSubmissions').limit(500).snapshots(),
-                          builder: (context, jobSnapshot) {
-                            return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                              stream: FirebaseFirestore.instance.collection('events').limit(500).snapshots(),
-                              builder: (context, eventSnapshot) {
-                                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                                  stream: FirebaseFirestore.instance.collection('eventSubmissions').limit(500).snapshots(),
-                                  builder: (context, eventSubSnapshot) {
-                                    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                                      stream: FirebaseFirestore.instance.collection('jobs').limit(500).snapshots(),
-                                      builder: (context, jobsSnapshot) {
-                                        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                                          stream: FirebaseFirestore.instance.collection('marketplace').limit(500).snapshots(),
-                                          builder: (context, marketSnapshot) {
-                                            return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                                              stream: FirebaseFirestore.instance.collection('posts').limit(500).snapshots(),
-                                              builder: (context, communitySnapshot) {
-                                                final sources = <String, AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>>>{
-                                                  'professionals': proSnapshot,
-                                                   'professionalProfiles': proProfileSnapshot,
-                                                   'marketplaceSubmissions': marketSubSnapshot,
-                                                   // Anciennes demandes communautaires exclues de À proximité.
-                                                   // Anciennes publications communautaires exclues de À proximité.
-                                                   'publicFeed': feedSnapshot,
-                                                  'businesses': businessSnapshot,
-                                                  'businessSubmissions': businessSubSnapshot,
-                                                  'jobSubmissions': jobSnapshot,
-                                                  'events': eventSnapshot,
-                                                  'eventSubmissions': eventSubSnapshot,
-                                                  'jobs': jobsSnapshot,
-                                                  'marketplace': marketSnapshot,
-                                                  'posts': communitySnapshot,
-                                                };
-                                                if (sources.values.every((s) => !s.hasData && !s.hasError)) {
-                                                  return const Center(child: CircularProgressIndicator(color: primaryGold));
-                                                }
-                                                final documents = <Map<String, dynamic>>[];
-                                                final seen = <String>{};
-                                                // Priorité aux fiches publiques, puis aux sources approuvées.
-                                                for (final entry in sources.entries) {
-                                                  final collection = entry.key;
-                                                  final snapshot = entry.value.data;
-                                                  if (snapshot == null) continue;
-                                                  for (final doc in snapshot.docs) {
-                                                    final data = doc.data();
-                                                    final status = (data['status'] ?? '').toString().trim().toLowerCase();
-                                                    if (status != 'approved' && status != 'published') continue;
-                                                    if (data['isActive'] == false || data['isArchived'] == true ||
-                                                        data['isDeleted'] == true || data['deleted'] == true) {
-                                                      continue;
-                                                    }
-                                                    final source = collection == 'publicFeed'
-                                                        ? (data['sourceCollection'] ?? 'publicFeed').toString()
-                                                        : collection;
-                                                    final sourceId = collection == 'publicFeed'
-                                                        ? (data['sourceId'] ?? doc.id).toString()
-                                                        : doc.id;
-                                                    if (!seen.add('$source/$sourceId')) continue;
-                                                    documents.add({
-                                                      ...data,
-                                                      'sourceCollection': source,
-                                                      'sourceId': sourceId,
-                                                      '_sourceId': doc.id,
-                                                    });
-                                                  }
-                                                }
-                                                final errors = sources.entries
-                                                    .where((entry) => entry.value.hasError)
-                                                    .map((entry) => entry.key).toList();
-                                                if (_center == null) {
-                                                  return const Center(child: Padding(
-                                                    padding: EdgeInsets.all(24),
-                                                    child: Text('Choisissez une ville ci-dessus ou activez votre GPS.',
-                                                      textAlign: TextAlign.center,
-                                                      style: TextStyle(color: Colors.white70)),
-                                                  ));
-                                                }
-                                                final items = _prepareItems(documents);
-                                                 // Diagnostic : différencier données chargées et fiches localisables.
-                                                 final approvedCount = documents.length;
-                                                 final geolocatedCount = documents.where((d) =>
-                                                   _coordinates(d) != null || _cityFallback(d) != null).length;
-                                                return Column(
-                                                  children: [
-                                                    _radarCard(items),
-                                                     if (items.isEmpty && approvedCount > 0)
-                                                       Padding(
-                                                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                                                         child: Text('$approvedCount publication(s) approuvée(s) chargée(s), '
-                                                           '$geolocatedCount localisable(s). Vérifiez la ville, les coordonnées et le rayon.',
-                                                           style: const TextStyle(color: Colors.orangeAccent, fontSize: 11)),
-                                                       ),
-                                                    if (errors.isNotEmpty)
-                                                      Padding(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                                                        child: Text('Certaines sources sont inaccessibles : ${errors.join(', ')}',
-                                                          style: const TextStyle(color: Colors.orangeAccent, fontSize: 11)),
-                                                      ),
-                                                    Expanded(
-                                                      child: items.isEmpty
-                                                          ? const Center(child: Padding(
-                                                              padding: EdgeInsets.all(24),
-                                                              child: Text('Aucune publication approuvée et localisable dans cette zone.\nEssayez une autre ville ou un rayon plus grand.',
-                                                                textAlign: TextAlign.center,
-                                                                style: TextStyle(color: Colors.white70, height: 1.5)),
-                                                            ))
-                                                          : ListView.builder(
-                                                              padding: const EdgeInsets.fromLTRB(14, 6, 14, 28),
-                                                              itemCount: items.length,
-                                                              itemBuilder: (context, index) => _resultCard(items[index]),
-                                                            ),
-                                                    ),
-                                                  ],
-                                                );
-                                              },
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-            ),
-            ),
-            ),
-            ),
+              stream: FirebaseFirestore.instance
+                  .collection('professionals')
+                  .limit(500)
+                  .snapshots(),
+              builder: (context, proSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('professionalProfiles')
+                    .limit(500)
+                    .snapshots(),
+                builder: (context, proProfileSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: FirebaseFirestore.instance
+                      .collection('marketplaceSubmissions')
+                      .limit(500)
+                      .snapshots(),
+                  builder: (context, marketSubSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: FirebaseFirestore.instance
+                        .collection('communitySubmissions')
+                        .limit(500)
+                        .snapshots(),
+                    builder: (context, communitySubSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('communityPosts')
+                          .limit(500)
+                          .snapshots(),
+                      builder: (context, communityPostSnapshot) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: FirebaseFirestore.instance
+                            .collection('publicFeed')
+                            .limit(500)
+                            .snapshots(),
+                        builder: (context, feedSnapshot) {
+                          return StreamBuilder<
+                            QuerySnapshot<Map<String, dynamic>>
+                          >(
+                            stream: FirebaseFirestore.instance
+                                .collection('businesses')
+                                .limit(500)
+                                .snapshots(),
+                            builder: (context, businessSnapshot) {
+                              return StreamBuilder<
+                                QuerySnapshot<Map<String, dynamic>>
+                              >(
+                                stream: FirebaseFirestore.instance
+                                    .collection('businessSubmissions')
+                                    .limit(500)
+                                    .snapshots(),
+                                builder: (context, businessSubSnapshot) {
+                                  return StreamBuilder<
+                                    QuerySnapshot<Map<String, dynamic>>
+                                  >(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('jobSubmissions')
+                                        .limit(500)
+                                        .snapshots(),
+                                    builder: (context, jobSnapshot) {
+                                      return StreamBuilder<
+                                        QuerySnapshot<Map<String, dynamic>>
+                                      >(
+                                        stream: FirebaseFirestore.instance
+                                            .collection('events')
+                                            .limit(500)
+                                            .snapshots(),
+                                        builder: (context, eventSnapshot) {
+                                          return StreamBuilder<
+                                            QuerySnapshot<Map<String, dynamic>>
+                                          >(
+                                            stream: FirebaseFirestore.instance
+                                                .collection('eventSubmissions')
+                                                .limit(500)
+                                                .snapshots(),
+                                            builder: (context, eventSubSnapshot) {
+                                              return StreamBuilder<
+                                                QuerySnapshot<
+                                                  Map<String, dynamic>
+                                                >
+                                              >(
+                                                stream: FirebaseFirestore
+                                                    .instance
+                                                    .collection('jobs')
+                                                    .limit(500)
+                                                    .snapshots(),
+                                                builder: (context, jobsSnapshot) {
+                                                  return StreamBuilder<
+                                                    QuerySnapshot<
+                                                      Map<String, dynamic>
+                                                    >
+                                                  >(
+                                                    stream: FirebaseFirestore
+                                                        .instance
+                                                        .collection(
+                                                          'marketplace',
+                                                        )
+                                                        .limit(500)
+                                                        .snapshots(),
+                                                    builder: (context, marketSnapshot) {
+                                                      return StreamBuilder<
+                                                        QuerySnapshot<
+                                                          Map<String, dynamic>
+                                                        >
+                                                      >(
+                                                        stream:
+                                                            FirebaseFirestore
+                                                                .instance
+                                                                .collection(
+                                                                  'posts',
+                                                                )
+                                                                .limit(500)
+                                                                .snapshots(),
+                                                        builder: (context, communitySnapshot) {
+                                                          final sources =
+                                                              <
+                                                                String,
+                                                                AsyncSnapshot<
+                                                                  QuerySnapshot<
+                                                                    Map<
+                                                                      String,
+                                                                      dynamic
+                                                                    >
+                                                                  >
+                                                                >
+                                                              >{
+                                                                'professionals':
+                                                                    proSnapshot,
+                                                                'professionalProfiles':
+                                                                    proProfileSnapshot,
+                                                                'marketplaceSubmissions':
+                                                                    marketSubSnapshot,
+                                                                // Anciennes demandes communautaires exclues de À proximité.
+                                                                // Anciennes publications communautaires exclues de À proximité.
+                                                                'publicFeed':
+                                                                    feedSnapshot,
+                                                                'businesses':
+                                                                    businessSnapshot,
+                                                                'businessSubmissions':
+                                                                    businessSubSnapshot,
+                                                                'jobSubmissions':
+                                                                    jobSnapshot,
+                                                                'events':
+                                                                    eventSnapshot,
+                                                                'eventSubmissions':
+                                                                    eventSubSnapshot,
+                                                                'jobs':
+                                                                    jobsSnapshot,
+                                                                'marketplace':
+                                                                    marketSnapshot,
+                                                                'posts':
+                                                                    communitySnapshot,
+                                                              };
+                                                          if (sources.values
+                                                              .every(
+                                                                (s) =>
+                                                                    !s.hasData &&
+                                                                    !s.hasError,
+                                                              )) {
+                                                            return const Center(
+                                                              child: CircularProgressIndicator(
+                                                                color:
+                                                                    primaryGold,
+                                                              ),
+                                                            );
+                                                          }
+                                                          final documents =
+                                                              <
+                                                                Map<
+                                                                  String,
+                                                                  dynamic
+                                                                >
+                                                              >[];
+                                                          final seen =
+                                                              <String>{};
+                                                          // Priorité aux fiches publiques, puis aux sources approuvées.
+                                                          for (final entry
+                                                              in sources
+                                                                  .entries) {
+                                                            final collection =
+                                                                entry.key;
+                                                            final snapshot =
+                                                                entry
+                                                                    .value
+                                                                    .data;
+                                                            if (snapshot ==
+                                                                null)
+                                                              continue;
+                                                            for (final doc
+                                                                in snapshot
+                                                                    .docs) {
+                                                              final data = doc
+                                                                  .data();
+                                                              final status =
+                                                                  (data['status'] ??
+                                                                          '')
+                                                                      .toString()
+                                                                      .trim()
+                                                                      .toLowerCase();
+                                                              if (status !=
+                                                                      'approved' &&
+                                                                  status !=
+                                                                      'published')
+                                                                continue;
+                                                              if (data['isActive'] ==
+                                                                      false ||
+                                                                  data['isArchived'] ==
+                                                                      true ||
+                                                                  data['isDeleted'] ==
+                                                                      true ||
+                                                                  data['deleted'] ==
+                                                                      true) {
+                                                                continue;
+                                                              }
+                                                              final source =
+                                                                  collection == 'publicFeed'
+                                                                  ? (data['sourceCollection'] ??
+                                                                            'publicFeed')
+                                                                        .toString()
+                                                                  : collection;
+                                                              final sourceId =
+                                                                  collection == 'publicFeed'
+                                                                  ? (data['sourceId'] ??
+                                                                            doc.id)
+                                                                        .toString()
+                                                                  : doc.id;
+                                                              if (!seen.add(
+                                                                '$source/$sourceId',
+                                                              ))
+                                                                continue;
+                                                              documents.add({
+                                                                ...data,
+                                                                'sourceCollection':
+                                                                    source,
+                                                                'sourceId':
+                                                                    sourceId,
+                                                                '_sourceId':
+                                                                    doc.id,
+                                                              });
+                                                            }
+                                                          }
+                                                          final errors = sources
+                                                              .entries
+                                                              .where(
+                                                                (entry) => entry
+                                                                    .value
+                                                                    .hasError,
+                                                              )
+                                                              .map(
+                                                                (entry) =>
+                                                                    entry.key,
+                                                              )
+                                                              .toList();
+                                                          if (_center == null) {
+                                                            return const Center(
+                                                              child: Padding(
+                                                                padding:
+                                                                    EdgeInsets.all(
+                                                                      24,
+                                                                    ),
+                                                                child: AppText(
+                                                                  'Choisissez une ville ci-dessus ou activez votre GPS.',
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .center,
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            );
+                                                          }
+                                                          final items =
+                                                              _prepareItems(
+                                                                documents,
+                                                              );
+                                                          // Diagnostic : différencier données chargées et fiches localisables.
+                                                          final approvedCount =
+                                                              documents.length;
+                                                          final geolocatedCount = documents
+                                                              .where(
+                                                                (d) =>
+                                                                    _coordinates(
+                                                                          d,
+                                                                        ) !=
+                                                                        null ||
+                                                                    _cityFallback(
+                                                                          d,
+                                                                        ) !=
+                                                                        null,
+                                                              )
+                                                              .length;
+                                                          return Column(
+                                                            children: [
+                                                              _radarCard(items),
+                                                              if (items
+                                                                      .isEmpty &&
+                                                                  approvedCount >
+                                                                      0)
+                                                                Padding(
+                                                                  padding:
+                                                                      const EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            14,
+                                                                        vertical:
+                                                                            5,
+                                                                      ),
+                                                                  child: AppText(
+                                                                    '$approvedCount publication(s) approuvée(s) chargée(s), '
+                                                                    '$geolocatedCount localisable(s). Vérifiez la ville, les coordonnées et le rayon.',
+                                                                    style: const TextStyle(
+                                                                      color: Colors
+                                                                          .orangeAccent,
+                                                                      fontSize:
+                                                                          11,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              if (errors
+                                                                  .isNotEmpty)
+                                                                Padding(
+                                                                  padding:
+                                                                      const EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            14,
+                                                                        vertical:
+                                                                            5,
+                                                                      ),
+                                                                  child: AppText(
+                                                                    'Certaines sources sont inaccessibles : ${errors.join(', ')}',
+                                                                    style: const TextStyle(
+                                                                      color: Colors
+                                                                          .orangeAccent,
+                                                                      fontSize:
+                                                                          11,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              Expanded(
+                                                                child:
+                                                                    items
+                                                                        .isEmpty
+                                                                    ? const Center(
+                                                                        child: Padding(
+                                                                          padding: EdgeInsets.all(
+                                                                            24,
+                                                                          ),
+                                                                          child: AppText(
+                                                                            'Aucune publication approuvée et localisable dans cette zone.\nEssayez une autre ville ou un rayon plus grand.',
+                                                                            textAlign:
+                                                                                TextAlign.center,
+                                                                            style: TextStyle(
+                                                                              color: Colors.white70,
+                                                                              height: 1.5,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      )
+                                                                    : ListView.builder(
+                                                                        padding:
+                                                                            const EdgeInsets.fromLTRB(
+                                                                              14,
+                                                                              6,
+                                                                              14,
+                                                                              28,
+                                                                            ),
+                                                                        itemCount:
+                                                                            items.length,
+                                                                        itemBuilder: (
+                                                                          context,
+                                                                          index,
+                                                                        ) => _resultCard(items[index]),
+                                                                      ),
+                                                              ),
+                                                            ],
+                                                          );
+                                                        },
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -1270,11 +1505,9 @@ class _NearbyScreenState extends State<NearbyScreen> {
     );
   }
 }
+
 class _CityCoord {
   final double lat;
   final double lng;
-  const _CityCoord(
-    this.lat,
-    this.lng,
-  );
+  const _CityCoord(this.lat, this.lng);
 }

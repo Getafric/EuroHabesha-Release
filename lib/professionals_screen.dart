@@ -1,7 +1,10 @@
+import 'l10n/app_ui.dart';
+import 'member_interface_text.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dynamic_submission_screen.dart';
+
 import 'quote_request_screen.dart';
 import 'status_badge_widget.dart';
 import 'chat_screen.dart';
@@ -49,8 +52,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
       'email': 'dr.selam@eurohabesha.eu',
       'website': 'https://www.eurohabesha.eu',
       'whatsapp': 'https://wa.me/33100000000',
-      'description':
-          'Certified Medical Doctor specializing in general practice and pediatrics. Providing culturally understanding medical consultations, check-ups, and pediatric care for the Habesha diaspora.',
+      'description': 'Certified Medical Doctor specializing in general practice and pediatrics. Providing culturally understanding medical consultations, check-ups, and pediatric care for the Habesha diaspora.',
       'icon': Icons.medical_services,
       'gallery': [
         'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=800&q=80',
@@ -59,17 +61,15 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
       'reviews': [
         {
           'user': 'Amanuel D.',
-          'comment':
-              'Dr. Selam is incredibly caring and professional. Highly recommended!',
-          'rating': '5.0'
+          'comment': 'Dr. Selam is incredibly caring and professional. Highly recommended!',
+          'rating': '5.0',
         },
         {
           'user': 'Sara M.',
-          'comment':
-              'Best pediatrician in Paris. She speaks Amharic and French fluently.',
-          'rating': '5.0'
+          'comment': 'Best pediatrician in Paris. She speaks Amharic and French fluently.',
+          'rating': '5.0',
         },
-      ]
+      ],
     },
     {
       'id': 'starter_dawit_law',
@@ -84,8 +84,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
       'email': 'dawit.law@eurohabesha.eu',
       'website': 'https://www.eurohabesha.eu',
       'whatsapp': 'https://wa.me/33611223344',
-      'description':
-          'Licensed attorney helping the Habesha community with asylum cases, residency permits, business registration, and corporate law across France and Switzerland.',
+      'description': 'Licensed attorney helping the Habesha community with asylum cases, residency permits, business registration, and corporate law across France and Switzerland.',
       'icon': Icons.gavel,
       'gallery': [
         'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80',
@@ -96,9 +95,9 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
           'user': 'Yonas K.',
           'comment':
               'Helped me get my residence permit smoothly. Very knowledgeable.',
-          'rating': '5.0'
+          'rating': '5.0',
         },
-      ]
+      ],
     },
     {
       'id': 'starter_beth_tax',
@@ -113,8 +112,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
       'email': 'beth.tax@eurohabesha.eu',
       'website': 'https://www.eurohabesha.eu',
       'whatsapp': 'https://wa.me/33400000000',
-      'description':
-          'Professional tax advisory and accounting services for Habesha-owned small businesses, freelancers, and individuals in France.',
+      'description': 'Professional tax advisory and accounting services for Habesha-owned small businesses, freelancers, and individuals in France.',
       'icon': Icons.account_balance,
       'gallery': [
         'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80',
@@ -123,11 +121,10 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
       'reviews': [
         {
           'user': 'Getafric Prod.',
-          'comment':
-              'Bethlehem handles all our business taxes. 100% accurate and timely!',
-          'rating': '4.9'
+          'comment': 'Bethlehem handles all our business taxes. 100% accurate and timely!',
+          'rating': '4.9',
         },
-      ]
+      ],
     },
   ];
 
@@ -138,7 +135,8 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
   }
 
   Map<String, dynamic> _normalizeDoc(
-      DocumentSnapshot<Map<String, dynamic>> doc) {
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final raw = doc.data() ?? {};
     final fields = Map<String, dynamic>.from(raw['fields'] ?? {});
     final badgeMap = Map<String, dynamic>.from(raw['verificationBadge'] ?? {});
@@ -150,14 +148,14 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
     final title = fields['professionTitle']?.toString().isNotEmpty == true
         ? fields['professionTitle'].toString()
         : fields['jobCategory']?.toString() ??
-            raw['title']?.toString() ??
-            'Professional Service';
+              raw['title']?.toString() ??
+              'Professional Service';
 
     final location = fields['cityAddress']?.toString().isNotEmpty == true
         ? fields['cityAddress'].toString()
         : raw['location']?.toString() ??
-            fields['country']?.toString() ??
-            'Europe';
+              fields['country']?.toString() ??
+              'Europe';
 
     final phone = fields['phoneNumber']?.toString().isNotEmpty == true
         ? fields['phoneNumber'].toString()
@@ -178,8 +176,8 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
     final description = fields['description']?.toString().isNotEmpty == true
         ? fields['description'].toString()
         : raw['description']?.toString() ??
-            fields['servicesOffered']?.toString() ??
-            '';
+              fields['servicesOffered']?.toString() ??
+              '';
 
     final badge = badgeMap['title']?.toString().isNotEmpty == true
         ? badgeMap['title'].toString()
@@ -236,8 +234,9 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
 
   bool _matchesFilter(Map<String, dynamic> pro) {
     if (_selectedCategory != 'All') {
-      final proCat =
-          (pro['category'] ?? pro['title'] ?? '').toString().toLowerCase();
+      final proCat = (pro['category'] ?? pro['title'] ?? '')
+          .toString()
+          .toLowerCase();
       final filterCat = _selectedCategory.toLowerCase();
       if (!proCat.contains(filterCat.split(' ').first)) {
         return false;
@@ -266,24 +265,12 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: Text('Trusted Professionals',
-            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        title: Text(
+          memberText(context, 'Professionnels', 'Professionals'),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: primaryDarkGreen,
         iconTheme: IconThemeData(color: primaryGold),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.person_add, color: primaryGold),
-            tooltip: 'Register as Professional',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const DynamicSubmissionScreen(
-                        type: SubmissionType.professional)),
-              );
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -309,11 +296,14 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                     : null,
                 filled: true,
                 fillColor: cardGreen,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 16,
+                ),
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
@@ -337,12 +327,14 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                     backgroundColor: cardGreen,
                     labelStyle: TextStyle(
                       color: isSelected ? primaryDarkGreen : Colors.white70,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                        color: isSelected ? primaryGold : Colors.white12),
+                      color: isSelected ? primaryGold : Colors.white12,
+                    ),
                     onSelected: (selected) {
                       if (selected) setState(() => _selectedCategory = cat);
                     },
@@ -360,7 +352,8 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
-                      child: CircularProgressIndicator(color: primaryGold));
+                    child: CircularProgressIndicator(color: primaryGold),
+                  );
                 }
 
                 final List<Map<String, dynamic>> combined = [];
@@ -376,9 +369,11 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                 }
 
                 for (final starter in _starterPros) {
-                  if (!combined.any((p) =>
-                      p['id'] == starter['id'] ||
-                      p['name'] == starter['name'])) {
+                  if (!combined.any(
+                    (p) =>
+                        p['id'] == starter['id'] ||
+                        p['name'] == starter['name'],
+                  )) {
                     combined.add(starter);
                   }
                 }
@@ -392,40 +387,37 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.badge_outlined,
-                              color: primaryGold.withValues(alpha: 0.5),
-                              size: 56),
-                          const SizedBox(height: 12),
-                          const Text('No professionals found.',
-                              style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          const Text(
-                              'Register your professional profile today.',
-                              style: TextStyle(
-                                  color: Colors.white38, fontSize: 12)),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryGold),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const DynamicSubmissionScreen(
-                                            type: SubmissionType.professional)),
-                              );
-                            },
-                            icon:
-                                Icon(Icons.person_add, color: primaryDarkGreen),
-                            label: Text('Register as Professional',
-                                style: TextStyle(
-                                    color: primaryDarkGreen,
-                                    fontWeight: FontWeight.bold)),
+                          Icon(
+                            Icons.badge_outlined,
+                            color: primaryGold.withValues(alpha: 0.5),
+                            size: 56,
                           ),
+                          const SizedBox(height: 12),
+                          Text(
+                            memberText(
+                              context,
+                              'Aucun professionnel trouvé.',
+                              'No professionals found.',
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            memberText(
+                              context,
+                              'Essayez une autre recherche ou catégorie.',
+                              'Try another search or category.',
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -443,8 +435,9 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                            color: primaryGold.withValues(alpha: 0.3),
-                            width: 1),
+                          color: primaryGold.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
@@ -464,12 +457,14 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 25,
-                                backgroundColor:
-                                    primaryGold.withValues(alpha: 0.2),
+                                backgroundColor: primaryGold.withValues(
+                                  alpha: 0.2,
+                                ),
                                 child: Icon(
-                                    pro['icon'] as IconData? ?? Icons.work,
-                                    color: primaryGold,
-                                    size: 28),
+                                  pro['icon'] as IconData? ?? Icons.work,
+                                  color: primaryGold,
+                                  size: 28,
+                                ),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -484,33 +479,43 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                                           child: Text(
                                             pro['name'] ?? '',
                                             style: TextStyle(
-                                                color: primaryGold,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16),
+                                              color: primaryGold,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const Icon(Icons.arrow_forward_ios,
-                                            color: Colors.white54, size: 14),
+                                        const Icon(
+                                          Icons.arrow_forward_ios,
+                                          color: Colors.white54,
+                                          size: 14,
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     StatusBadgeWidget(
                                       isVerified: pro['isVerified'] == true,
-                                      subscriptionTier:
-                                          pro['subscriptionTier']?.toString(),
+                                      subscriptionTier: pro['subscriptionTier']
+                                          ?.toString(),
                                       compact: true,
                                     ),
                                     const SizedBox(height: 6),
-                                    Text(pro['title']?.toString() ?? '',
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 13)),
-                                    const SizedBox(height: 4),
                                     Text(
+                                      pro['title']?.toString() ?? '',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    AppText(
                                       '📍 ${pro['location']} • ⭐ ${pro['rating']}',
                                       style: const TextStyle(
-                                          color: Colors.white70, fontSize: 12),
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -537,13 +542,16 @@ class ProDetailScreen extends StatelessWidget {
 
   const ProDetailScreen({super.key, required this.proData});
 
-  Future<void> _launchUrl(String urlString,
-      {bool isEmail = false, bool isPhone = false}) async {
+  Future<void> _launchUrl(
+    String urlString, {
+    bool isEmail = false,
+    bool isPhone = false,
+  }) async {
     final Uri uri = isEmail
         ? Uri(scheme: 'mailto', path: urlString)
         : isPhone
-            ? Uri.parse(urlString)
-            : Uri.parse(urlString);
+        ? Uri.parse(urlString)
+        : Uri.parse(urlString);
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -560,16 +568,21 @@ class ProDetailScreen extends StatelessWidget {
 
     final List<dynamic> galleryImages = proData['gallery'] ?? [];
     final List<dynamic> reviewsList = proData['reviews'] ?? [];
-    final bool isVerified = proData['isVerified'] == true ||
+    final bool isVerified =
+        proData['isVerified'] == true ||
         proData['verificationStatus'] == 'approved';
     final String? subTier = proData['subscriptionTier']?.toString();
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: Text(proData['name'],
-            style: const TextStyle(
-                color: primaryGold, fontWeight: FontWeight.bold)),
+        title: Text(
+          proData['name'],
+          style: const TextStyle(
+            color: primaryGold,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: primaryGold),
       ),
@@ -591,18 +604,27 @@ class ProDetailScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(proData['name'],
-                          style: const TextStyle(
-                              color: primaryGold,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold)),
+                      Text(
+                        proData['name'],
+                        style: const TextStyle(
+                          color: primaryGold,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       StatusBadgeWidget(
-                          isVerified: isVerified, subscriptionTier: subTier),
+                        isVerified: isVerified,
+                        subscriptionTier: subTier,
+                      ),
                       const SizedBox(height: 6),
-                      Text(proData['title'],
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 13)),
+                      Text(
+                        proData['title'],
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -614,12 +636,27 @@ class ProDetailScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildActionBtn(Icons.phone, 'Call', primaryGold, cardGreen,
-                    () => _launchUrl(proData['phone'], isPhone: true)),
-                _buildActionBtn(Icons.email, 'Email', primaryGold, cardGreen,
-                    () => _launchUrl(proData['email'], isEmail: true)),
-                _buildActionBtn(Icons.language, 'Website', primaryGold,
-                    cardGreen, () => _launchUrl(proData['website'])),
+                _buildActionBtn(
+                  Icons.phone,
+                  'Call',
+                  primaryGold,
+                  cardGreen,
+                  () => _launchUrl(proData['phone'], isPhone: true),
+                ),
+                _buildActionBtn(
+                  Icons.email,
+                  'Email',
+                  primaryGold,
+                  cardGreen,
+                  () => _launchUrl(proData['email'], isEmail: true),
+                ),
+                _buildActionBtn(
+                  Icons.language,
+                  'Website',
+                  primaryGold,
+                  cardGreen,
+                  () => _launchUrl(proData['website']),
+                ),
               ],
             ),
             const SizedBox(height: 25),
@@ -628,11 +665,13 @@ class ProDetailScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => QuoteRequestScreen(provider: proData))),
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => QuoteRequestScreen(provider: proData),
+                  ),
+                ),
                 icon: const Icon(Icons.request_quote),
-                label: const Text('Request a Quote'),
+                label: const AppText('Request a Quote'),
               ),
             ),
             const SizedBox(height: 20),
@@ -642,14 +681,18 @@ class ProDetailScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Certifications & Office',
-                      style: TextStyle(
-                          color: primaryGold,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold)),
-                  Text('(${galleryImages.length} Photos)',
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 12)),
+                  const AppText(
+                    'Certifications & Office',
+                    style: TextStyle(
+                      color: primaryGold,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  AppText(
+                    '(${galleryImages.length} Photos)',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -665,7 +708,8 @@ class ProDetailScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                            color: primaryGold.withValues(alpha: 0.3)),
+                          color: primaryGold.withValues(alpha: 0.3),
+                        ),
                         image: DecorationImage(
                           image: NetworkImage(galleryImages[index]),
                           fit: BoxFit.cover,
@@ -690,31 +734,53 @@ class ProDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Professional Overview',
-                      style: TextStyle(
-                          color: Color(0xFFFFD700),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13)),
+                  const AppText(
+                    'Professional Overview',
+                    style: TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(proData['description'],
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13, height: 1.4)),
+                  Text(
+                    proData['description'],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on,
-                          color: Color(0xFFFFD700), size: 15),
+                      const Icon(
+                        Icons.location_on,
+                        color: Color(0xFFFFD700),
+                        size: 15,
+                      ),
                       const SizedBox(width: 4),
-                      Text(proData['location'],
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
+                      Text(
+                        proData['location'],
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
                       const SizedBox(width: 20),
-                      const Icon(Icons.star,
-                          color: Color(0xFFFFD700), size: 15),
+                      const Icon(
+                        Icons.star,
+                        color: Color(0xFFFFD700),
+                        size: 15,
+                      ),
                       const SizedBox(width: 4),
-                      Text(proData['rating'],
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
+                      Text(
+                        proData['rating'],
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -723,50 +789,69 @@ class ProDetailScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // ── 5. ሪቪው ──
-            const Text('Client Reviews',
-                style: TextStyle(
-                    color: primaryGold,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold)),
+            const AppText(
+              'Client Reviews',
+              style: TextStyle(
+                color: primaryGold,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
-            ...reviewsList.map((rev) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: cardGreen,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(rev['user'],
-                              style: const TextStyle(
-                                  color: primaryGold,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12)),
-                          Row(
-                            children: [
-                              const Icon(Icons.star,
-                                  color: Color(0xFFFFD700), size: 13),
-                              const SizedBox(width: 3),
-                              Text(rev['rating'],
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 11)),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(rev['comment'],
+            ...reviewsList.map(
+              (rev) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cardGreen,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          rev['user'],
                           style: const TextStyle(
-                              color: Colors.white70, fontSize: 11)),
-                    ],
-                  ),
-                )),
+                            color: primaryGold,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Color(0xFFFFD700),
+                              size: 13,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              rev['rating'],
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      rev['comment'],
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 25),
 
             // ── 6. የተነጣጠሉ የ WhatsApp እና In-app Chat አዝራሮች ──
@@ -779,12 +864,17 @@ class ProDetailScreen extends StatelessWidget {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     icon: const Icon(Icons.phone_in_talk, size: 20),
-                    label: const Text('WhatsApp',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13)),
+                    label: const AppText(
+                      'WhatsApp',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     onPressed: () => _launchUrl(proData['whatsapp']),
                   ),
                 ),
@@ -796,13 +886,11 @@ class ProDetailScreen extends StatelessWidget {
                       foregroundColor: primaryDarkGreen,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    icon: const Icon(
-                      Icons.chat_bubble_outline,
-                      size: 20,
-                    ),
-                    label: const Text(
+                    icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                    label: const AppText(
                       'In-app Chat',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -818,6 +906,11 @@ class ProDetailScreen extends StatelessWidget {
                         otherUserId: ownerId,
                         otherUserName:
                             proData['name']?.toString() ?? 'Professional',
+                        publicContactCollection:
+                            (proData['docRef'] is DocumentReference)
+                            ? (proData['docRef'] as DocumentReference).parent.id
+                            : 'professionals',
+                        publicContactId: proData['id']?.toString(),
                         professionalAutoReply: true,
                       );
                     },
@@ -832,8 +925,13 @@ class ProDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionBtn(IconData icon, String label, Color goldColor,
-      Color bgColor, VoidCallback onTap) {
+  Widget _buildActionBtn(
+    IconData icon,
+    String label,
+    Color goldColor,
+    Color bgColor,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -849,11 +947,14 @@ class ProDetailScreen extends StatelessWidget {
           children: [
             Icon(icon, color: goldColor, size: 16),
             const SizedBox(width: 5),
-            Text(label,
-                style: TextStyle(
-                    color: goldColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
+            Text(
+              label,
+              style: TextStyle(
+                color: goldColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
           ],
         ),
       ),
@@ -866,8 +967,11 @@ class ProDirectChatScreen extends StatefulWidget {
   final String chatName;
   final IconData iconData;
 
-  const ProDirectChatScreen(
-      {super.key, required this.chatName, required this.iconData});
+  const ProDirectChatScreen({
+    super.key,
+    required this.chatName,
+    required this.iconData,
+  });
 
   @override
   State<ProDirectChatScreen> createState() => _ProDirectChatScreenState();
@@ -884,7 +988,7 @@ class _ProDirectChatScreenState extends State<ProDirectChatScreen> {
       'text': 'Hello! How can I assist you professionally today?',
       'isMe': false,
       'time': 'Online',
-    }
+    },
   ];
 
   void _sendMessage() {
@@ -902,8 +1006,7 @@ class _ProDirectChatScreenState extends State<ProDirectChatScreen> {
       if (mounted) {
         setState(() {
           _messages.add({
-            'text':
-                'Thank you for your message. I am currently reviewing your request and will reply shortly.',
+            'text': 'Thank you for your message. I am currently reviewing your request and will reply shortly.',
             'isMe': false,
             'time': 'Now',
           });
@@ -930,14 +1033,18 @@ class _ProDirectChatScreenState extends State<ProDirectChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.chatName,
-                      style: TextStyle(
-                          color: primaryGold,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
-                  const Text('Verified Pro • Online',
-                      style:
-                          TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                  Text(
+                    widget.chatName,
+                    style: TextStyle(
+                      color: primaryGold,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const AppText(
+                    'Verified Pro • Online',
+                    style: TextStyle(color: Colors.greenAccent, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -954,14 +1061,18 @@ class _ProDirectChatScreenState extends State<ProDirectChatScreen> {
                 final msg = _messages[index];
                 final isMe = msg['isMe'];
                 return Align(
-                  alignment:
-                      isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.75),
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
                     decoration: BoxDecoration(
                       color: isMe ? primaryGold : cardGreen,
                       borderRadius: BorderRadius.only(
@@ -974,17 +1085,23 @@ class _ProDirectChatScreenState extends State<ProDirectChatScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(msg['text'],
-                            style: TextStyle(
-                                color: isMe ? primaryDarkGreen : Colors.white,
-                                fontSize: 14)),
+                        Text(
+                          msg['text'],
+                          style: TextStyle(
+                            color: isMe ? primaryDarkGreen : Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
                         const SizedBox(height: 5),
-                        Text(msg['time'],
-                            style: TextStyle(
-                                color: isMe
-                                    ? primaryDarkGreen.withValues(alpha: 0.6)
-                                    : Colors.white54,
-                                fontSize: 10)),
+                        Text(
+                          msg['time'],
+                          style: TextStyle(
+                            color: isMe
+                                ? primaryDarkGreen.withValues(alpha: 0.6)
+                                : Colors.white54,
+                            fontSize: 10,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -997,7 +1114,8 @@ class _ProDirectChatScreenState extends State<ProDirectChatScreen> {
             decoration: BoxDecoration(
               color: cardGreen,
               border: Border(
-                  top: BorderSide(color: primaryGold.withValues(alpha: 0.2))),
+                top: BorderSide(color: primaryGold.withValues(alpha: 0.2)),
+              ),
             ),
             child: Row(
               children: [
@@ -1013,10 +1131,13 @@ class _ProDirectChatScreenState extends State<ProDirectChatScreen> {
                       filled: true,
                       fillColor: primaryDarkGreen,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none),
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                 ),

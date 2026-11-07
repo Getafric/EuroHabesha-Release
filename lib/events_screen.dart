@@ -1,12 +1,16 @@
+import 'l10n/app_ui.dart';
+import 'member_interface_text.dart';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
 import 'event_qr_documents.dart';
 import 'app_session.dart';
 import 'subscription_service.dart';
-import 'dynamic_submission_screen.dart';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
@@ -32,17 +36,15 @@ class EventsScreen extends StatelessWidget {
         'location': 'Le ZÃƒÂ©nith Paris - La Villette, Paris',
         'price': 'Ã¢â€šÂ¬45.00',
         'nonRefundable': true,
-        'description':
-            'Join the biggest Ethiopian New Year celebration in Europe! Featuring top artists from home, live band, cultural food, and drinks. Get your tickets early before they sell out.',
+        'description': 'Join the biggest Ethiopian New Year celebration in Europe! Featuring top artists from home, live band, cultural food, and drinks. Get your tickets early before they sell out.',
         'performerDj': 'Rophnan + Live DJ',
         'amenities': ['VIP', 'Food', 'Shisha'],
         'artists': [
           'Teddy Afro (Special Guest)',
           'Rophnan',
-          'Live Traditional Band'
+          'Live Traditional Band',
         ],
-        'image':
-            'https://images.unsplash.com/photo-1540039155732-d6749b132338?auto=format&fit=crop&w=800&q=80',
+        'image': 'https://images.unsplash.com/photo-1540039155732-d6749b132338?auto=format&fit=crop&w=800&q=80',
       },
       {
         'title': 'Habesha Family & Kids Festival',
@@ -53,13 +55,11 @@ class EventsScreen extends StatelessWidget {
         'endTime': '06:00 PM',
         'location': 'Parc de la TÃƒÂªte d\'Or, Lyon',
         'price': 'Ã¢â€šÂ¬15.00',
-        'description':
-            'A beautiful day out for the whole family! Face painting for kids, bouncy castles, traditional games (Gebeta, Kuks), fashion show for children, and authentic Habesha BBQ (Tibs).',
+        'description': 'A beautiful day out for the whole family! Face painting for kids, bouncy castles, traditional games (Gebeta, Kuks), fashion show for children, and authentic Habesha BBQ (Tibs).',
         'performerDj': 'DJ Sammy',
         'amenities': ['Kids', 'Food', 'Games'],
         'artists': ['Kids Animators', 'DJ Sammy', 'Cultural Dance Troup'],
-        'image':
-            'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=800&q=80',
+        'image': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=800&q=80',
       },
       {
         'title': 'Eritrean Independence Day Gala',
@@ -70,54 +70,49 @@ class EventsScreen extends StatelessWidget {
         'endTime': '01:00 AM',
         'location': 'Palais des CongrÃƒÂ¨s de Rome, Italy',
         'price': 'Ã¢â€šÂ¬60.00',
-        'description':
-            'A prestigious evening celebrating culture and heritage. The event includes a full course traditional dinner, networking sessions, cultural attire showcase, and live Guaila music.',
+        'description': 'A prestigious evening celebrating culture and heritage. The event includes a full course traditional dinner, networking sessions, cultural attire showcase, and live Guaila music.',
         'performerDj': 'Eden Kesete',
         'amenities': ['Dinner', 'VIP', 'Networking'],
         'artists': ['Eden Kesete', 'Korcho', 'Guest Speakers'],
-        'image':
-            'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
+        'image': 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
       },
     ];
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text('Events & Tickets',
-            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        title: Text(
+          memberText(context, 'Événements et billets', 'Events & Tickets'),
+          style: const TextStyle(
+            color: primaryGold,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: primaryGold),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: primaryGold),
-            tooltip: 'Submit Event',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const DynamicSubmissionScreen(
-                        type: SubmissionType.event)),
-              );
-            },
-          ),
           if (_canScanTickets())
             IconButton(
-              icon:
-                  const Icon(Icons.qr_code_scanner, color: Colors.greenAccent),
+              icon: const Icon(
+                Icons.qr_code_scanner,
+                color: Colors.greenAccent,
+              ),
               tooltip: 'Ticket Scanner',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const AdminScannerScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const AdminScannerScreen()),
               ),
             ),
           IconButton(
-            icon: const Icon(Icons.confirmation_number_outlined,
-                color: Color(0xFFFFD700)),
+            icon: const Icon(
+              Icons.confirmation_number_outlined,
+              color: Color(0xFFFFD700),
+            ),
             tooltip: 'profile.my_tickets'.tr(),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const MyTicketsScreen())),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyTicketsScreen()),
+            ),
           ),
           const SizedBox(width: 10),
         ],
@@ -133,25 +128,32 @@ class EventsScreen extends StatelessWidget {
               final status = data['status']?.toString() ?? 'published';
               if (status == 'published' || status == 'approved') {
                 final fields = Map<String, dynamic>.from(data['fields'] ?? {});
-                final title = fields['title']?.toString() ??
+                final title =
+                    fields['title']?.toString() ??
                     data['title']?.toString() ??
                     'Event';
-                final type = fields['eventType']?.toString() ??
+                final type =
+                    fields['eventType']?.toString() ??
                     data['type']?.toString() ??
                     'Concert & Party';
-                final audience = fields['audience']?.toString() ??
+                final audience =
+                    fields['audience']?.toString() ??
                     data['audience']?.toString() ??
                     'General';
-                final date = fields['eventDate']?.toString() ??
+                final date =
+                    fields['eventDate']?.toString() ??
                     data['date']?.toString() ??
                     'Upcoming';
-                final time = fields['eventTime']?.toString() ??
+                final time =
+                    fields['eventTime']?.toString() ??
                     data['time']?.toString() ??
                     '';
-                final endTime = fields['endTime']?.toString() ??
+                final endTime =
+                    fields['endTime']?.toString() ??
                     data['endTime']?.toString() ??
                     '';
-                final location = fields['cityAddress']?.toString() ??
+                final location =
+                    fields['cityAddress']?.toString() ??
                     data['location']?.toString() ??
                     'Europe';
                 final rawTicketTypes = data['ticketTypes'];
@@ -204,19 +206,21 @@ class EventsScreen extends StatelessWidget {
                 } else {
                   final legacyPrice =
                       fields['ticketPrice']?.toString().trim() ??
-                          data['price']?.toString().trim() ??
-                          '';
+                      data['price']?.toString().trim() ??
+                      '';
 
                   price = legacyPrice.isEmpty
                       ? 'Unavailable'
                       : legacyPrice.startsWith('Ã¢â€šÂ¬')
-                          ? legacyPrice
-                          : 'Ã¢â€šÂ¬$legacyPrice';
+                      ? legacyPrice
+                      : 'Ã¢â€šÂ¬$legacyPrice';
                 }
-                final description = fields['description']?.toString() ??
+                final description =
+                    fields['description']?.toString() ??
                     data['description']?.toString() ??
                     '';
-                final performer = fields['performer']?.toString() ??
+                final performer =
+                    fields['performer']?.toString() ??
                     data['performerDj']?.toString() ??
                     'Live Show';
                 final eventMediaRaw = data['eventMedia'];
@@ -292,15 +296,16 @@ class EventsScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            EventDetailScreen(eventData: event)),
+                      builder: (context) => EventDetailScreen(eventData: event),
+                    ),
                   );
                 },
                 child: Card(
                   color: cardGreen,
                   margin: const EdgeInsets.only(bottom: 20),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                   elevation: 4,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +314,8 @@ class EventsScreen extends StatelessWidget {
                         children: [
                           ClipRRect(
                             borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(15)),
+                              top: Radius.circular(15),
+                            ),
                             child: Image.network(
                               event['image'],
                               height: 180,
@@ -318,8 +324,11 @@ class EventsScreen extends StatelessWidget {
                               errorBuilder: (c, e, s) => Container(
                                 height: 180,
                                 color: Colors.white10,
-                                child: const Icon(Icons.event,
-                                    color: Colors.white38, size: 48),
+                                child: const Icon(
+                                  Icons.event,
+                                  color: Colors.white38,
+                                  size: 48,
+                                ),
                               ),
                             ),
                           ),
@@ -328,16 +337,20 @@ class EventsScreen extends StatelessWidget {
                             right: 15,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
-                                  color: primaryGold,
-                                  borderRadius: BorderRadius.circular(10)),
+                                color: primaryGold,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                               child: Text(
                                 event['date'],
                                 style: const TextStyle(
-                                    color: primaryDarkGreen,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13),
+                                  color: primaryDarkGreen,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ),
@@ -348,24 +361,34 @@ class EventsScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(event['title'],
-                                style: const TextStyle(
-                                    color: primaryGold,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              event['title'],
+                              style: const TextStyle(
+                                color: primaryGold,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.location_on,
-                                    color: Colors.white70, size: 16),
+                                const Icon(
+                                  Icons.location_on,
+                                  color: Colors.white70,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 5),
                                 Expanded(
-                                    child: Text(event['location'],
-                                        style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 13),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis)),
+                                  child: Text(
+                                    event['location'],
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -375,28 +398,40 @@ class EventsScreen extends StatelessWidget {
                               children: [
                                 if (event['performerDj'] != null &&
                                     (event['performerDj'] as String).isNotEmpty)
-                                  _buildEventBadge(Icons.mic,
-                                      event['performerDj'], primaryGold),
+                                  _buildEventBadge(
+                                    Icons.mic,
+                                    event['performerDj'],
+                                    primaryGold,
+                                  ),
                                 if (event['endTime'] != null &&
                                     (event['endTime'] as String).isNotEmpty)
-                                  _buildEventBadge(Icons.schedule,
-                                      'Ends ${event['endTime']}', primaryGold),
+                                  _buildEventBadge(
+                                    Icons.schedule,
+                                    'Ends ${event['endTime']}',
+                                    primaryGold,
+                                  ),
                                 if (event['audience'] != null &&
                                     (event['audience'] as String).isNotEmpty)
-                                  _buildEventBadge(Icons.no_adult_content,
-                                      event['audience'], primaryGold),
+                                  _buildEventBadge(
+                                    Icons.no_adult_content,
+                                    event['audience'],
+                                    primaryGold,
+                                  ),
                                 if (event['amenities'] is List)
                                   for (final amenity
                                       in (event['amenities'] as List))
-                                    _buildEventBadge(Icons.local_activity,
-                                        amenity.toString(), primaryGold),
+                                    _buildEventBadge(
+                                      Icons.local_activity,
+                                      amenity.toString(),
+                                      primaryGold,
+                                    ),
                               ],
                             ),
                             const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
+                                AppText(
                                   'Tickets from: ${event['price']?.toString().trim().isNotEmpty == true ? event['price'].toString().replaceAll(RegExp(r'^[^0-9]*'), '\u20AC') : 'Free'}',
                                   style: const TextStyle(
                                     color: Colors.greenAccent,
@@ -406,15 +441,21 @@ class EventsScreen extends StatelessWidget {
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 5),
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
                                   decoration: BoxDecoration(
-                                      color: primaryGold.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(5)),
-                                  child: const Text('Get Ticket',
-                                      style: TextStyle(
-                                          color: Color(0xFFFFD700),
-                                          fontSize: 12)),
-                                )
+                                    color: primaryGold.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: const AppText(
+                                    'Get Ticket',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFD700),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 10),
@@ -423,42 +464,50 @@ class EventsScreen extends StatelessWidget {
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
-                                      color:
-                                          primaryGold.withValues(alpha: 0.55)),
+                                    color: primaryGold.withValues(alpha: 0.55),
+                                  ),
                                   shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                                 icon: const Icon(
-                                    Icons.notifications_active_outlined,
-                                    color: primaryGold,
-                                    size: 18),
-                                label: const Text('Follow Event Updates',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold)),
+                                  Icons.notifications_active_outlined,
+                                  color: primaryGold,
+                                  size: 18,
+                                ),
+                                label: const AppText(
+                                  'Follow Event Updates',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 onPressed: () async {
                                   final followed =
                                       await SubscriptionService.follow(
-                                    type: 'event',
-                                    targetId: event['title']
-                                        .toString()
-                                        .toLowerCase()
-                                        .replaceAll(' ', '_'),
-                                    targetName: event['title'],
-                                  );
+                                        type: 'event',
+                                        targetId: event['title']
+                                            .toString()
+                                            .toLowerCase()
+                                            .replaceAll(' ', '_'),
+                                        targetName: event['title'],
+                                      );
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                        content: Text(followed
+                                      content: Text(
+                                        followed
                                             ? 'You will receive updates for this event.'
-                                            : 'Sign in and verify your email to follow event updates.')),
+                                            : 'Sign in and verify your email to follow event updates.',
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
                             ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -491,11 +540,14 @@ class EventsScreen extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 13),
           const SizedBox(width: 4),
-          Text(label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -516,33 +568,44 @@ class EventDetailScreen extends StatelessWidget {
     final eventDetails = eventData['eventDetails'] is Map
         ? Map<String, dynamic>.from(eventData['eventDetails'] as Map)
         : const <String, dynamic>{};
-    final nonRefundable = eventData['nonRefundable'] == true ||
+    final nonRefundable =
+        eventData['nonRefundable'] == true ||
         eventDetails['nonRefundable'] == true;
-    final nonTransferable = eventData['nonTransferable'] == true ||
+    final nonTransferable =
+        eventData['nonTransferable'] == true ||
         eventDetails['nonTransferable'] == true;
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text('Event Details',
-            style: TextStyle(color: Color(0xFFFFD700))),
+        title: const AppText(
+          'Event Details',
+          style: TextStyle(color: Color(0xFFFFD700)),
+        ),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: Color(0xFFFFD700)),
         actions: [
           if (validPublicEventId(eventData['id']?.toString() ?? ''))
-            IconButton(tooltip: 'Partager le QR public',
+            IconButton(
+              tooltip: 'Partager le QR public',
               icon: const Icon(Icons.qr_code_2),
-              onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
-                builder: (_) => EventQrDocumentScreen(
-                  title: eventData['title']?.toString() ?? 'Événement',
-                  payload: publicEventLink(eventData['id'].toString()),
-                  details: [
-                    for (final key in ['date', 'time', 'location'])
-                      if ((eventData[key]?.toString().trim() ?? '').isNotEmpty)
-                        eventData[key].toString(),
-                  ],
-                  isTicket: false,
-                )))),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => EventQrDocumentScreen(
+                    title: eventData['title']?.toString() ?? 'Événement',
+                    payload: publicEventLink(eventData['id'].toString()),
+                    details: [
+                      for (final key in ['date', 'time', 'location'])
+                        if ((eventData[key]?.toString().trim() ?? '')
+                            .isNotEmpty)
+                          eventData[key].toString(),
+                    ],
+                    isTicket: false,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -568,7 +631,7 @@ class EventDetailScreen extends StatelessWidget {
                         size: 58,
                       ),
                       SizedBox(height: 10),
-                      Text(
+                      AppText(
                         'Event image unavailable',
                         style: TextStyle(
                           color: Colors.white70,
@@ -597,16 +660,25 @@ class EventDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   _buildInfoRow(
-                      Icons.calendar_today,
-                      'Date & Time',
-                      '${eventData['date']} \n${eventData['time']}',
-                      primaryGold),
+                    Icons.calendar_today,
+                    'Date & Time',
+                    '${eventData['date']} \n${eventData['time']}',
+                    primaryGold,
+                  ),
                   const SizedBox(height: 15),
-                  _buildInfoRow(Icons.schedule, 'End Time',
-                      eventData['endTime'] ?? 'Not specified', primaryGold),
+                  _buildInfoRow(
+                    Icons.schedule,
+                    'End Time',
+                    eventData['endTime'] ?? 'Not specified',
+                    primaryGold,
+                  ),
                   const SizedBox(height: 15),
-                  _buildInfoRow(Icons.mic, 'Performer / DJ',
-                      eventData['performerDj'] ?? 'Not specified', primaryGold),
+                  _buildInfoRow(
+                    Icons.mic,
+                    'Performer / DJ',
+                    eventData['performerDj'] ?? 'Not specified',
+                    primaryGold,
+                  ),
                   const SizedBox(height: 15),
                   _buildInfoRow(
                     Icons.location_on,
@@ -618,41 +690,49 @@ class EventDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   _buildInfoRow(
-                      Icons.people,
-                      'Audience / Type',
-                      '${eventData['audience']} \n${eventData['type']}',
-                      primaryGold),
+                    Icons.people,
+                    'Audience / Type',
+                    '${eventData['audience']} \n${eventData['type']}',
+                    primaryGold,
+                  ),
                   if (nonRefundable || nonTransferable) ...[
                     const SizedBox(height: 16),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.redAccent)),
+                        color: Colors.redAccent.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.redAccent),
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(Icons.block, color: Colors.redAccent),
                           const SizedBox(width: 10),
                           Expanded(
-                              child: Text(
-                                  'TICKET POLICY\n${nonRefundable ? 'Tickets cannot be refunded after purchase. ' : ''}${nonTransferable ? 'Tickets cannot be transferred to another person.' : ''}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.4))),
+                            child: AppText(
+                              'TICKET POLICY\n${nonRefundable ? 'Tickets cannot be refunded after purchase. ' : ''}${nonTransferable ? 'Tickets cannot be transferred to another person.' : ''}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ],
                   const Divider(color: Colors.white24, height: 40),
-                  const Text('About the Event',
-                      style: TextStyle(
-                          color: primaryGold,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold)),
+                  const AppText(
+                    'About the Event',
+                    style: TextStyle(
+                      color: primaryGold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   Text(
                     eventData['description']?.toString().trim().isNotEmpty ==
@@ -666,44 +746,49 @@ class EventDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Featuring / Lineup',
-                      style: TextStyle(
-                          color: primaryGold,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold)),
+                  const AppText(
+                    'Featuring / Lineup',
+                    style: TextStyle(
+                      color: primaryGold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 10,
                     runSpacing: 10,
-                    children: (eventData['artists'] is List
-                            ? eventData['artists'] as List
-                            : const [])
-                        .map((artist) {
-                      final artistName = artist is Map
-                          ? (artist['name']?.toString() ?? 'Artist')
-                          : artist?.toString() ?? 'Artist';
+                    children:
+                        (eventData['artists'] is List
+                                ? eventData['artists'] as List
+                                : const [])
+                            .map((artist) {
+                              final artistName = artist is Map
+                                  ? (artist['name']?.toString() ?? 'Artist')
+                                  : artist?.toString() ?? 'Artist';
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cardGreen,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: primaryGold.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Text(
-                          artistName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: cardGreen,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: primaryGold.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Text(
+                                  artistName,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              );
+                            })
+                            .toList(),
                   ),
                   const SizedBox(height: 120),
                 ],
@@ -718,11 +803,11 @@ class EventDetailScreen extends StatelessWidget {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 15,
-                bottom:
-                    30), // Ã°Å¸â€™Â¡ bottom: 30 Ã¡Å Â Ã¡â€¹ÂµÃ¡Ë†Â­Ã¡Å’Ë†Ã¡Å â€¢ Ã¡Å Â¨Ã¡ÂÂ Ã¡Å Â Ã¡â€¹ÂµÃ¡Ë†Â­Ã¡Å’Ë†Ã¡Å ÂÃ¡â€¹â€¹Ã¡Ë†Â!
+              left: 20,
+              right: 20,
+              top: 15,
+              bottom: 30,
+            ), // Ã°Å¸â€™Â¡ bottom: 30 Ã¡Å Â Ã¡â€¹ÂµÃ¡Ë†Â­Ã¡Å’Ë†Ã¡Å â€¢ Ã¡Å Â¨Ã¡ÂÂ Ã¡Å Â Ã¡â€¹ÂµÃ¡Ë†Â­Ã¡Å’Ë†Ã¡Å ÂÃ¡â€¹â€¹Ã¡Ë†Â!
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -730,13 +815,16 @@ class EventDetailScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Ticket Price',
-                        style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    const AppText(
+                      'Ticket Price',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
                     Text(
                       eventData['price']?.toString().trim().isNotEmpty == true
-                          ? eventData['price']
-                              .toString()
-                              .replaceAll(RegExp(r'^[^0-9]*'), '\u20AC')
+                          ? eventData['price'].toString().replaceAll(
+                              RegExp(r'^[^0-9]*'),
+                              '\u20AC',
+                            )
                           : 'Free',
                       style: const TextStyle(
                         color: primaryGold,
@@ -750,25 +838,34 @@ class EventDetailScreen extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryGold,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 15),
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => TicketCheckoutScreen(
-                                    eventData: {
-                                      ...eventData,
-                                      'nonRefundable': nonRefundable
-                                    })));
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TicketCheckoutScreen(
+                          eventData: {
+                            ...eventData,
+                            'nonRefundable': nonRefundable,
+                          },
+                        ),
+                      ),
+                    );
                   },
-                  child: const Text('Buy Ticket',
-                      style: TextStyle(
-                          color: Color(0xFF061E12),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16)),
+                  child: const AppText(
+                    'Buy Ticket',
+                    style: TextStyle(
+                      color: Color(0xFF061E12),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -788,14 +885,19 @@ class EventDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
               const SizedBox(height: 2),
-              Text(value,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500)),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -808,10 +910,7 @@ class EventDetailScreen extends StatelessWidget {
 class TicketCheckoutScreen extends StatefulWidget {
   final Map<String, dynamic> eventData;
 
-  const TicketCheckoutScreen({
-    super.key,
-    required this.eventData,
-  });
+  const TicketCheckoutScreen({super.key, required this.eventData});
 
   @override
   State<TicketCheckoutScreen> createState() => _TicketCheckoutScreenState();
@@ -880,9 +979,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
       return _firestoreEventId;
     }
 
-    return _eventId(
-      widget.eventData['title']?.toString() ?? 'event',
-    );
+    return _eventId(widget.eventData['title']?.toString() ?? 'event');
   }
 
   Map<String, dynamic>? get _selectedTicket {
@@ -936,9 +1033,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     return null;
   }
 
-  int _remainingFor(
-    Map<String, dynamic> ticket,
-  ) {
+  int _remainingFor(Map<String, dynamic> ticket) {
     final capacity = _toInt(ticket['capacity']);
     final sold = _toInt(ticket['sold']);
 
@@ -1084,17 +1179,13 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Ticket options could not be loaded: $error',
-          ),
+          content: AppText('Ticket options could not be loaded: $error'),
         ),
       );
     }
   }
 
-  void _selectTicket(
-    Map<String, dynamic> ticket,
-  ) {
+  void _selectTicket(Map<String, dynamic> ticket) {
     setState(() {
       _selectedTicketTypeId = ticket['id']?.toString();
 
@@ -1116,11 +1207,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     // Limite raisonnable par achat.
     if (_quantity >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Maximum 10 tickets per purchase.',
-          ),
-        ),
+        const SnackBar(content: AppText('Maximum 10 tickets per purchase.')),
       );
       return;
     }
@@ -1143,32 +1230,21 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
 
     if (ticket == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please select a ticket type.',
-          ),
-        ),
+        const SnackBar(content: AppText('Please select a ticket type.')),
       );
       return;
     }
 
     if (!_salesAreOpen) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_salesStatusText),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(_salesStatusText)));
       return;
     }
 
     if (_nameController.text.trim().isEmpty ||
         _emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please enter your Name and Email.',
-          ),
-        ),
+        const SnackBar(content: AppText('Please enter your Name and Email.')),
       );
       return;
     }
@@ -1178,9 +1254,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     if (_quantity > remaining) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'There are not enough tickets remaining.',
-          ),
+          content: AppText('There are not enough tickets remaining.'),
         ),
       );
       return;
@@ -1190,10 +1264,8 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text(
-            'Non-refundable ticket',
-          ),
-          content: const Text(
+          title: const AppText('Non-refundable ticket'),
+          content: const AppText(
             'This ticket cannot be refunded after '
             'purchase. Do you want to continue?',
           ),
@@ -1212,7 +1284,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                 ),
               ),
               onPressed: () => Navigator.pop(context, false),
-              child: const Text(
+              child: const AppText(
                 'Cancel',
                 style: TextStyle(
                   color: Color(0xFF0F5257),
@@ -1235,7 +1307,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                 ),
               ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text(
+              child: const AppText(
                 'I Understand',
                 style: TextStyle(
                   color: Colors.black,
@@ -1258,7 +1330,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     if (user == null || !user.emailVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Please sign in and verify your email '
             'before purchasing a ticket.',
           ),
@@ -1307,7 +1379,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
         if (ticketId == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
+              content: AppText(
                 'Payment successful. Your ticket is still being prepared. '
                 'Please check My Tickets.',
               ),
@@ -1340,44 +1412,45 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
 
       // Billet gratuit : crÃƒÂ©ation directe.
       for (var index = 0; index < _quantity; index++) {
-        final ticketId = 'EH-${DateTime.now().microsecondsSinceEpoch}'
+        final ticketId =
+            'EH-${DateTime.now().microsecondsSinceEpoch}'
             '-$index-${user.uid.substring(0, 6)}';
 
         await FirebaseFirestore.instance
             .collection('tickets')
             .doc(ticketId)
             .set({
-          'ticketId': ticketId,
-          'eventId': eventId,
-          'eventName': widget.eventData['title']?.toString() ?? 'Event',
-          'ticketTypeId': ticketTypeId,
-          'ticketTypeName': ticketTypeName,
-          'buyerId': user.uid,
-          'buyerEmail': _emailController.text.trim(),
-          'attendeeName': _nameController.text.trim(),
-          'unitPrice': 0,
-          'price': 0,
-          'purchaseQuantity': _quantity,
-          'purchaseTotal': 0,
-          'paymentStatus': 'purchased',
-          'paymentMethod': 'Free',
-          'checkedIn': false,
-          'nonRefundable': _nonRefundable,
-          'nonTransferable': _nonTransferable,
-          'eventAdminIds': {
-            ...((widget.eventData['eventAdminIds'] as List?)?.map(
-                  (id) => id.toString(),
-                ) ??
-                const <String>[]),
-            if (widget.eventData['organizerId'] != null)
-              widget.eventData['organizerId'].toString(),
-            if (widget.eventData['submittedBy'] != null)
-              widget.eventData['submittedBy'].toString(),
-            if (widget.eventData['ownerId'] != null)
-              widget.eventData['ownerId'].toString(),
-          }.toList(),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+              'ticketId': ticketId,
+              'eventId': eventId,
+              'eventName': widget.eventData['title']?.toString() ?? 'Event',
+              'ticketTypeId': ticketTypeId,
+              'ticketTypeName': ticketTypeName,
+              'buyerId': user.uid,
+              'buyerEmail': _emailController.text.trim(),
+              'attendeeName': _nameController.text.trim(),
+              'unitPrice': 0,
+              'price': 0,
+              'purchaseQuantity': _quantity,
+              'purchaseTotal': 0,
+              'paymentStatus': 'purchased',
+              'paymentMethod': 'Free',
+              'checkedIn': false,
+              'nonRefundable': _nonRefundable,
+              'nonTransferable': _nonTransferable,
+              'eventAdminIds': {
+                ...((widget.eventData['eventAdminIds'] as List?)?.map(
+                      (id) => id.toString(),
+                    ) ??
+                    const <String>[]),
+                if (widget.eventData['organizerId'] != null)
+                  widget.eventData['organizerId'].toString(),
+                if (widget.eventData['submittedBy'] != null)
+                  widget.eventData['submittedBy'].toString(),
+                if (widget.eventData['ownerId'] != null)
+                  widget.eventData['ownerId'].toString(),
+              }.toList(),
+              'createdAt': FieldValue.serverTimestamp(),
+            });
 
         createdTicketIds.add(ticketId);
       }
@@ -1389,11 +1462,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Ticket could not be issued: $error',
-          ),
-        ),
+        SnackBar(content: AppText('Ticket could not be issued: $error')),
       );
 
       return;
@@ -1431,10 +1500,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     for (var attempt = 0; attempt < 20; attempt++) {
       final snapshot = await FirebaseFirestore.instance
           .collection('tickets')
-          .where(
-            'stripePaymentIntentId',
-            isEqualTo: paymentIntentId,
-          )
+          .where('stripePaymentIntentId', isEqualTo: paymentIntentId)
           .get();
 
       for (final document in snapshot.docs) {
@@ -1451,9 +1517,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
         }
       }
 
-      await Future.delayed(
-        const Duration(seconds: 1),
-      );
+      await Future.delayed(const Duration(seconds: 1));
     }
 
     return null;
@@ -1480,10 +1544,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                 ],
               ),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: const Color(0xFFFFD700),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x55000000),
@@ -1495,7 +1556,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                const AppText(
                   'Euro Habesha',
                   style: TextStyle(
                     color: Color(0xFFFFD700),
@@ -1510,9 +1571,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0B5039),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFFFFD700),
-                    ),
+                    border: Border.all(color: const Color(0xFFFFD700)),
                   ),
                   child: const Stack(
                     alignment: Alignment.center,
@@ -1531,7 +1590,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                   ),
                 ),
                 const SizedBox(height: 22),
-                const Text(
+                const AppText(
                   'Payment Successful!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -1541,7 +1600,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                const AppText(
                   'Thank you for your purchase.\n'
                   'Your ticket is ready.',
                   textAlign: TextAlign.center,
@@ -1565,10 +1624,8 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                       ),
                     ),
                     onPressed: () => Navigator.pop(dialogContext),
-                    icon: const Icon(
-                      Icons.confirmation_number_rounded,
-                    ),
-                    label: const Text(
+                    icon: const Icon(Icons.confirmation_number_rounded),
+                    label: const AppText(
                       'View My Ticket',
                       style: TextStyle(
                         fontSize: 18,
@@ -1590,13 +1647,9 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     required String ticketTypeId,
     required int quantity,
   }) async {
-    final functions = FirebaseFunctions.instanceFor(
-      region: 'europe-west1',
-    );
+    final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
 
-    final callable = functions.httpsCallable(
-      'createTicketPaymentIntent',
-    );
+    final callable = functions.httpsCallable('createTicketPaymentIntent');
 
     final result = await callable.call({
       'eventId': eventId,
@@ -1608,9 +1661,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
       'nonTransferable': _nonTransferable,
     });
 
-    final data = Map<String, dynamic>.from(
-      result.data as Map,
-    );
+    final data = Map<String, dynamic>.from(result.data as Map);
 
     final clientSecret = data['clientSecret']?.toString();
     final paymentIntentId = data['paymentIntentId']?.toString();
@@ -1639,43 +1690,30 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
   String _eventId(String title) {
     return title
         .toLowerCase()
-        .replaceAll(
-          RegExp(r'[^a-z0-9]+'),
-          '_',
-        )
-        .replaceAll(
-          RegExp(r'^_|_$'),
-          '',
-        );
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedTicket = _selectedTicket;
 
-    final remaining =
-        selectedTicket == null ? 0 : _remainingFor(selectedTicket);
+    final remaining = selectedTicket == null
+        ? 0
+        : _remainingFor(selectedTicket);
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'Checkout',
-          style: TextStyle(
-            color: Color(0xFFFFD700),
-          ),
+          style: TextStyle(color: Color(0xFFFFD700)),
         ),
         backgroundColor: primaryDarkGreen,
-        iconTheme: const IconThemeData(
-          color: Color(0xFFFFD700),
-        ),
+        iconTheme: const IconThemeData(color: Color(0xFFFFD700)),
       ),
       body: _loadingTicketing
-          ? Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
-            )
+          ? Center(child: CircularProgressIndicator(color: primaryGold))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -1696,20 +1734,13 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                             width: 70,
                             height: 70,
                             fit: BoxFit.cover,
-                            errorBuilder: (
-                              context,
-                              error,
-                              stackTrace,
-                            ) =>
+                            errorBuilder: (context, error, stackTrace) =>
                                 Container(
-                              width: 70,
-                              height: 70,
-                              color: primaryDarkGreen,
-                              child: Icon(
-                                Icons.event,
-                                color: primaryGold,
-                              ),
-                            ),
+                                  width: 70,
+                                  height: 70,
+                                  color: primaryDarkGreen,
+                                  child: Icon(Icons.event, color: primaryGold),
+                                ),
                           ),
                         ),
                         const SizedBox(width: 15),
@@ -1729,7 +1760,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                     ),
                   ),
                   const SizedBox(height: 25),
-                  Text(
+                  AppText(
                     'Choose Ticket',
                     style: TextStyle(
                       color: primaryGold,
@@ -1745,9 +1776,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                       decoration: BoxDecoration(
                         color: Colors.orange.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.orange,
-                        ),
+                        border: Border.all(color: Colors.orange),
                       ),
                       child: Text(
                         _salesStatusText,
@@ -1766,22 +1795,16 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                         color: cardGreen,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
+                      child: const AppText(
                         'No tickets are currently '
                         'available for this event.',
-                        style: TextStyle(
-                          color: Colors.white70,
-                        ),
+                        style: TextStyle(color: Colors.white70),
                       ),
                     ),
                   for (final ticket in _ticketTypes)
                     Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: 10,
-                      ),
-                      child: _buildTicketTypeOption(
-                        ticket,
-                      ),
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _buildTicketTypeOption(ticket),
                     ),
                   if (selectedTicket != null) ...[
                     const SizedBox(height: 8),
@@ -1797,7 +1820,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                const AppText(
                                   'Quantity',
                                   style: TextStyle(
                                     color: Colors.white70,
@@ -1805,7 +1828,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
+                                AppText(
                                   '$remaining remaining',
                                   style: const TextStyle(
                                     color: Colors.greenAccent,
@@ -1817,12 +1840,10 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                           ),
                           IconButton(
                             onPressed: _quantity > 1 ? _decreaseQuantity : null,
-                            icon: const Icon(
-                              Icons.remove_circle,
-                            ),
+                            icon: const Icon(Icons.remove_circle),
                             color: primaryGold,
                           ),
-                          Text(
+                          AppText(
                             '$_quantity',
                             style: const TextStyle(
                               color: Colors.white,
@@ -1834,9 +1855,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                             onPressed: _quantity < remaining
                                 ? _increaseQuantity
                                 : null,
-                            icon: const Icon(
-                              Icons.add_circle,
-                            ),
+                            icon: const Icon(Icons.add_circle),
                             color: primaryGold,
                           ),
                         ],
@@ -1849,9 +1868,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                       decoration: BoxDecoration(
                         color: primaryGold.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: primaryGold,
-                        ),
+                        border: Border.all(color: primaryGold),
                       ),
                       child: Column(
                         children: [
@@ -1860,30 +1877,17 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                             selectedTicket['name']?.toString() ?? 'Standard',
                           ),
                           const SizedBox(height: 8),
-                          _priceRow(
-                            'Unit price',
-                            _money(_unitPrice),
-                          ),
+                          _priceRow('Unit price', _money(_unitPrice)),
                           const SizedBox(height: 8),
-                          _priceRow(
-                            'Quantity',
-                            '$_quantity',
-                          ),
-                          const Divider(
-                            color: Colors.white24,
-                            height: 22,
-                          ),
-                          _priceRow(
-                            'Total',
-                            _money(_totalPrice),
-                            strong: true,
-                          ),
+                          _priceRow('Quantity', '$_quantity'),
+                          const Divider(color: Colors.white24, height: 22),
+                          _priceRow('Total', _money(_totalPrice), strong: true),
                         ],
                       ),
                     ),
                   ],
                   const SizedBox(height: 25),
-                  Text(
+                  AppText(
                     'Attendee Details',
                     style: TextStyle(
                       color: primaryGold,
@@ -1894,20 +1898,13 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                   const SizedBox(height: 10),
                   TextField(
                     controller: _nameController,
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Full Name (For Ticket Verification)',
-                      hintStyle: const TextStyle(
-                        color: Colors.white54,
-                      ),
+                      hintStyle: const TextStyle(color: Colors.white54),
                       filled: true,
                       fillColor: cardGreen,
-                      prefixIcon: Icon(
-                        Icons.person,
-                        color: primaryGold,
-                      ),
+                      prefixIcon: Icon(Icons.person, color: primaryGold),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
@@ -1918,20 +1915,13 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Email Address (To receive receipt)',
-                      hintStyle: const TextStyle(
-                        color: Colors.white54,
-                      ),
+                      hintStyle: const TextStyle(color: Colors.white54),
                       filled: true,
                       fillColor: cardGreen,
-                      prefixIcon: Icon(
-                        Icons.email,
-                        color: primaryGold,
-                      ),
+                      prefixIcon: Icon(Icons.email, color: primaryGold),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
@@ -1946,11 +1936,9 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                       decoration: BoxDecoration(
                         color: Colors.redAccent.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.redAccent,
-                        ),
+                        border: Border.all(color: Colors.redAccent),
                       ),
-                      child: Text(
+                      child: AppText(
                         'TICKET POLICY: '
                         '${_nonRefundable ? 'This ticket cannot be refunded after purchase. ' : ''}'
                         '${_nonTransferable ? 'This ticket cannot be transferred to another person.' : ''}',
@@ -1964,7 +1952,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                   if (_nonRefundable || _nonTransferable)
                     const SizedBox(height: 16),
                   if (_totalPrice > 0) ...[
-                    Text(
+                    AppText(
                       'Payment Method',
                       style: TextStyle(
                         color: primaryGold,
@@ -2009,7 +1997,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                           ),
                           const SizedBox(width: 10),
                           const Expanded(
-                            child: Text(
+                            child: AppText(
                               'This is a free ticket. No payment method is required.',
                               style: TextStyle(
                                 color: Colors.white,
@@ -2031,12 +2019,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
               color: cardGreen,
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    20,
-                    15,
-                    20,
-                    20,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 15, 20, 20),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -2050,7 +2033,8 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      onPressed: isProcessing ||
+                      onPressed:
+                          isProcessing ||
                               selectedTicket == null ||
                               !_salesAreOpen
                           ? null
@@ -2085,9 +2069,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     );
   }
 
-  Widget _buildTicketTypeOption(
-    Map<String, dynamic> ticket,
-  ) {
+  Widget _buildTicketTypeOption(Map<String, dynamic> ticket) {
     final id = ticket['id']?.toString() ?? '';
     final name = ticket['name']?.toString() ?? 'Ticket';
     final price = _toDouble(ticket['price']);
@@ -2127,12 +2109,9 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  AppText(
                     '$remaining remaining',
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white60, fontSize: 12),
                   ),
                 ],
               ),
@@ -2151,11 +2130,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     );
   }
 
-  Widget _priceRow(
-    String label,
-    String value, {
-    bool strong = false,
-  }) {
+  Widget _priceRow(String label, String value, {bool strong = false}) {
     return Row(
       children: [
         Expanded(
@@ -2179,11 +2154,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentOption(
-    String value,
-    IconData icon,
-    String subtitle,
-  ) {
+  Widget _buildPaymentOption(String value, IconData icon, String subtitle) {
     final isSelected = selectedPayment == value;
 
     return GestureDetector(
@@ -2193,10 +2164,7 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 16,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected ? primaryGold.withValues(alpha: 0.1) : cardGreen,
           border: Border.all(
@@ -2221,26 +2189,20 @@ class _TicketCheckoutScreenState extends State<TicketCheckoutScreen> {
                     value,
                     style: TextStyle(
                       color: Colors.white,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: 15,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                 ],
               ),
             ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: primaryGold,
-              ),
+            if (isSelected) Icon(Icons.check_circle, color: primaryGold),
           ],
         ),
       ),
@@ -2255,16 +2217,22 @@ class TicketQRCodeScreen extends StatelessWidget {
   final String ticketId;
   final bool nonRefundable;
   final bool nonTransferable;
-  const TicketQRCodeScreen({super.key, required this.eventName,
-    required this.attendeeName, required this.ticketId,
-    this.nonRefundable = false, this.nonTransferable = false});
+  const TicketQRCodeScreen({
+    super.key,
+    required this.eventName,
+    required this.attendeeName,
+    required this.ticketId,
+    this.nonRefundable = false,
+    this.nonTransferable = false,
+  });
 
   @override
   Widget build(BuildContext context) => EventQrDocumentScreen(
     title: eventName,
     payload: 'EURO_HABESHA_TICKET|$ticketId|$eventName|$attendeeName',
     details: [attendeeName, 'Billet : $ticketId'],
-    isTicket: true, nonRefundable: nonRefundable,
+    isTicket: true,
+    nonRefundable: nonRefundable,
     nonTransferable: nonTransferable,
   );
 }
@@ -2277,14 +2245,17 @@ class MyTicketsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const _TicketMessageScreen(
-          message: 'Sign in to view your tickets.');
+        message: 'Sign in to view your tickets.',
+      );
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFF061E12),
       appBar: AppBar(
-        title: Text('profile.my_tickets'.tr(),
-            style: TextStyle(color: Color(0xFFFFD700))),
+        title: AppText(
+          'profile.my_tickets'.tr(),
+          style: TextStyle(color: Color(0xFFFFD700)),
+        ),
         backgroundColor: const Color(0xFF061E12),
         iconTheme: const IconThemeData(color: Color(0xFFFFD700)),
       ),
@@ -2302,13 +2273,12 @@ class MyTicketsScreen extends StatelessWidget {
 
           if (!snapshot.hasData) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFFFD700),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFFFFD700)),
             );
           }
 
-          final tickets = [...snapshot.data!.docs]..sort((a, b) {
+          final tickets = [...snapshot.data!.docs]
+            ..sort((a, b) {
               final aDate = a.data()['createdAt'] as Timestamp?;
               final bDate = b.data()['createdAt'] as Timestamp?;
 
@@ -2328,10 +2298,7 @@ class MyTicketsScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final ticket = tickets[index];
 
-              return _MyTicketCard(
-                ticketId: ticket.id,
-                data: ticket.data(),
-              );
+              return _MyTicketCard(ticketId: ticket.id, data: ticket.data());
             },
           );
         },
@@ -2341,10 +2308,7 @@ class MyTicketsScreen extends StatelessWidget {
 }
 
 class _MyTicketCard extends StatelessWidget {
-  const _MyTicketCard({
-    required this.ticketId,
-    required this.data,
-  });
+  const _MyTicketCard({required this.ticketId, required this.data});
 
   final String ticketId;
   final Map<String, dynamic> data;
@@ -2357,27 +2321,21 @@ class _MyTicketCard extends StatelessWidget {
       stream: eventId.isEmpty
           ? null
           : FirebaseFirestore.instance
-              .collection('events')
-              .doc(eventId)
-              .snapshots(),
+                .collection('events')
+                .doc(eventId)
+                .snapshots(),
       builder: (context, snapshot) {
         final eventData = snapshot.data?.data();
         final status = eventData?['status']?.toString().toLowerCase() ?? '';
 
         final isCancelled = status == 'cancelled' || status == 'canceled';
 
-        return _buildCard(
-          context,
-          isCancelled: isCancelled,
-        );
+        return _buildCard(context, isCancelled: isCancelled);
       },
     );
   }
 
-  Widget _buildCard(
-    BuildContext context, {
-    required bool isCancelled,
-  }) {
+  Widget _buildCard(BuildContext context, {required bool isCancelled}) {
     final eventName = data['eventName']?.toString() ?? 'Event';
     final attendeeName = data['attendeeName']?.toString() ?? '';
     final checkedIn = data['checkedIn'] == true;
@@ -2396,16 +2354,13 @@ class _MyTicketCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              attendeeName,
-              style: const TextStyle(color: Colors.white70),
-            ),
+            Text(attendeeName, style: const TextStyle(color: Colors.white70)),
             Text(
               checkedIn ? 'Checked in' : 'Unused',
               style: const TextStyle(color: Colors.white70),
             ),
             if (isCancelled)
-              const Text(
+              const AppText(
                 'EVENT CANCELLED',
                 style: TextStyle(
                   color: Colors.redAccent,
@@ -2446,13 +2401,13 @@ class _TicketMessageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: const Color(0xFF061E12),
-        appBar: AppBar(
-          title: const Text('My Tickets'),
-          backgroundColor: const Color(0xFF061E12),
-        ),
-        body: _TicketMessage(message: message),
-      );
+    backgroundColor: const Color(0xFF061E12),
+    appBar: AppBar(
+      title: const AppText('My Tickets'),
+      backgroundColor: const Color(0xFF061E12),
+    ),
+    body: _TicketMessage(message: message),
+  );
 }
 
 class _TicketMessage extends StatelessWidget {
@@ -2462,19 +2417,20 @@ class _TicketMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-      child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70))));
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white70),
+      ),
+    ),
+  );
 }
 
 // Ã¢â€€Ã¢â€€ Ã°Å¸â€™Â¡ Ã¡Å Â¥Ã¡â€¹ÂÃ¡Å ÂÃ¡â€°Â°Ã¡Å â€º Ã¡â€¹Â¨Ã¡Å Â«Ã¡Ë†Å“Ã¡Ë†Â« Ã¡Ë†ÂµÃ¡Å Â«Ã¡Å ÂÃ¡Ë†Â­ (Admin Scanner) Ã¢â€€Ã¢â€€
 class AdminScannerScreen extends StatefulWidget {
-  const AdminScannerScreen({
-    super.key,
-    this.eventId,
-  });
+  const AdminScannerScreen({super.key, this.eventId});
 
   final String? eventId;
 
@@ -2520,12 +2476,9 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'Scan Tickets',
-          style: TextStyle(
-            color: gold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: gold, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: darkGreen,
@@ -2546,7 +2499,7 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
                     children: [
                       CircularProgressIndicator(color: gold),
                       SizedBox(height: 14),
-                      Text(
+                      AppText(
                         'Starting camera...',
                         style: TextStyle(color: Colors.white70),
                       ),
@@ -2566,7 +2519,7 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
                         size: 60,
                       ),
                       const SizedBox(height: 14),
-                      const Text(
+                      const AppText(
                         'Camera could not start',
                         style: TextStyle(
                           color: Colors.white,
@@ -2583,7 +2536,7 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
                           foregroundColor: darkGreen,
                         ),
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Retry Camera'),
+                        label: const AppText('Retry Camera'),
                       ),
                     ],
                   ),
@@ -2648,10 +2601,7 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
                   width: 245,
                   height: 245,
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: gold,
-                      width: 4,
-                    ),
+                    border: Border.all(color: gold, width: 4),
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
@@ -2688,23 +2638,17 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
                     decoration: BoxDecoration(
                       color: darkGreen.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: gold.withValues(alpha: 0.35),
-                      ),
+                      border: Border.all(color: gold.withValues(alpha: 0.35)),
                     ),
                     child: Column(
                       children: [
                         const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.qr_code_scanner,
-                              color: gold,
-                              size: 24,
-                            ),
+                            Icon(Icons.qr_code_scanner, color: gold, size: 24),
                             SizedBox(width: 10),
                             Flexible(
-                              child: Text(
+                              child: AppText(
                                 'Place the ticket QR code inside the frame',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -2747,11 +2691,8 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    icon: const Icon(
-                      Icons.qr_code_scanner,
-                      size: 25,
-                    ),
-                    label: const Text(
+                    icon: const Icon(Icons.qr_code_scanner, size: 25),
+                    label: const AppText(
                       'Scan Next Ticket',
                       style: TextStyle(
                         fontSize: 17,
@@ -2776,16 +2717,11 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF061E12).withValues(alpha: 0.88),
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFFFFD700),
-        ),
+        border: Border.all(color: const Color(0xFFFFD700)),
       ),
       child: IconButton(
         onPressed: onPressed,
-        icon: Icon(
-          icon,
-          color: const Color(0xFFFFD700),
-        ),
+        icon: Icon(icon, color: const Color(0xFFFFD700)),
       ),
     );
   }
@@ -2903,7 +2839,8 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
 
       final isGlobalAdmin = AppSession.isSuperAdmin;
 
-      final hasEventAdminRole = roles.contains('eventadmin') ||
+      final hasEventAdminRole =
+          roles.contains('eventadmin') ||
           roles.contains('event_admin') ||
           roles.contains('manage_events') ||
           roles.contains('scan_tickets');
@@ -2962,66 +2899,61 @@ class _AdminScannerScreenState extends State<AdminScannerScreen> {
       // 2. Verify the scanned ticket.
       // ---------------------------------------------------------
 
-      final ticketRef =
-          FirebaseFirestore.instance.collection('tickets').doc(ticketId);
+      final ticketRef = FirebaseFirestore.instance
+          .collection('tickets')
+          .doc(ticketId);
 
       Map<String, dynamic>? ticket;
       String? failureReason;
       var valid = false;
 
-      await FirebaseFirestore.instance.runTransaction(
-        (transaction) async {
-          // Firestore can retry: discard the outcome of an aborted attempt.
-          valid = false;
-          failureReason = null;
-          ticket = null;
-          final snapshot = await transaction.get(ticketRef);
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        // Firestore can retry: discard the outcome of an aborted attempt.
+        valid = false;
+        failureReason = null;
+        ticket = null;
+        final snapshot = await transaction.get(ticketRef);
 
-          if (!snapshot.exists) {
-            failureReason = 'INVALID: ticket was not found.';
-            return;
-          }
+        if (!snapshot.exists) {
+          failureReason = 'INVALID: ticket was not found.';
+          return;
+        }
 
-          final data = snapshot.data()!;
-          ticket = data;
+        final data = snapshot.data()!;
+        ticket = data;
 
-          final ticketEventId = data['eventId']?.toString().trim() ?? '';
+        final ticketEventId = data['eventId']?.toString().trim() ?? '';
 
-          final paymentStatus =
-              data['paymentStatus']?.toString().trim().toLowerCase() ?? '';
+        final paymentStatus =
+            data['paymentStatus']?.toString().trim().toLowerCase() ?? '';
 
-          final alreadyCheckedIn = data['checkedIn'] == true;
+        final alreadyCheckedIn = data['checkedIn'] == true;
 
-          // Ticket must belong to the event whose dashboard
-          // opened this scanner.
-          if (ticketEventId != selectedEventId) {
-            failureReason = 'INVALID: this ticket belongs to another event.';
-            return;
-          }
+        // Ticket must belong to the event whose dashboard
+        // opened this scanner.
+        if (ticketEventId != selectedEventId) {
+          failureReason = 'INVALID: this ticket belongs to another event.';
+          return;
+        }
 
-          if (paymentStatus != 'purchased') {
-            failureReason = 'INVALID: payment is not confirmed.';
-            return;
-          }
+        if (paymentStatus != 'purchased') {
+          failureReason = 'INVALID: payment is not confirmed.';
+          return;
+        }
 
-          if (alreadyCheckedIn) {
-            failureReason =
-                'ALREADY SCANNED: this ticket has already been used.';
-            return;
-          }
+        if (alreadyCheckedIn) {
+          failureReason = 'ALREADY SCANNED: this ticket has already been used.';
+          return;
+        }
 
-          valid = true;
+        valid = true;
 
-          transaction.update(
-            ticketRef,
-            {
-              'checkedIn': true,
-              'checkedInAt': FieldValue.serverTimestamp(),
-              'checkedInBy': currentUser.uid,
-            },
-          );
-        },
-      );
+        transaction.update(ticketRef, {
+          'checkedIn': true,
+          'checkedInAt': FieldValue.serverTimestamp(),
+          'checkedInBy': currentUser.uid,
+        });
+      });
 
       if (!mounted) return;
 

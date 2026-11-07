@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'event_financial_summary.dart';
 
 class EventPaymentsPayoutsScreen extends StatelessWidget {
@@ -26,11 +29,9 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
         backgroundColor: darkGreen,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: const AppText(
           'Paiements et versements',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -46,15 +47,13 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: gold,
-              ),
-            );
+            return const Center(child: CircularProgressIndicator(color: gold));
           }
 
           final finance = EventFinancialSummary.fromTickets(
-            snapshot.data!.docs.map((doc) => doc.data()), eventId);
+            snapshot.data!.docs.map((doc) => doc.data()),
+            eventId,
+          );
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -68,26 +67,25 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              const AppText(
                 'Montants enregistrés pour cet événement',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
               const SizedBox(height: 22),
               _PaymentSummaryCard(
                 icon: Icons.account_balance_wallet_outlined,
                 title: 'Ventes de billets enregistrées',
                 amount: eventSavedMoney(finance.grossCents),
-                subtitle: '${finance.count} billets enregistrés ; ${finance.unknownMode} sans mode de paiement confirmé',
+                subtitle:
+                    '${finance.count} billets enregistrés ; ${finance.unknownMode} sans mode de paiement confirmé',
               ),
               const SizedBox(height: 12),
               _PaymentSummaryCard(
                 icon: Icons.receipt_long_outlined,
                 title: 'Commission Euro Habesha',
                 amount: eventSavedMoney(finance.merchantCommissionCents),
-                subtitle: 'Commission professionnelle enregistrée, hors frais Stripe',
+                subtitle:
+                    'Commission professionnelle enregistrée, hors frais Stripe',
               ),
               const SizedBox(height: 12),
               _PaymentSummaryCard(
@@ -98,11 +96,15 @@ class EventPaymentsPayoutsScreen extends StatelessWidget {
                 highlighted: true,
               ),
               const SizedBox(height: 24),
-              Text('Frais clients enregistrés : ${eventSavedMoney(finance.customerFeesCents)}',
-                style: const TextStyle(color: Colors.white70)),
+              AppText(
+                'Frais clients enregistrés : ${eventSavedMoney(finance.customerFeesCents)}',
+                style: const TextStyle(color: Colors.white70),
+              ),
               const SizedBox(height: 8),
-              Text('Frais Stripe enregistrés : ${eventSavedMoney(finance.stripeFeesCents)}',
-                style: const TextStyle(color: Colors.white70)),
+              AppText(
+                'Frais Stripe enregistrés : ${eventSavedMoney(finance.stripeFeesCents)}',
+                style: const TextStyle(color: Colors.white70),
+              ),
               const SizedBox(height: 12),
               const _PaymentInfoCard(),
             ],
@@ -149,11 +151,7 @@ class _PaymentSummaryCard extends StatelessWidget {
               color: Colors.black.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              icon,
-              color: EventPaymentsPayoutsScreen.gold,
-              size: 26,
-            ),
+            child: Icon(icon, color: EventPaymentsPayoutsScreen.gold, size: 26),
           ),
           const SizedBox(width: 15),
           Expanded(
@@ -182,10 +180,7 @@ class _PaymentSummaryCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
                 ),
               ],
             ),
@@ -206,20 +201,15 @@ class _PaymentInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white12,
-        ),
+        border: Border.all(color: Colors.white12),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline,
-            color: EventPaymentsPayoutsScreen.gold,
-          ),
+          Icon(Icons.info_outline, color: EventPaymentsPayoutsScreen.gold),
           SizedBox(width: 12),
           Expanded(
-            child: Text(
+            child: AppText(
               'Les frais proviennent des données sauvegardées au paiement. '
               'Un montant absent reste non renseigné. Les frais clients ne '
               'sont pas une commission professionnelle. Aucun forfait de '
@@ -238,9 +228,7 @@ class _PaymentInfoCard extends StatelessWidget {
 }
 
 class _PaymentMessage extends StatelessWidget {
-  const _PaymentMessage({
-    required this.message,
-  });
+  const _PaymentMessage({required this.message});
 
   final String message;
 
@@ -252,9 +240,7 @@ class _PaymentMessage extends StatelessWidget {
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white70,
-          ),
+          style: const TextStyle(color: Colors.white70),
         ),
       ),
     );

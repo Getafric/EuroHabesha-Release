@@ -1,10 +1,14 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+
 import 'admin_announcement_screen.dart';
 import 'app_session.dart';
+
 import 'package:easy_localization/easy_localization.dart';
 
 class AdminUpdatesFeed extends StatelessWidget {
@@ -24,11 +28,7 @@ class AdminUpdatesFeed extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
             height: 80,
-            child: Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
-            ),
+            child: Center(child: CircularProgressIndicator(color: primaryGold)),
           );
         }
 
@@ -94,9 +94,7 @@ class AdminUpdatesFeed extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ...docs.map(
-              (doc) => _AdminUpdateCard(doc: doc),
-            ),
+            ...docs.map((doc) => _AdminUpdateCard(doc: doc)),
             const SizedBox(height: 18),
           ],
         );
@@ -108,15 +106,11 @@ class AdminUpdatesFeed extends StatelessWidget {
 class _AdminUpdateCard extends StatelessWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> doc;
 
-  const _AdminUpdateCard({
-    required this.doc,
-  });
+  const _AdminUpdateCard({required this.doc});
 
   static const Color primaryGold = Color(0xFFFFD700);
   static const Color cardGreen = Color(0xFF004D40);
-  Future<void> _deleteOfficialUpdate(
-    BuildContext context,
-  ) async {
+  Future<void> _deleteOfficialUpdate(BuildContext context) async {
     if (!AppSession.isSuperAdmin) return;
 
     final confirmed = await showDialog<bool>(
@@ -124,37 +118,30 @@ class _AdminUpdateCard extends StatelessWidget {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: cardGreen,
-          title: const Text(
+          title: const AppText(
             'Delete Official Update?',
-            style: TextStyle(
-              color: primaryGold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
           ),
-          content: const Text(
+          content: const AppText(
             'This will permanently delete this update, '
             'its comments, replies, likes and poll votes.',
-            style: TextStyle(
-              color: Colors.white70,
-            ),
+            style: TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text(
+              child: const AppText(
                 'Cancel',
-                style: TextStyle(
-                  color: Colors.white70,
-                ),
+                style: TextStyle(color: Colors.white70),
               ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text(
+              child: const AppText(
                 'Delete',
                 style: TextStyle(
                   color: Colors.redAccent,
@@ -217,22 +204,13 @@ class _AdminUpdateCard extends StatelessWidget {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Official update deleted.',
-          ),
-        ),
+        const SnackBar(content: AppText('Official update deleted.')),
       );
     } catch (error) {
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Delete failed: $error',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: AppText('Delete failed: $error')));
     }
   }
 
@@ -266,18 +244,12 @@ class _AdminUpdateCard extends StatelessWidget {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Like could not be updated: $error',
-          ),
-        ),
+        SnackBar(content: AppText('Like could not be updated: $error')),
       );
     }
   }
 
-  Future<void> _openComments(
-    BuildContext context,
-  ) async {
+  Future<void> _openComments(BuildContext context) async {
     if (AppSession.isGuest || FirebaseAuth.instance.currentUser == null) {
       Navigator.pushNamed(context, '/login');
       return;
@@ -288,9 +260,7 @@ class _AdminUpdateCard extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CommentsSheet(
-        announcementRef: doc.reference,
-      ),
+      builder: (_) => _CommentsSheet(announcementRef: doc.reference),
     );
   }
 
@@ -302,34 +272,22 @@ class _AdminUpdateCard extends StatelessWidget {
     final mediaUrl = data['mediaUrl']?.toString();
     final postType = data['postType']?.toString() ?? 'announcement';
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 5,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 9,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.30),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.30)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.verified,
-                color: primaryGold,
-                size: 17,
-              ),
+              const Icon(Icons.verified, color: primaryGold, size: 17),
               const SizedBox(width: 6),
               const Expanded(
-                child: Text(
+                child: AppText(
                   'Euro Habesha Official',
                   style: TextStyle(
                     color: primaryGold,
@@ -355,9 +313,8 @@ class _AdminUpdateCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => AdminAnnouncementScreen(
-                            announcementId: doc.id,
-                          ),
+                          builder: (_) =>
+                              AdminAnnouncementScreen(announcementId: doc.id),
                         ),
                       );
                     }
@@ -377,7 +334,7 @@ class _AdminUpdateCard extends StatelessWidget {
                             size: 19,
                           ),
                           SizedBox(width: 8),
-                          Text(
+                          AppText(
                             'Edit',
                             style: TextStyle(color: Colors.white),
                           ),
@@ -394,7 +351,7 @@ class _AdminUpdateCard extends StatelessWidget {
                             size: 19,
                           ),
                           SizedBox(width: 8),
-                          Text(
+                          AppText(
                             'Delete',
                             style: TextStyle(color: Colors.white),
                           ),
@@ -450,10 +407,7 @@ class _AdminUpdateCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            _OfficialPoll(
-              announcementRef: doc.reference,
-              data: data,
-            ),
+            _OfficialPoll(announcementRef: doc.reference, data: data),
           ],
           const SizedBox(height: 3),
           Row(
@@ -484,12 +438,9 @@ class _AdminUpdateCard extends StatelessWidget {
                       color: primaryGold,
                       size: 17,
                     ),
-                    label: Text(
+                    label: AppText(
                       '$count',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   );
                 },
@@ -507,10 +458,7 @@ class _LikeButton extends StatelessWidget {
 
   final VoidCallback onPressed;
 
-  const _LikeButton({
-    required this.announcementRef,
-    required this.onPressed,
-  });
+  const _LikeButton({required this.announcementRef, required this.onPressed});
 
   static const Color primaryGold = Color(0xFFFFD700);
 
@@ -523,10 +471,7 @@ class _LikeButton extends StatelessWidget {
       builder: (context, likesSnapshot) {
         final likes = likesSnapshot.data?.docs ?? [];
 
-        final liked = user != null &&
-            likes.any(
-              (like) => like.id == user.uid,
-            );
+        final liked = user != null && likes.any((like) => like.id == user.uid);
 
         return TextButton.icon(
           onPressed: onPressed,
@@ -535,11 +480,9 @@ class _LikeButton extends StatelessWidget {
             color: primaryGold,
             size: 18,
           ),
-          label: Text(
+          label: AppText(
             '${likes.length}',
-            style: const TextStyle(
-              color: Colors.white,
-            ),
+            style: const TextStyle(color: Colors.white),
           ),
         );
       },
@@ -550,9 +493,7 @@ class _LikeButton extends StatelessWidget {
 class _CommentsSheet extends StatefulWidget {
   final DocumentReference<Map<String, dynamic>> announcementRef;
 
-  const _CommentsSheet({
-    required this.announcementRef,
-  });
+  const _CommentsSheet({required this.announcementRef});
 
   @override
   State<_CommentsSheet> createState() => _CommentsSheetState();
@@ -571,10 +512,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   String? _replyToCommentId;
   String? _replyToName;
 
-  void _startReply({
-    required String commentId,
-    required String authorName,
-  }) {
+  void _startReply({required String commentId, required String authorName}) {
     setState(() {
       _replyToCommentId = commentId;
       _replyToName = authorName;
@@ -637,7 +575,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
           authorPhotoUrl = savedPhoto;
         }
 
-        authorVerified = profile['isVerified'] == true ||
+        authorVerified =
+            profile['isVerified'] == true ||
             profile['verificationStatus'] == 'approved';
 
         final tier = profile['subscriptionTier']?.toString().toLowerCase();
@@ -677,11 +616,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Comment could not be posted: $error',
-          ),
-        ),
+        SnackBar(content: AppText('Comment could not be posted: $error')),
       );
     } finally {
       if (mounted) {
@@ -698,16 +633,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
-      padding: EdgeInsets.only(
-        bottom: keyboard,
-      ),
+      padding: EdgeInsets.only(bottom: keyboard),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.72,
         decoration: const BoxDecoration(
           color: primaryDarkGreen,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -721,16 +652,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                14,
-                8,
-                8,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
               child: Row(
                 children: [
                   const Expanded(
-                    child: Text(
+                    child: AppText(
                       'Comments',
                       style: TextStyle(
                         color: primaryGold,
@@ -741,45 +667,32 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.close, color: Colors.white),
                   ),
                 ],
               ),
             ),
-            const Divider(
-              color: Colors.white12,
-              height: 1,
-            ),
+            const Divider(color: Colors.white12, height: 1),
             Expanded(
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: widget.announcementRef
                     .collection('comments')
-                    .orderBy(
-                      'createdAt',
-                      descending: true,
-                    )
+                    .orderBy('createdAt', descending: true)
                     .limit(100)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       !snapshot.hasData) {
                     return const Center(
-                      child: CircularProgressIndicator(
-                        color: primaryGold,
-                      ),
+                      child: CircularProgressIndicator(color: primaryGold),
                     );
                   }
 
                   if (snapshot.hasError) {
                     return const Center(
-                      child: Text(
+                      child: AppText(
                         'Comments could not be loaded.',
-                        style: TextStyle(
-                          color: Colors.white70,
-                        ),
+                        style: TextStyle(color: Colors.white70),
                       ),
                     );
                   }
@@ -788,12 +701,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
                   if (comments.isEmpty) {
                     return const Center(
-                      child: Text(
+                      child: AppText(
                         'No comments yet.\nBe the first to comment.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white54,
-                        ),
+                        style: TextStyle(color: Colors.white54),
                       ),
                     );
                   }
@@ -801,21 +712,21 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                   final parentComments = comments.where((comment) {
                     final parentId =
                         comment.data()['parentCommentId']?.toString().trim() ??
-                            '';
+                        '';
                     return parentId.isEmpty;
                   }).toList();
 
                   return ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: parentComments.length,
-                    separatorBuilder: (_, __) => const Divider(
-                      color: Colors.white10,
-                    ),
+                    separatorBuilder: (_, __) =>
+                        const Divider(color: Colors.white10),
                     itemBuilder: (context, index) {
                       final commentDoc = parentComments[index];
                       final data = commentDoc.data();
                       final replies = comments.where((reply) {
-                        final parentId = reply
+                        final parentId =
+                            reply
                                 .data()['parentCommentId']
                                 ?.toString()
                                 .trim() ??
@@ -831,7 +742,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                         final commentText =
                             commentData['text']?.toString() ?? '';
 
-                        final commentAuthorName = commentData['authorName']
+                        final commentAuthorName =
+                            commentData['authorName']
                                     ?.toString()
                                     .trim()
                                     .isNotEmpty ==
@@ -841,7 +753,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
                         final photoUrl =
                             commentData['authorPhotoUrl']?.toString().trim() ??
-                                '';
+                            '';
 
                         final verified = commentData['authorVerified'] == true;
 
@@ -946,17 +858,16 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                               if (value == 'edit') {
                                                 final editController =
                                                     TextEditingController(
-                                                  text: commentText,
-                                                );
+                                                      text: commentText,
+                                                    );
 
-                                                final newText =
-                                                    await showDialog<String>(
+                                                final newText = await showDialog<String>(
                                                   context: context,
                                                   builder: (dialogContext) {
                                                     return AlertDialog(
                                                       backgroundColor:
                                                           cardGreen,
-                                                      title: const Text(
+                                                      title: const AppText(
                                                         'Edit comment',
                                                         style: TextStyle(
                                                           color: primaryGold,
@@ -976,21 +887,22 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                         ),
                                                         decoration:
                                                             const InputDecoration(
-                                                          hintText:
-                                                              'Write your comment...',
-                                                          hintStyle: TextStyle(
-                                                            color:
-                                                                Colors.white38,
-                                                          ),
-                                                        ),
+                                                              hintText: 'Write your comment...',
+                                                              hintStyle:
+                                                                  TextStyle(
+                                                                    color: Colors
+                                                                        .white38,
+                                                                  ),
+                                                            ),
                                                       ),
                                                       actions: [
                                                         TextButton(
                                                           onPressed: () {
                                                             Navigator.pop(
-                                                                dialogContext);
+                                                              dialogContext,
+                                                            );
                                                           },
-                                                          child: const Text(
+                                                          child: const AppText(
                                                             'Cancel',
                                                             style: TextStyle(
                                                               color: Colors
@@ -1008,11 +920,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                             if (text
                                                                 .isNotEmpty) {
                                                               Navigator.pop(
-                                                                  dialogContext,
-                                                                  text);
+                                                                dialogContext,
+                                                                text,
+                                                              );
                                                             }
                                                           },
-                                                          child: const Text(
+                                                          child: const AppText(
                                                             'Save',
                                                             style: TextStyle(
                                                               color:
@@ -1034,8 +947,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                     newText != commentText) {
                                                   await commentRef.update({
                                                     'text': newText,
-                                                    'editedAt': FieldValue
-                                                        .serverTimestamp(),
+                                                    'editedAt':
+                                                        FieldValue.serverTimestamp(),
                                                   });
                                                 }
                                               }
@@ -1057,7 +970,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                         size: 19,
                                                       ),
                                                       SizedBox(width: 8),
-                                                      Text(
+                                                      AppText(
                                                         'Edit',
                                                         style: TextStyle(
                                                           color: Colors.white,
@@ -1076,7 +989,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                       size: 19,
                                                     ),
                                                     SizedBox(width: 8),
-                                                    Text(
+                                                    AppText(
                                                       'Delete',
                                                       style: TextStyle(
                                                         color: Colors.white,
@@ -1106,10 +1019,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                           onPressed: () {
                                             _startReply(
                                               commentId: isReply
-                                                  ? (commentData[
-                                                              'parentCommentId']
-                                                          ?.toString() ??
-                                                      commentId)
+                                                  ? (commentData['parentCommentId']
+                                                            ?.toString() ??
+                                                        commentId)
                                                   : commentId,
                                               authorName: commentAuthorName,
                                             );
@@ -1125,7 +1037,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                             color: primaryGold,
                                             size: 15,
                                           ),
-                                          label: const Text(
+                                          label: const AppText(
                                             'Reply',
                                             style: TextStyle(
                                               color: primaryGold,
@@ -1136,20 +1048,23 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                         ),
                                         const SizedBox(width: 12),
                                         StreamBuilder<
-                                            QuerySnapshot<
-                                                Map<String, dynamic>>>(
+                                          QuerySnapshot<Map<String, dynamic>>
+                                        >(
                                           stream: commentRef
                                               .collection('likes')
                                               .snapshots(),
                                           builder: (context, likeSnapshot) {
                                             final user = FirebaseAuth
-                                                .instance.currentUser;
+                                                .instance
+                                                .currentUser;
                                             final likes =
                                                 likeSnapshot.data?.docs ?? [];
 
-                                            final liked = user != null &&
-                                                likes.any((like) =>
-                                                    like.id == user.uid);
+                                            final liked =
+                                                user != null &&
+                                                likes.any(
+                                                  (like) => like.id == user.uid,
+                                                );
 
                                             return InkWell(
                                               onTap: user == null
@@ -1164,8 +1079,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                       } else {
                                                         await likeRef.set({
                                                           'userId': user.uid,
-                                                          'createdAt': FieldValue
-                                                              .serverTimestamp(),
+                                                          'createdAt':
+                                                              FieldValue.serverTimestamp(),
                                                         });
                                                       }
                                                     },
@@ -1174,9 +1089,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                               child: Padding(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                  horizontal: 4,
-                                                  vertical: 5,
-                                                ),
+                                                      horizontal: 4,
+                                                      vertical: 5,
+                                                    ),
                                                 child: Row(
                                                   mainAxisSize:
                                                       MainAxisSize.min,
@@ -1185,7 +1100,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                       liked
                                                           ? Icons.thumb_up_alt
                                                           : Icons
-                                                              .thumb_up_alt_outlined,
+                                                                .thumb_up_alt_outlined,
                                                       color: liked
                                                           ? primaryGold
                                                           : Colors.white54,
@@ -1193,7 +1108,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                                     ),
                                                     if (likes.isNotEmpty) ...[
                                                       const SizedBox(width: 5),
-                                                      Text(
+                                                      AppText(
                                                         '${likes.length}',
                                                         style: TextStyle(
                                                           color: liked
@@ -1243,19 +1158,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(
-                12,
-                10,
-                12,
-                12,
-              ),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
               decoration: const BoxDecoration(
                 color: cardGreen,
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.white12,
-                  ),
-                ),
+                border: Border(top: BorderSide(color: Colors.white12)),
               ),
               child: SafeArea(
                 top: false,
@@ -1265,14 +1171,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                     if (_replyToCommentId != null) ...[
                       Row(
                         children: [
-                          const Icon(
-                            Icons.reply,
-                            color: primaryGold,
-                            size: 16,
-                          ),
+                          const Icon(Icons.reply, color: primaryGold, size: 16),
                           const SizedBox(width: 6),
                           Expanded(
-                            child: Text(
+                            child: AppText(
                               'Replying to ${_replyToName ?? 'Member'}',
                               style: const TextStyle(
                                 color: Colors.white70,
@@ -1300,16 +1202,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                             controller: _controller,
                             minLines: 1,
                             maxLines: 4,
-                            style: const TextStyle(
-                              color: Colors.white,
-                            ),
+                            style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: _replyToCommentId != null
                                   ? 'Write a reply...'
                                   : 'Write a comment...',
-                              hintStyle: const TextStyle(
-                                color: Colors.white38,
-                              ),
+                              hintStyle: const TextStyle(color: Colors.white38),
                               filled: true,
                               fillColor: primaryDarkGreen,
                               contentPadding: const EdgeInsets.symmetric(
@@ -1338,10 +1236,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                     color: primaryDarkGreen,
                                   ),
                                 )
-                              : const Icon(
-                                  Icons.send,
-                                  color: primaryDarkGreen,
-                                ),
+                              : const Icon(Icons.send, color: primaryDarkGreen),
                         ),
                       ],
                     ),
@@ -1357,10 +1252,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 }
 
 class _OfficialPoll extends StatelessWidget {
-  const _OfficialPoll({
-    required this.announcementRef,
-    required this.data,
-  });
+  const _OfficialPoll({required this.announcementRef, required this.data});
 
   final DocumentReference<Map<String, dynamic>> announcementRef;
   final Map<String, dynamic> data;
@@ -1368,10 +1260,7 @@ class _OfficialPoll extends StatelessWidget {
   static const Color primaryDarkGreen = Color(0xFF061E12);
   static const Color primaryGold = Color(0xFFFFD700);
 
-  Future<void> _vote(
-    BuildContext context,
-    String optionId,
-  ) async {
+  Future<void> _vote(BuildContext context, String optionId) async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null || AppSession.isGuest) {
@@ -1384,11 +1273,9 @@ class _OfficialPoll extends StatelessWidget {
     if (!latest.exists || latest.data()?['pollClosed'] == true) {
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This poll is closed.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: AppText('This poll is closed.')));
       return;
     }
 
@@ -1410,11 +1297,8 @@ class _OfficialPoll extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Poll closed.'),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: AppText('Poll closed.')));
   }
 
   @override
@@ -1427,11 +1311,9 @@ class _OfficialPoll extends StatelessWidget {
 
     final options = rawOptions is List
         ? rawOptions
-            .whereType<Map>()
-            .map(
-              (option) => Map<String, dynamic>.from(option),
-            )
-            .toList()
+              .whereType<Map>()
+              .map((option) => Map<String, dynamic>.from(option))
+              .toList()
         : <Map<String, dynamic>>[];
 
     if (question.isEmpty || options.length < 2) {
@@ -1462,9 +1344,7 @@ class _OfficialPoll extends StatelessWidget {
           decoration: BoxDecoration(
             color: primaryDarkGreen,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: primaryGold.withValues(alpha: 0.35),
-            ),
+            border: Border.all(color: primaryGold.withValues(alpha: 0.35)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1472,11 +1352,7 @@ class _OfficialPoll extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.poll_outlined,
-                    color: primaryGold,
-                    size: 21,
-                  ),
+                  const Icon(Icons.poll_outlined, color: primaryGold, size: 21),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1502,8 +1378,9 @@ class _OfficialPoll extends StatelessWidget {
                       return vote.data()['optionId']?.toString() == optionId;
                     }).length;
 
-                    final percentage =
-                        totalVotes == 0 ? 0.0 : optionVotes / totalVotes;
+                    final percentage = totalVotes == 0
+                        ? 0.0
+                        : optionVotes / totalVotes;
 
                     final selected = myOptionId == optionId;
 
@@ -1512,10 +1389,7 @@ class _OfficialPoll extends StatelessWidget {
                       child: InkWell(
                         onTap: closed || optionId.isEmpty
                             ? null
-                            : () => _vote(
-                                  context,
-                                  optionId,
-                                ),
+                            : () => _vote(context, optionId),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           padding: const EdgeInsets.all(11),
@@ -1533,8 +1407,9 @@ class _OfficialPoll extends StatelessWidget {
                                     selected
                                         ? Icons.radio_button_checked
                                         : Icons.radio_button_off,
-                                    color:
-                                        selected ? primaryGold : Colors.white54,
+                                    color: selected
+                                        ? primaryGold
+                                        : Colors.white54,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 9),
@@ -1551,7 +1426,7 @@ class _OfficialPoll extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  Text(
+                                  AppText(
                                     '${(percentage * 100).round()}%',
                                     style: const TextStyle(
                                       color: Colors.white70,
@@ -1569,8 +1444,8 @@ class _OfficialPoll extends StatelessWidget {
                                   backgroundColor: Colors.white12,
                                   valueColor:
                                       const AlwaysStoppedAnimation<Color>(
-                                    primaryGold,
-                                  ),
+                                        primaryGold,
+                                      ),
                                 ),
                               ),
                             ],
@@ -1583,16 +1458,13 @@ class _OfficialPoll extends StatelessWidget {
               ],
               Row(
                 children: [
-                  Text(
+                  AppText(
                     '$totalVotes vote${totalVotes == 1 ? '' : 's'}',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   if (closed) ...[
                     const SizedBox(width: 10),
-                    const Text(
+                    const AppText(
                       '• Closed',
                       style: TextStyle(
                         color: Colors.redAccent,
@@ -1610,12 +1482,9 @@ class _OfficialPoll extends StatelessWidget {
                         color: primaryGold,
                         size: 17,
                       ),
-                      label: const Text(
+                      label: const AppText(
                         'Close poll',
-                        style: TextStyle(
-                          color: primaryGold,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: primaryGold, fontSize: 12),
                       ),
                     ),
                 ],

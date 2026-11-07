@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -58,61 +60,43 @@ class MyOrdersScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: primaryDarkGreen,
         appBar: AppBar(
-          title: Text(
+          title: AppText(
             'orders.title'.tr(),
-            style: TextStyle(
-              color: primaryGold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
           ),
           backgroundColor: primaryDarkGreen,
-          iconTheme: const IconThemeData(
-            color: primaryGold,
-          ),
+          iconTheme: const IconThemeData(color: primaryGold),
           bottom: TabBar(
             indicatorColor: primaryGold,
             labelColor: primaryGold,
             unselectedLabelColor: Colors.white54,
             tabs: [
-              Tab(
-                icon: Icon(Icons.access_time),
-                text: 'orders.active'.tr(),
-              ),
-              Tab(
-                icon: Icon(Icons.history),
-                text: 'orders.history'.tr(),
-              ),
+              Tab(icon: Icon(Icons.access_time), text: 'orders.active'.tr()),
+              Tab(icon: Icon(Icons.history), text: 'orders.history'.tr()),
             ],
           ),
         ),
         body: user == null
             ? Center(
-                child: Text(
+                child: AppText(
                   'orders.sign_in_required'.tr(),
-                  style: TextStyle(
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(color: Colors.white70),
                 ),
               )
             : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: FirebaseFirestore.instance
                     .collection('cashOnDeliveryOrders')
-                    .where(
-                      'buyerId',
-                      isEqualTo: user.uid,
-                    )
+                    .where('buyerId', isEqualTo: user.uid)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
-                        child: Text(
+                        child: AppText(
                           'Unable to load your orders.\n${snapshot.error}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                          ),
+                          style: const TextStyle(color: Colors.white70),
                         ),
                       ),
                     );
@@ -120,9 +104,7 @@ class MyOrdersScreen extends StatelessWidget {
 
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(
-                        color: primaryGold,
-                      ),
+                      child: CircularProgressIndicator(color: primaryGold),
                     );
                   }
 
@@ -175,7 +157,7 @@ class MyOrdersScreen extends StatelessWidget {
                               size: 64,
                             ),
                             SizedBox(height: 16),
-                            Text(
+                            AppText(
                               'No orders yet',
                               style: TextStyle(
                                 color: Colors.white,
@@ -184,12 +166,10 @@ class MyOrdersScreen extends StatelessWidget {
                               ),
                             ),
                             SizedBox(height: 8),
-                            Text(
+                            AppText(
                               'Your orders will appear here after you place them.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white60,
-                              ),
+                              style: TextStyle(color: Colors.white60),
                             ),
                           ],
                         ),
@@ -209,8 +189,7 @@ class MyOrdersScreen extends StatelessWidget {
                         context,
                         historyOrders,
                         emptyTitle: 'No order history',
-                        emptyMessage:
-                            'Completed, rejected or cancelled orders will appear here.',
+                        emptyMessage: 'Completed, rejected or cancelled orders will appear here.',
                       ),
                     ],
                   );
@@ -251,9 +230,7 @@ class MyOrdersScreen extends StatelessWidget {
               Text(
                 emptyMessage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white60,
-                ),
+                style: const TextStyle(color: Colors.white60),
               ),
             ],
           ),
@@ -273,7 +250,8 @@ class MyOrdersScreen extends StatelessWidget {
 
         final sellerName = data['sellerName']?.toString() ?? 'Seller';
 
-        final total = (data['cartTotal'] as num?)?.toDouble() ??
+        final total =
+            (data['cartTotal'] as num?)?.toDouble() ??
             (data['orderTotal'] as num?)?.toDouble() ??
             0;
 
@@ -300,9 +278,8 @@ class MyOrdersScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => CashOnDeliveryOrderTrackingScreen(
-                    orderId: order.id,
-                  ),
+                  builder: (_) =>
+                      CashOnDeliveryOrderTrackingScreen(orderId: order.id),
                 ),
               );
             },
@@ -317,17 +294,14 @@ class MyOrdersScreen extends StatelessWidget {
                       color: primaryDarkGreen,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      _statusIcon(status),
-                      color: primaryGold,
-                    ),
+                    child: Icon(_statusIcon(status), color: primaryGold),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        AppText(
                           'Order #$shortId',
                           style: const TextStyle(
                             color: primaryGold,
@@ -344,7 +318,7 @@ class MyOrdersScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        AppText(
                           '${_statusLabel(status)}'
                           '${quantity > 0 ? ' • $quantity item${quantity > 1 ? 's' : ''}' : ''}',
                           style: const TextStyle(
@@ -359,7 +333,7 @@ class MyOrdersScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
+                      AppText(
                         '€${total.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: primaryGold,

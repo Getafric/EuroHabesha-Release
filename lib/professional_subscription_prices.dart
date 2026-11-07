@@ -22,9 +22,9 @@ String subscriptionPriceText(int cents) =>
 class ProfessionalSubscriptionPrices {
   const ProfessionalSubscriptionPrices({
     this.silverCents = 599,
-this.goldCents = 999,
-this.vipCents = 1499,
-this.period = 'P6M',
+    this.goldCents = 999,
+    this.vipCents = 1499,
+    this.period = 'P6M',
     this.silverDiscountPercent = 25,
     this.goldDiscountPercent = 50,
     this.vipDiscountPercent = 100,

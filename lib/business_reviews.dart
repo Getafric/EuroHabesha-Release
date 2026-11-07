@@ -1,7 +1,11 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'business_review_policy.dart';
 
 const _gold = Color(0xFFFFD700),
@@ -75,8 +79,7 @@ String _reviewError(Object error) {
   }
   if (error is FirebaseException) {
     return switch (error.code) {
-      'permission-denied' =>
-        'Envoi refusé (permission-denied). Vérifiez le compte connecté et les règles des avis pour cette fiche. Votre texte est conservé.',
+      'permission-denied' => 'Envoi refusé (permission-denied). Vérifiez le compte connecté et les règles des avis pour cette fiche. Votre texte est conservé.',
       'unauthenticated' || 'user-token-expired' =>
         'Votre session a expiré. Reconnectez-vous puis réessayez.',
       'unavailable' =>
@@ -97,7 +100,7 @@ Future<void> showBusinessReviewDialog(
   if (user == null || user.isAnonymous) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Connectez-vous avec un compte pour publier un avis.'),
+        content: AppText('Connectez-vous avec un compte pour publier un avis.'),
       ),
     );
     return;
@@ -172,7 +175,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
       Navigator.of(context).pop(true);
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('Votre avis a bien été enregistré. Merci !'),
+          content: AppText('Votre avis a bien été enregistré. Merci !'),
         ),
       );
     } catch (error) {
@@ -190,7 +193,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
     canPop: !_sending,
     child: AlertDialog(
       backgroundColor: _card,
-      title: const Text('Donner mon avis', style: TextStyle(color: _gold)),
+      title: const AppText('Donner mon avis', style: TextStyle(color: _gold)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -245,7 +248,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
       actions: [
         TextButton(
           onPressed: _sending ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Annuler'),
+          child: const AppText('Annuler'),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -294,14 +297,14 @@ class _BusinessReviewsListState extends State<BusinessReviewsList> {
       ),
       TextButton(
         onPressed: () => setState(() => _target = _reviewTarget(widget.data)),
-        child: const Text('Réessayer'),
+        child: const AppText('Réessayer'),
       ),
     ],
   );
   Widget _rows(List<Map<String, dynamic>> rows) => Column(
     children: [
       if (rows.isEmpty)
-        const Text(
+        const AppText(
           'Aucun avis pour le moment.',
           style: TextStyle(color: Colors.white70),
         ),
@@ -329,7 +332,7 @@ class _BusinessReviewsListState extends State<BusinessReviewsList> {
                     ),
                   ),
                   const Icon(Icons.star, color: _gold, size: 16),
-                  Text(
+                  AppText(
                     ' ${row['rating'] ?? ''}',
                     style: const TextStyle(color: Colors.white70),
                   ),

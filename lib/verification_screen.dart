@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -49,7 +51,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please sign in before requesting verification.')),
+          content: AppText('Please sign in before requesting verification.'),
+        ),
       );
       Navigator.pushNamed(context, '/login');
       return;
@@ -58,7 +61,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
     if (_businessNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please enter your business or professional name.')),
+          content: AppText('Please enter your business or professional name.'),
+        ),
       );
       return;
     }
@@ -66,8 +70,10 @@ class _VerificationScreenState extends State<VerificationScreen> {
     if (_selectedDocument == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'Please attach an official registration document, license, or diploma PDF/image.')),
+          content: AppText(
+            'Please attach an official registration document, license, or diploma PDF/image.',
+          ),
+        ),
       );
       return;
     }
@@ -75,8 +81,10 @@ class _VerificationScreenState extends State<VerificationScreen> {
     setState(() => _isSubmitting = true);
     try {
       final bytes = await _selectedDocument!.readAsBytes();
-      final safeName =
-          _selectedDocument!.name.replaceAll(RegExp(r'[^A-Za-z0-9_.-]'), '_');
+      final safeName = _selectedDocument!.name.replaceAll(
+        RegExp(r'[^A-Za-z0-9_.-]'),
+        '_',
+      );
       final storagePath =
           'verificationDocs/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_$safeName';
       final storageRef = FirebaseStorage.instance.ref(storagePath);
@@ -106,8 +114,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-              'Verification request submitted for Admin review. Thank you!'),
+          content: AppText(
+            'Verification request submitted for Admin review. Thank you!',
+          ),
           backgroundColor: cardGreen,
         ),
       );
@@ -115,7 +124,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Submission error: $e')));
+            .showSnackBar(SnackBar(content: AppText('Submission error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -127,9 +136,13 @@ class _VerificationScreenState extends State<VerificationScreen> {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text('Request Admin Verification',
-            style: TextStyle(
-                color: Color(0xFFFFD700), fontWeight: FontWeight.bold)),
+        title: const AppText(
+          'Request Admin Verification',
+          style: TextStyle(
+            color: Color(0xFFFFD700),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: Color(0xFFFFD700)),
       ),
@@ -138,32 +151,43 @@ class _VerificationScreenState extends State<VerificationScreen> {
         children: [
           const Icon(Icons.verified, color: Color(0xFFFFD700), size: 56),
           const SizedBox(height: 12),
-          const Text(
+          const AppText(
             'Official Identity & Business Verification',
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Color(0xFFFFD700),
-                fontSize: 20,
-                fontWeight: FontWeight.bold),
+              color: Color(0xFFFFD700),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          const AppText(
             'Submit your official business registration (SIRET/SIREN), professional license, or ID document for manual Admin verification. Once verified, your profile will display the clean "✓ Verified" mark.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 20),
           _buildField(
-              'Business or Professional Name *', _businessNameController,
-              hint: 'e.g., Lucy Habesha Restaurant or Dr. Selam'),
-          _buildField('Country *', _countryController,
-              hint: 'e.g., France, Germany, Switzerland...'),
-          _buildField('City & Address *', _cityController,
-              hint: 'e.g., Lyon, Paris, Geneva...'),
-          _buildField('Additional Notes / SIRET info', _notesController,
-              maxLines: 3,
-              hint:
-                  'Provide any extra registration numbers or context for admin review.'),
+            'Business or Professional Name *',
+            _businessNameController,
+            hint: 'e.g., Lucy Habesha Restaurant or Dr. Selam',
+          ),
+          _buildField(
+            'Country *',
+            _countryController,
+            hint: 'e.g., France, Germany, Switzerland...',
+          ),
+          _buildField(
+            'City & Address *',
+            _cityController,
+            hint: 'e.g., Lyon, Paris, Geneva...',
+          ),
+          _buildField(
+            'Additional Notes / SIRET info',
+            _notesController,
+            maxLines: 3,
+            hint: 'Provide any extra registration numbers or context for admin review.',
+          ),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
@@ -175,15 +199,19 @@ class _VerificationScreenState extends State<VerificationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Attach Official Document / Proof *',
-                    style: TextStyle(
-                        color: primaryGold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14)),
+                const AppText(
+                  'Attach Official Document / Proof *',
+                  style: TextStyle(
+                    color: primaryGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                const Text(
-                    'Upload your SIRET proof, diploma, license, or business registration PDF / image.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const AppText(
+                  'Upload your SIRET proof, diploma, license, or business registration PDF / image.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -208,7 +236,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
               foregroundColor: primaryDarkGreen,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: _isSubmitting ? null : _submitVerification,
             icon: const Icon(Icons.send),
@@ -225,18 +254,25 @@ class _VerificationScreenState extends State<VerificationScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller,
-      {int maxLines = 1, String? hint}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+    String? hint,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: primaryGold,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: primaryGold,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
           const SizedBox(height: 5),
           TextField(
             controller: controller,
@@ -248,8 +284,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
               filled: true,
               fillColor: cardGreen,
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none),
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ],

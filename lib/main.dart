@@ -1,13 +1,18 @@
+import 'l10n/app_ui.dart';
+import 'member_interface_text.dart';
+
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'notification_service.dart';
 import 'firebase_options.dart';
+
 import 'package:euro_habesha/home_screen.dart';
-import 'business_screen.dart';
+
 import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
@@ -15,16 +20,14 @@ import 'app_session.dart';
 import 'advertisement_request_screen.dart';
 import 'admin_passcode_screen.dart';
 import 'review_prompt_service.dart';
-import 'qr_scanner_entry_screen.dart';
 import 'public_event_route_screen.dart';
 import 'euro_habesha_video_intro.dart';
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
-  const stripePublishableKey = String.fromEnvironment(
-    'STRIPE_PUBLISHABLE_KEY',
-  );
+  const stripePublishableKey = String.fromEnvironment('STRIPE_PUBLISHABLE_KEY');
   if (stripePublishableKey.isNotEmpty) {
     Stripe.publishableKey = stripePublishableKey;
     await Stripe.instance.applySettings();
@@ -41,6 +44,7 @@ void main() async {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
   };
+  await AppUi.load();
   runApp(
     EasyLocalization(
       supportedLocales: const [
@@ -61,21 +65,18 @@ void main() async {
     ),
   );
 }
+
 class EuroHabeshaApp extends StatelessWidget {
   final bool firebaseReady;
-  const EuroHabeshaApp({
-    super.key,
-    this.firebaseReady = true,
-  });
+  const EuroHabeshaApp({super.key, this.firebaseReady = true});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Euro Habesha',
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => EuroHabeshaVideoIntro(
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) =>
+          EuroHabeshaVideoIntro(child: child ?? const SizedBox.shrink()),
       locale: context.locale,
       supportedLocales: context.supportedLocales,
       localizationsDelegates: context.localizationDelegates,
@@ -106,7 +107,9 @@ class EuroHabeshaApp extends StatelessWidget {
         return MaterialPageRoute<void>(
           settings: settings,
           builder: (_) => firebaseReady
-              ? PublicEventRouteScreen(eventId: route!.queryParameters['id'] ?? '')
+              ? PublicEventRouteScreen(
+                  eventId: route!.queryParameters['id'] ?? '',
+                )
               : const SafeHomeScreen(),
         );
       },
@@ -117,11 +120,13 @@ class EuroHabeshaApp extends StatelessWidget {
         '/advertisement-request': (context) =>
             const AdvertisementRequestScreen(),
       },
-      home:
-          firebaseReady ? const LoginScreen(resumeSession: true) : const SafeHomeScreen(),
+      home: firebaseReady
+          ? const LoginScreen(resumeSession: true)
+          : const SafeHomeScreen(),
     );
   }
 }
+
 // Safe home screen with error handling.
 class SafeHomeScreen extends StatelessWidget {
   const SafeHomeScreen({super.key});
@@ -144,7 +149,7 @@ class SafeHomeScreen extends StatelessWidget {
                     size: 60,
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  const AppText(
                     'Euro Habesha',
                     style: TextStyle(
                       color: Color(0xFFFFD700),
@@ -153,13 +158,10 @@ class SafeHomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
+                  const AppText(
                     'App Initialized Successfully! ✅',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 30),
                   Container(
@@ -171,7 +173,7 @@ class SafeHomeScreen extends StatelessWidget {
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        AppText(
                           'System Status:',
                           style: TextStyle(
                             color: Color(0xFFFFD700),
@@ -179,21 +181,21 @@ class SafeHomeScreen extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 10),
-                        Text(
+                        AppText(
                           'Firebase: Connected ✅',
                           style: TextStyle(
                             color: Colors.greenAccent,
                             fontSize: 12,
                           ),
                         ),
-                        Text(
+                        AppText(
                           'UI Framework: Loaded ✅',
                           style: TextStyle(
                             color: Colors.greenAccent,
                             fontSize: 12,
                           ),
                         ),
-                        Text(
+                        AppText(
                           'Plugins: Initialized ✅',
                           style: TextStyle(
                             color: Colors.greenAccent,
@@ -225,13 +227,11 @@ class SafeHomeScreen extends StatelessWidget {
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Navigation error: $e'),
-                          ),
+                          SnackBar(content: AppText('Navigation error: $e')),
                         );
                       }
                     },
-                    child: const Text(
+                    child: const AppText(
                       'Continue to App',
                       style: TextStyle(
                         color: Color(0xFF061E12),
@@ -250,6 +250,7 @@ class SafeHomeScreen extends StatelessWidget {
     );
   }
 }
+
 // ==========================================
 // 1. Welcome / Sign-Up
 // ==========================================
@@ -270,9 +271,7 @@ class WelcomeAuthScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: cardGreen,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: primaryGold.withValues(alpha: 0.4),
-              ),
+              border: Border.all(color: primaryGold.withValues(alpha: 0.4)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -282,14 +281,11 @@ class WelcomeAuthScreen extends StatelessWidget {
                   width: 65,
                   height: 65,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.hub,
-                    color: primaryGold,
-                    size: 50,
-                  ),
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.hub, color: primaryGold, size: 50),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                const AppText(
                   'Join Euro Habesha',
                   style: TextStyle(
                     color: primaryGold,
@@ -298,12 +294,9 @@ class WelcomeAuthScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                const AppText(
                   'Create an account to post, message, and connect with the community.',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 25),
@@ -328,7 +321,7 @@ class WelcomeAuthScreen extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.g_mobiledata, size: 26),
-                    label: const Text(
+                    label: const AppText(
                       'Continue with Google',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -359,7 +352,7 @@ class WelcomeAuthScreen extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.apple, size: 20),
-                    label: const Text(
+                    label: const AppText(
                       'Continue with Apple',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -390,7 +383,7 @@ class WelcomeAuthScreen extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.email, size: 18),
-                    label: const Text(
+                    label: const AppText(
                       'Sign Up with Email',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -410,12 +403,9 @@ class WelcomeAuthScreen extends StatelessWidget {
                       ),
                     );
                   },
-                  child: const Text(
+                  child: const AppText(
                     'Maybe Later',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.white60, fontSize: 13),
                   ),
                 ),
               ],
@@ -426,6 +416,7 @@ class WelcomeAuthScreen extends StatelessWidget {
     );
   }
 }
+
 // ==========================================
 // 2. Main Navigation
 // ==========================================
@@ -434,6 +425,7 @@ class MainNavigationScreen extends StatefulWidget {
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
+
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
   bool _sessionReady = false;
@@ -451,6 +443,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       }
     });
   }
+
   Future<void> _initializeSession() async {
     try {
       await AppSession.restoreFromFirebase();
@@ -469,26 +462,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       debugPrint('Initialisation des notifications : $error');
     }
   }
+
   void _selectTab(int index) {
-    if (index < 0 || index > 3 || _selectedIndex == index) return;
+    if (index < 0 || index > 2 || _selectedIndex == index) return;
     setState(() => _selectedIndex = index);
   }
 
-  // Navigation horizontale entre les 4 onglets principaux.
-  // Le bouton + reste une action distincte.
+  // Navigation horizontale entre Accueil, Messages et Profil.
   void _handleTabSwipe(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
     if (velocity.abs() < 250) return;
     _selectTab(_selectedIndex + (velocity < 0 ? 1 : -1));
   }
-  void _openQrScanner() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const QrScannerEntryScreen(),
-      ),
-    );
-  }
+
   @override
   Widget build(BuildContext context) {
     if (!_sessionReady) {
@@ -499,14 +485,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Impossible de charger votre session.',
-                        style: TextStyle(color: Colors.white)),
+                    const AppText(
+                      'Impossible de charger votre session.',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     TextButton(
                       onPressed: () {
                         setState(() => _sessionFailed = false);
                         _initializeSession();
                       },
-                      child: Text('Réessayer', style: TextStyle(color: primaryGold)),
+                      child: AppText(
+                        'Réessayer',
+                        style: TextStyle(color: primaryGold),
+                      ),
                     ),
                   ],
                 )
@@ -520,52 +511,50 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         bottom: false,
         child: Column(
           children: [
-
-Expanded(
+            Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onHorizontalDragEnd: _handleTabSwipe,
                 child: IndexedStack(
-                index: _selectedIndex,
-                children: [
-                  HomeScreen(),
-                  BusinessDirectoryScreen(),
-                  ChatScreen(),
-                  ProfileScreen(),
-                ],
+                  index: _selectedIndex,
+                  children: const [HomeScreen(), ChatScreen(), ProfileScreen()],
                 ),
               ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-              elevation: 8,
-              shape: const CircleBorder(),
-              backgroundColor: primaryGold,
-              foregroundColor: Colors.black,
-              tooltip: 'Scanner un QR code',
-              onPressed: _openQrScanner,
-              child: const Icon(Icons.qr_code_scanner_rounded, size: 31),
-            ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: SafeArea(
         top: false,
         minimum: const EdgeInsets.only(bottom: 8),
         child: BottomAppBar(
           color: cardGreen,
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 8,
           child: SizedBox(
             height: 66,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home, 'navigation.home'.tr(), 0),
-                _buildNavItem(Icons.explore, 'Découvrir', 1),
-                const SizedBox(width: 56),
+                _buildNavItem(
+                  Icons.home,
+                  memberText(
+                    context,
+                    'Accueil',
+                    'Home',
+                    catalogKey: 'navigation.home',
+                  ),
+                  0,
+                ),
                 _buildMessagesNavItem(),
-                _buildNavItem(Icons.person, 'navigation.profile'.tr(), 3),
+                _buildNavItem(
+                  Icons.person,
+                  memberText(
+                    context,
+                    'Profil',
+                    'Profile',
+                    catalogKey: 'navigation.profile',
+                  ),
+                  2,
+                ),
               ],
             ),
           ),
@@ -573,10 +562,20 @@ Expanded(
       ),
     );
   }
+
   Widget _buildMessagesNavItem() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return _buildNavItem(Icons.chat, 'navigation.messages'.tr(), 2);
+      return _buildNavItem(
+        Icons.chat,
+        memberText(
+          context,
+          'Messages',
+          'Messages',
+          catalogKey: 'navigation.messages',
+        ),
+        1,
+      );
     }
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
@@ -598,13 +597,19 @@ Expanded(
         }
         return _buildNavItem(
           Icons.chat,
-          'navigation.messages'.tr(),
-          2,
+          memberText(
+            context,
+            'Messages',
+            'Messages',
+            catalogKey: 'navigation.messages',
+          ),
+          1,
           badgeCount: unreadCount,
         );
       },
     );
   }
+
   Widget _buildNavItem(
     IconData icon,
     String label,
@@ -636,9 +641,7 @@ Expanded(
                           minWidth: 18,
                           minHeight: 18,
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
                           color: primaryGold,
                           shape: BoxShape.circle,

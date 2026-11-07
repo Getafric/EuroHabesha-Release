@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
 import 'admin_professional_verification_review_screen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'dynamic_submission_screen.dart';
 import 'app_session.dart';
 import 'status_badge_widget.dart';
@@ -44,7 +47,7 @@ class _AdminUniversalContentManagerScreenState
   Widget build(BuildContext context) {
     if (!AppSession.isSuperAdmin) {
       return const Center(
-        child: Text(
+        child: AppText(
           'Super Admin access required.',
           style: TextStyle(color: Colors.white70),
         ),
@@ -127,7 +130,7 @@ class _AdminUniversalContentManagerScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            AppText(
               'Managing: $_selectedSectionLabel',
               style: TextStyle(
                 color: primaryGold,
@@ -150,7 +153,7 @@ class _AdminUniversalContentManagerScreenState
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: Text(
+            child: AppText(
               'Managing: $_selectedSectionLabel',
               style: TextStyle(
                 color: primaryGold,
@@ -178,7 +181,7 @@ class _AdminUniversalContentManagerScreenState
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       icon: const Icon(Icons.add, size: 17),
-      label: const Text(
+      label: const AppText(
         'Add Content',
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
       ),
@@ -230,7 +233,7 @@ class _AdminUniversalContentManagerScreenState
           children: [
             const Icon(Icons.error_outline, color: Colors.redAccent, size: 42),
             const SizedBox(height: 12),
-            const Text(
+            const AppText(
               'Unable to load this content.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -259,7 +262,7 @@ class _AdminUniversalContentManagerScreenState
           children: [
             Icon(Icons.inbox_outlined, color: primaryGold, size: 42),
             const SizedBox(height: 12),
-            const Text(
+            const AppText(
               'No items in this category yet.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -268,7 +271,7 @@ class _AdminUniversalContentManagerScreenState
               ),
             ),
             const SizedBox(height: 5),
-            const Text(
+            const AppText(
               'Tap "+ Add Content" to create one.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white54, height: 1.4),
@@ -485,7 +488,7 @@ class _AdminUniversalContentManagerScreenState
             ),
             onPressed: () => _showEventDetails(doc),
             icon: const Icon(Icons.visibility_outlined, size: 14),
-            label: const Text(
+            label: const AppText(
               'View Details',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
             ),
@@ -522,7 +525,7 @@ class _AdminUniversalContentManagerScreenState
             ),
             onPressed: () => _toggleVerify(doc, isVerified),
             icon: Icon(Icons.folder_open_outlined, size: 14),
-            label: Text(
+            label: AppText(
               'Dossier & vérification',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
             ),
@@ -539,7 +542,7 @@ class _AdminUniversalContentManagerScreenState
             color: Colors.redAccent,
             size: 14,
           ),
-          label: const Text(
+          label: const AppText(
             'Delete',
             style: TextStyle(color: Colors.redAccent, fontSize: 11),
           ),
@@ -563,7 +566,7 @@ class _AdminUniversalContentManagerScreenState
     if (!submission.exists) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Original event submission not found.'),
+          content: AppText('Original event submission not found.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -952,7 +955,7 @@ class _AdminUniversalContentManagerScreenState
                                 await _openEventEditor(eventDoc);
                               },
                               icon: const Icon(Icons.edit_outlined),
-                              label: const Text(
+                              label: const AppText(
                                 'Edit Event',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
@@ -977,7 +980,7 @@ class _AdminUniversalContentManagerScreenState
                                 Icons.delete_forever,
                                 color: Colors.redAccent,
                               ),
-                              label: const Text(
+                              label: const AppText(
                                 'Delete Event',
                                 style: TextStyle(
                                   color: Colors.redAccent,
@@ -1004,7 +1007,7 @@ class _AdminUniversalContentManagerScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to load event details: $e'),
+          content: AppText('Unable to load event details: $e'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -1210,7 +1213,7 @@ class _AdminUniversalContentManagerScreenState
             ),
           ),
           const SizedBox(height: 5),
-          Text(
+          AppText(
             'Capacity: $capacity • Sold: $sold • Remaining: $remaining',
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
@@ -1364,7 +1367,7 @@ class _AdminUniversalContentManagerScreenState
               onPressed: () {
                 Navigator.pop(dialogCtx);
               },
-              child: const Text(
+              child: const AppText(
                 'Cancel',
                 style: TextStyle(color: Colors.white54),
               ),
@@ -1383,7 +1386,9 @@ class _AdminUniversalContentManagerScreenState
                   }
 
                   ScaffoldMessenger.of(dialogCtx).showSnackBar(
-                    const SnackBar(content: Text('Title / Name is required.')),
+                    const SnackBar(
+                      content: AppText('Title / Name is required.'),
+                    ),
                   );
                   return;
                 }
@@ -1486,7 +1491,7 @@ class _AdminUniversalContentManagerScreenState
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Operation failed: $e'),
+                      content: AppText('Operation failed: $e'),
                       backgroundColor: Colors.redAccent,
                     ),
                   );
@@ -1521,7 +1526,7 @@ class _AdminUniversalContentManagerScreenState
         keyboardType: keyboardType,
         style: const TextStyle(color: Colors.white, fontSize: 13),
         decoration: InputDecoration(
-          labelText: label,
+          labelText: ui(context, label),
           hintText: hint,
           labelStyle: const TextStyle(color: Colors.white70, fontSize: 12),
           hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
@@ -1604,9 +1609,8 @@ class _AdminUniversalContentManagerScreenState
           cancellation,
           SetOptions(merge: true),
         );
-        NearbySyncService(
-          firestore,
-        ).stageRemove(batch, sourceCollection: 'events', sourceId: eventId);
+        NearbySyncService(firestore)
+            .stageRemove(batch, sourceCollection: 'events', sourceId: eventId);
         await batch.commit();
 
         if (!mounted) {
@@ -1615,7 +1619,7 @@ class _AdminUniversalContentManagerScreenState
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: AppText(
               'Event archived because purchased tickets already exist.',
             ),
           ),
@@ -1632,7 +1636,7 @@ class _AdminUniversalContentManagerScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to delete event: $e'),
+          content: AppText('Unable to delete event: $e'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -1649,11 +1653,11 @@ class _AdminUniversalContentManagerScreenState
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: primaryDarkGreen,
-          title: const Text(
+          title: const AppText(
             'Delete Event?',
             style: TextStyle(color: Colors.white),
           ),
-          content: const Text(
+          content: const AppText(
             'No purchased tickets were found. '
             'This event can be permanently deleted.',
             style: TextStyle(color: Colors.white70),
@@ -1661,11 +1665,11 @@ class _AdminUniversalContentManagerScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: const AppText('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
+              child: const AppText(
                 'Delete Permanently',
                 style: TextStyle(color: Colors.redAccent),
               ),
@@ -1690,9 +1694,8 @@ class _AdminUniversalContentManagerScreenState
       firestore.collection('publicFeed').doc('eventSubmissions_$eventId'),
     );
     batch.delete(firestore.collection('publicFeed').doc('events_$eventId'));
-    NearbySyncService(
-      firestore,
-    ).stageRemove(batch, sourceCollection: 'events', sourceId: eventId);
+    NearbySyncService(firestore)
+        .stageRemove(batch, sourceCollection: 'events', sourceId: eventId);
 
     await batch.commit();
 
@@ -1700,9 +1703,9 @@ class _AdminUniversalContentManagerScreenState
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Event permanently deleted.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: AppText('Event permanently deleted.')),
+    );
   }
 
   Future<void> _delete(DocumentSnapshot<Map<String, dynamic>> doc) async {
@@ -1718,14 +1721,14 @@ class _AdminUniversalContentManagerScreenState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          title: const Text(
+          title: const AppText(
             'Delete Content?',
             style: TextStyle(
               color: Colors.redAccent,
               fontWeight: FontWeight.bold,
             ),
           ),
-          content: const Text(
+          content: const AppText(
             'This will permanently delete this item from the database.',
             style: TextStyle(color: Colors.white70),
           ),
@@ -1734,7 +1737,7 @@ class _AdminUniversalContentManagerScreenState
               onPressed: () {
                 Navigator.pop(ctx, false);
               },
-              child: const Text(
+              child: const AppText(
                 'Cancel',
                 style: TextStyle(color: Colors.white70),
               ),
@@ -1746,7 +1749,7 @@ class _AdminUniversalContentManagerScreenState
               onPressed: () {
                 Navigator.pop(ctx, true);
               },
-              child: const Text(
+              child: const AppText(
                 'Delete',
                 style: TextStyle(color: Colors.white),
               ),
@@ -1810,7 +1813,7 @@ class _AdminUniversalContentManagerScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Item deleted from the database and public feed.'),
+          content: AppText('Item deleted from the database and public feed.'),
         ),
       );
     } catch (e) {
@@ -1820,7 +1823,7 @@ class _AdminUniversalContentManagerScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Delete failed: $e'),
+          content: AppText('Delete failed: $e'),
           backgroundColor: Colors.redAccent,
         ),
       );

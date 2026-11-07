@@ -1,5 +1,7 @@
+import 'l10n/app_ui.dart';
 // Euro Habesha: photos et publicites v1
 import 'banner_destination.dart';
+
 import 'dart:typed_data';
 // EH_CADRAGE_AVIS_V1
 
@@ -7,7 +9,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+
 import 'professional_photo_cropper.dart';
+
 import 'package:image_picker/image_picker.dart';
 
 import 'app_session.dart';
@@ -31,15 +35,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
   final ImagePicker _picker = ImagePicker();
 
-  final List<double> _presetDiscounts = [0,
-    5,
-    10,
-    15,
-    20,
-    25,
-    30,
-    50,
-  ];
+  final List<double> _presetDiscounts = [0, 5, 10, 15, 20, 25, 30, 50];
 
   double _discountPercent = 20;
 
@@ -53,9 +49,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
   Map<String, dynamic>? _selectedTargetData;
 
   DateTime _startsAt = DateTime.now();
-  DateTime _endsAt = DateTime.now().add(
-    const Duration(days: 30),
-  );
+  DateTime _endsAt = DateTime.now().add(const Duration(days: 30));
 
   String? _editingBannerId;
   bool _saving = false;
@@ -76,23 +70,35 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: cardGreen,
-      ),
+      SnackBar(content: Text(message), backgroundColor: cardGreen),
     );
   }
 
   Future<void> _pickBannerImage() async {
     try {
-      final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
-      if (picked == null) { return; }
+      final picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      if (picked == null) {
+        return;
+      }
       final bytes = await picked.readAsBytes();
-      if (!mounted) { return; }
-      final framed = await frameProfessionalPhoto(context, bytes: bytes, use: ProfessionalPhotoUse.banner);
-      if (!mounted || framed == null) { return; }
+      if (!mounted) {
+        return;
+      }
+      final framed = await frameProfessionalPhoto(
+        context,
+        bytes: bytes,
+        use: ProfessionalPhotoUse.banner,
+      );
+      if (!mounted || framed == null) {
+        return;
+      }
       setState(() => _bannerImageFile = framed);
-    } catch (_) { _message('Impossible d’ouvrir cette photo. Réessayez.'); }
+    } catch (_) {
+      _message('Impossible d’ouvrir cette photo. Réessayez.');
+    }
   }
 
   void _resetForm() {
@@ -111,9 +117,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       _selectedTargetData = null;
       _discountPercent = 20;
       _startsAt = DateTime.now();
-      _endsAt = DateTime.now().add(
-        const Duration(days: 30),
-      );
+      _endsAt = DateTime.now().add(const Duration(days: 30));
       _showForm = false;
     });
   }
@@ -134,23 +138,20 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       _selectedTargetData = null;
       _discountPercent = 20;
       _startsAt = DateTime.now();
-      _endsAt = DateTime.now().add(
-        const Duration(days: 30),
-      );
+      _endsAt = DateTime.now().add(const Duration(days: 30));
       _showForm = true;
     });
   }
 
-  void _startEdit(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  void _startEdit(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
 
-    _title.text = (data['title'] ??
-            data['businessName'] ??
-            data['targetBusinessName'] ??
-            '')
-        .toString();
+    _title.text =
+        (data['title'] ??
+                data['businessName'] ??
+                data['targetBusinessName'] ??
+                '')
+            .toString();
 
     _body.text = (data['body'] ?? data['description'] ?? '').toString();
 
@@ -174,8 +175,8 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
         _targetType = 'business';
       }
 
-      _selectedTargetId =
-          (data['targetId'] ?? data['targetBusinessId'] ?? '').toString();
+      _selectedTargetId = (data['targetId'] ?? data['targetBusinessId'] ?? '')
+          .toString();
 
       if (_selectedTargetId!.isEmpty) {
         _selectedTargetId = null;
@@ -192,9 +193,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
       _discountPercent = discount is num ? discount.toDouble() : 20;
 
-      if (!_presetDiscounts.contains(
-        _discountPercent,
-      )) {
+      if (!_presetDiscounts.contains(_discountPercent)) {
         _discountPercent = 20;
       }
 
@@ -202,9 +201,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
       _endsAt = endsAt is Timestamp
           ? endsAt.toDate()
-          : DateTime.now().add(
-              const Duration(days: 30),
-            );
+          : DateTime.now().add(const Duration(days: 30));
 
       _showForm = true;
     });
@@ -214,12 +211,8 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     final date = await showDatePicker(
       context: context,
       initialDate: _startsAt,
-      firstDate: DateTime.now().subtract(
-        const Duration(days: 365),
-      ),
-      lastDate: DateTime.now().add(
-        const Duration(days: 3650),
-      ),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
 
     if (date == null || !mounted) return;
@@ -228,9 +221,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       _startsAt = date;
 
       if (_endsAt.isBefore(_startsAt)) {
-        _endsAt = _startsAt.add(
-          const Duration(days: 30),
-        );
+        _endsAt = _startsAt.add(const Duration(days: 30));
       }
     });
   }
@@ -240,9 +231,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       context: context,
       initialDate: _endsAt.isBefore(_startsAt) ? _startsAt : _endsAt,
       firstDate: _startsAt,
-      lastDate: DateTime.now().add(
-        const Duration(days: 3650),
-      ),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
 
     if (date == null || !mounted) return;
@@ -269,7 +258,10 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       'announcements/${user.uid}/$fileName',
     );
 
-    await ref.putData(_bannerImageFile!, SettableMetadata(contentType: 'image/png'));
+    await ref.putData(
+      _bannerImageFile!,
+      SettableMetadata(contentType: 'image/png'),
+    );
 
     return ref.getDownloadURL();
   }
@@ -302,7 +294,9 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     try {
       final imageUrl = await _uploadImage();
 
-      final promotion = _discountPercent > 0 ? '${_discountPercent.toInt()}% OFF' : '';
+      final promotion = _discountPercent > 0
+          ? '${_discountPercent.toInt()}% OFF'
+          : '';
 
       final data = <String, dynamic>{
         // Existing schema.
@@ -318,15 +312,18 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
         'targetName': _selectedTargetName ?? '',
         'targetData': _selectedTargetData ?? {},
         'targetRoute': bannerRouteForType(_targetType),
-     'targetCollection': bannerCollectionForType(_targetType),
+        'targetCollection': bannerCollectionForType(_targetType),
 
-// Compatibilité avec les anciennes publicités Business.
-        'targetBusinessId':
-            _targetType == 'business' ? _selectedTargetId ?? '' : '',
-        'targetBusinessName':
-            _targetType == 'business' ? _selectedTargetName ?? '' : '',
-        'targetBusinessData':
-            _targetType == 'business' ? _selectedTargetData ?? {} : {},
+        // Compatibilité avec les anciennes publicités Business.
+        'targetBusinessId': _targetType == 'business'
+            ? _selectedTargetId ?? ''
+            : '',
+        'targetBusinessName': _targetType == 'business'
+            ? _selectedTargetName ?? ''
+            : '',
+        'targetBusinessData': _targetType == 'business'
+            ? _selectedTargetData ?? {}
+            : {},
 
         // New carousel-compatible schema.
         'businessName': (_selectedTargetName?.trim().isNotEmpty ?? false)
@@ -340,14 +337,14 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      final collection =
-          FirebaseFirestore.instance.collection('sponsoredBanners');
+      final collection = FirebaseFirestore.instance.collection(
+        'sponsoredBanners',
+      );
 
       if (_isEditing) {
-        await collection.doc(_editingBannerId).set(
-              data,
-              SetOptions(merge: true),
-            );
+        await collection
+            .doc(_editingBannerId)
+            .set(data, SetOptions(merge: true));
 
         _message('Advertisement updated successfully.');
       } else {
@@ -372,10 +369,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     }
   }
 
-  Future<void> _toggleStatus(
-    String bannerId,
-    String currentStatus,
-  ) async {
+  Future<void> _toggleStatus(String bannerId, String currentStatus) async {
     try {
       final nextStatus = currentStatus == 'active' ? 'paused' : 'active';
 
@@ -383,9 +377,9 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
           .collection('sponsoredBanners')
           .doc(bannerId)
           .update({
-        'status': nextStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+            'status': nextStatus,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
 
       _message(
         nextStatus == 'active'
@@ -397,10 +391,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     }
   }
 
-  Future<void> _deleteBanner(
-    String bannerId,
-    String title,
-  ) async {
+  Future<void> _deleteBanner(String bannerId, String title) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -410,38 +401,28 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: gold),
           ),
-          title: const Text(
+          title: const AppText(
             'Delete advertisement?',
-            style: TextStyle(
-              color: gold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: gold, fontWeight: FontWeight.bold),
           ),
-          content: Text(
+          content: AppText(
             'Do you want to permanently delete "$title"?',
-            style: const TextStyle(
-              color: Colors.white,
-            ),
+            style: const TextStyle(color: Colors.white),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text(
+              child: const AppText(
                 'Cancel',
                 style: TextStyle(color: Colors.white70),
               ),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: gold,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: gold),
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
+              child: const AppText(
                 'Delete',
-                style: TextStyle(
-                  color: darkGreen,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: darkGreen, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -481,7 +462,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
   Widget build(BuildContext context) {
     if (!AppSession.isSuperAdmin) {
       return const Center(
-        child: Text(
+        child: AppText(
           'Super Admin access required.',
           style: TextStyle(color: Colors.white70),
         ),
@@ -491,14 +472,9 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     return Container(
       color: darkGreen,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          16,
-          18,
-          16,
-          40,
-        ),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 40),
         children: [
-          const Text(
+          const AppText(
             'Banners & Advertising',
             style: TextStyle(
               color: gold,
@@ -507,12 +483,9 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
             ),
           ),
           const SizedBox(height: 5),
-          const Text(
+          const AppText(
             'Create and manage sponsored advertising shown in Euro Habesha.',
-            style: TextStyle(
-              color: Colors.white60,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.white60, fontSize: 12),
           ),
           const SizedBox(height: 18),
           _buildBannerList(),
@@ -525,23 +498,16 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: gold,
                   foregroundColor: darkGreen,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 icon: const Icon(Icons.add),
-                label: const Text(
+                label: const AppText(
                   'Create New Advertisement',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
             ),
-          if (_showForm) ...[
-            const SizedBox(height: 6),
-            _buildForm(),
-          ],
+          if (_showForm) ...[const SizedBox(height: 6), _buildForm()],
         ],
       ),
     );
@@ -549,22 +515,19 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
   Widget _buildBannerList() {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream:
-          FirebaseFirestore.instance.collection('sponsoredBanners').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('sponsoredBanners')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Text(
+          return const AppText(
             'Advertisements could not be loaded.',
             style: TextStyle(color: Colors.white70),
           );
         }
 
         if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: gold,
-            ),
-          );
+          return const Center(child: CircularProgressIndicator(color: gold));
         }
 
         final docs = [...snapshot.data!.docs];
@@ -579,9 +542,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
         });
 
         final activeCount = docs
-            .where(
-              (doc) => doc.data()['status'] == 'active',
-            )
+            .where((doc) => doc.data()['status'] == 'active')
             .length;
 
         if (docs.isEmpty) {
@@ -591,7 +552,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
               color: cardGreen,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text(
+            child: const AppText(
               'No advertisements yet.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white70),
@@ -602,7 +563,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            AppText(
               '$activeCount Active • '
               '${docs.length - activeCount} Paused',
               style: const TextStyle(
@@ -618,18 +579,16 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     );
   }
 
-  Widget _buildBannerCard(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  Widget _buildBannerCard(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
 
-    final title =
-        (data['title'] ?? data['businessName'] ?? 'Advertisement').toString();
+    final title = (data['title'] ?? data['businessName'] ?? 'Advertisement')
+        .toString();
 
     final imageUrl = (data['imageUrl'] ?? '').toString();
 
-    final promotion =
-        (data['promotion'] ?? data['discountText'] ?? '').toString();
+    final promotion = (data['promotion'] ?? data['discountText'] ?? '')
+        .toString();
 
     final promoCode = (data['promoCode'] ?? '').toString();
 
@@ -711,13 +670,10 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                   ),
                 ],
                 const SizedBox(height: 6),
-                Text(
+                AppText(
                   '${_dateText(data['startsAt'])} → '
                   '${_dateText(data['endsAt'])}',
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 11,
-                  ),
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -760,9 +716,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         foregroundColor: gold,
-        side: BorderSide(
-          color: gold.withValues(alpha: 0.4),
-        ),
+        side: BorderSide(color: gold.withValues(alpha: 0.4)),
       ),
       icon: Icon(icon, size: 17),
       label: Text(text),
@@ -775,9 +729,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF031A10),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: gold.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: gold.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -796,10 +748,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
               ),
               IconButton(
                 onPressed: _resetForm,
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white70,
-                ),
+                icon: const Icon(Icons.close, color: Colors.white70),
               ),
             ],
           ),
@@ -813,63 +762,40 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
               decoration: BoxDecoration(
                 color: cardGreen,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: gold.withValues(alpha: 0.35),
-                ),
+                border: Border.all(color: gold.withValues(alpha: 0.35)),
               ),
               child: _bannerImageFile != null
-                  ? Image.memory(
-                      _bannerImageFile!,
-                      fit: BoxFit.contain,
-                    )
+                  ? Image.memory(_bannerImageFile!, fit: BoxFit.contain)
                   : _existingImageUrl.isNotEmpty
-                      ? Image.network(
-                          _existingImageUrl,
-                          fit: BoxFit.contain,
-                        )
-                      : const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.add_photo_alternate,
-                              color: gold,
-                              size: 40,
-                            ),
-                            SizedBox(height: 7),
-                            Text(
-                              'Choose Banner Photo',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                  ? Image.network(_existingImageUrl, fit: BoxFit.contain)
+                  : const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_photo_alternate, color: gold, size: 40),
+                        SizedBox(height: 7),
+                        AppText(
+                          'Choose Banner Photo',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                      ],
+                    ),
             ),
           ),
           const SizedBox(height: 16),
-          _field(
-            'Banner Title *',
-            _title,
-            hint: 'Lucy Habesha Restaurant',
-          ),
+          _field('Banner Title *', _title, hint: 'Lucy Habesha Restaurant'),
           _field(
             'Promotional Text',
             _body,
             maxLines: 3,
             hint: 'Describe the sponsored offer.',
           ),
-          _field(
-            'Promo Code',
-            _promoCode,
-            hint: 'HABESHA20',
-          ),
-          const Text(
+          _field('Promo Code', _promoCode, hint: 'HABESHA20'),
+          const AppText(
             'Discount',
-            style: TextStyle(
-              color: gold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: gold, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           Container(
@@ -883,14 +809,14 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                 value: _discountPercent,
                 isExpanded: true,
                 dropdownColor: cardGreen,
-                style: const TextStyle(
-                  color: Colors.white,
-                ),
+                style: const TextStyle(color: Colors.white),
                 items: _presetDiscounts.map((discount) {
                   return DropdownMenuItem<double>(
                     value: discount,
                     child: Text(
-                      discount == 0 ? 'Sans réduction' : '${discount.toInt()}% OFF',
+                      discount == 0
+                          ? 'Sans réduction'
+                          : '${discount.toInt()}% OFF',
                     ),
                   );
                 }).toList(),
@@ -916,20 +842,10 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
           Row(
             children: [
               Expanded(
-                child: _dateButton(
-                  'Start date',
-                  _startsAt,
-                  _chooseStartDate,
-                ),
+                child: _dateButton('Start date', _startsAt, _chooseStartDate),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: _dateButton(
-                  'End date',
-                  _endsAt,
-                  _chooseEndDate,
-                ),
-              ),
+              Expanded(child: _dateButton('End date', _endsAt, _chooseEndDate)),
             ],
           ),
           const SizedBox(height: 20),
@@ -940,9 +856,7 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: gold,
                 foregroundColor: darkGreen,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 14,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               icon: _saving
                   ? const SizedBox(
@@ -953,18 +867,14 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                         color: darkGreen,
                       ),
                     )
-                  : Icon(
-                      _isEditing ? Icons.save_outlined : Icons.campaign,
-                    ),
+                  : Icon(_isEditing ? Icons.save_outlined : Icons.campaign),
               label: Text(
                 _saving
                     ? 'Saving...'
                     : _isEditing
-                        ? 'Save Changes'
-                        : 'Publish Advertisement',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                ),
+                    ? 'Save Changes'
+                    : 'Publish Advertisement',
+                style: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
           ),
@@ -977,12 +887,9 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        const AppText(
           'Destination de la publicité',
-          style: TextStyle(
-            color: gold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: gold, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
         Container(
@@ -1000,13 +907,16 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
               items: const [
                 DropdownMenuItem(
                   value: 'business',
-                  child: Text('Commerce / Restaurant'),
+                  child: AppText('Commerce / Restaurant'),
                 ),
-                DropdownMenuItem(value: 'job', child: Text('Jobs / Prestataires'),),
-     DropdownMenuItem(value: 'event', child: Text('Événement'),),
+                DropdownMenuItem(
+                  value: 'job',
+                  child: AppText('Jobs / Prestataires'),
+                ),
+                DropdownMenuItem(value: 'event', child: AppText('Événement')),
                 DropdownMenuItem(
                   value: 'marketplace',
-                  child: Text('Marketplace'),
+                  child: AppText('Marketplace'),
                 ),
               ],
               onChanged: (value) {
@@ -1035,18 +945,19 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
       stream: FirebaseFirestore.instance.collection(collection).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-       return const Text('Impossible de charger les fiches. Réessayez.',
-         style: TextStyle(color: Colors.white70));
-     }
-     if (!snapshot.hasData) {
-          return const LinearProgressIndicator(
-            color: gold,
+          return const AppText(
+            'Impossible de charger les fiches. Réessayez.',
+            style: TextStyle(color: Colors.white70),
           );
+        }
+        if (!snapshot.hasData) {
+          return const LinearProgressIndicator(color: gold);
         }
 
         final docs = snapshot.data!.docs.where((doc) {
-          final status =
-              (doc.data()['status'] ?? 'published').toString().toLowerCase();
+          final status = (doc.data()['status'] ?? 'published')
+              .toString()
+              .toLowerCase();
 
           return status == 'approved' ||
               status == 'published' ||
@@ -1057,13 +968,11 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
 
         final selectedValue =
             _selectedTargetId != null && ids.contains(_selectedTargetId)
-                ? _selectedTargetId
-                : null;
+            ? _selectedTargetId
+            : null;
 
         return Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: cardGreen,
             borderRadius: BorderRadius.circular(10),
@@ -1077,36 +986,30 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                 _targetType == 'event'
                     ? 'Choisir un événement'
                     : _targetType == 'marketplace'
-                        ? 'Choisir une annonce Marketplace'
-                        : _targetType == 'job' ? 'Choisir un prestataire / service' : 'Choisir un commerce / restaurant',
-                style: const TextStyle(
-                  color: Colors.white54,
-                ),
+                    ? 'Choisir une annonce Marketplace'
+                    : _targetType == 'job'
+                    ? 'Choisir un prestataire / service'
+                    : 'Choisir un commerce / restaurant',
+                style: const TextStyle(color: Colors.white54),
               ),
-              style: const TextStyle(
-                color: Colors.white,
-              ),
+              style: const TextStyle(color: Colors.white),
               items: docs.map((doc) {
                 final data = doc.data();
 
                 final fields = data['fields'] is Map
-                    ? Map<String, dynamic>.from(
-                        data['fields'],
-                      )
+                    ? Map<String, dynamic>.from(data['fields'])
                     : <String, dynamic>{};
 
-                final name = (fields['title'] ??
-                        data['title'] ??
-                        data['name'] ??
-                        'Untitled')
-                    .toString();
+                final name =
+                    (fields['title'] ??
+                            data['title'] ??
+                            data['name'] ??
+                            'Untitled')
+                        .toString();
 
                 return DropdownMenuItem<String>(
                   value: doc.id,
-                  child: Text(
-                    name,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: Text(name, overflow: TextOverflow.ellipsis),
                 );
               }).toList(),
               onChanged: (value) {
@@ -1120,25 +1023,21 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
                 final rawData = doc.data();
 
                 final fields = rawData['fields'] is Map
-                    ? Map<String, dynamic>.from(
-                        rawData['fields'],
-                      )
+                    ? Map<String, dynamic>.from(rawData['fields'])
                     : <String, dynamic>{};
 
-                final name = (fields['title'] ??
-                        rawData['title'] ??
-                        rawData['name'] ??
-                        'Untitled')
-                    .toString();
+                final name =
+                    (fields['title'] ??
+                            rawData['title'] ??
+                            rawData['name'] ??
+                            'Untitled')
+                        .toString();
 
                 setState(() {
                   _selectedTargetId = doc.id;
                   _selectedTargetName = name;
 
-                  _selectedTargetData = {
-                    ...rawData,
-                    'id': doc.id,
-                  };
+                  _selectedTargetData = {...rawData, 'id': doc.id};
                 });
               },
             ),
@@ -1148,39 +1047,23 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
     );
   }
 
-  Widget _dateButton(
-    String label,
-    DateTime date,
-    VoidCallback onPressed,
-  ) {
+  Widget _dateButton(String label, DateTime date, VoidCallback onPressed) {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         foregroundColor: Colors.white,
-        side: BorderSide(
-          color: gold.withValues(alpha: 0.4),
-        ),
-        padding: const EdgeInsets.symmetric(
-          vertical: 12,
-        ),
+        side: BorderSide(color: gold.withValues(alpha: 0.4)),
+        padding: const EdgeInsets.symmetric(vertical: 12),
       ),
       child: Column(
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: gold,
-              fontSize: 11,
-            ),
-          ),
+          Text(label, style: const TextStyle(color: gold, fontSize: 11)),
           const SizedBox(height: 3),
-          Text(
+          AppText(
             '${date.day.toString().padLeft(2, '0')}/'
             '${date.month.toString().padLeft(2, '0')}/'
             '${date.year}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -1212,15 +1095,10 @@ class _AdminBannerScreenState extends State<AdminBannerScreen> {
             controller: controller,
             maxLines: maxLines,
             keyboardType: keyboardType,
-            style: const TextStyle(
-              color: Colors.white,
-            ),
+            style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(
-                color: Colors.white38,
-                fontSize: 12,
-              ),
+              hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
               filled: true,
               fillColor: cardGreen,
               border: OutlineInputBorder(

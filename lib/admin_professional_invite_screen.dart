@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 
 class AdminProfessionalInviteScreen extends StatefulWidget {
@@ -27,7 +30,7 @@ class _AdminProfessionalInviteScreenState
     'Catering',
     'Photographer / Videographer',
     'Professional Service',
-    'Other'
+    'Other',
   ];
 
   @override
@@ -41,7 +44,7 @@ class _AdminProfessionalInviteScreenState
       _qualifications,
       _services,
       _pricing,
-      _businessId
+      _businessId,
     ]) {
       c.dispose();
     }
@@ -51,7 +54,8 @@ class _AdminProfessionalInviteScreenState
   Future<void> _send() async {
     if (!AppSession.isSuperAdmin ||
         _name.text.trim().isEmpty ||
-        !_email.text.contains('@')) return;
+        !_email.text.contains('@'))
+      return;
     try {
       await FirebaseFirestore.instance.collection('professionalInvites').add({
         'fullName': _name.text.trim(),
@@ -69,7 +73,7 @@ class _AdminProfessionalInviteScreenState
           'manage_own_profile',
           'manage_own_services',
           'receive_customer_messages',
-          'respond_to_quotes'
+          'respond_to_quotes',
         ],
         'invitedBy': AppSession.email,
         'createdAt': FieldValue.serverTimestamp(),
@@ -77,12 +81,14 @@ class _AdminProfessionalInviteScreenState
       if (mounted) {
         setState(() => _step = 0);
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Professional invitation sent.')));
+          const SnackBar(content: AppText('Professional invitation sent.')),
+        );
       }
     } catch (error) {
       if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Invitation failed: $error')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: AppText('Invitation failed: $error')));
     }
   }
 
@@ -90,8 +96,11 @@ class _AdminProfessionalInviteScreenState
   Widget build(BuildContext context) {
     if (!AppSession.isSuperAdmin)
       return const Center(
-          child: Text('Super Admin access required.',
-              style: TextStyle(color: Colors.white70)));
+        child: AppText(
+          'Super Admin access required.',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
     return Stepper(
       currentStep: _step,
       onStepContinue: () => _step < 2 ? setState(() => _step++) : _send(),
@@ -100,56 +109,75 @@ class _AdminProfessionalInviteScreenState
       },
       steps: [
         Step(
-            title: const Text('Identity'),
-            isActive: _step >= 0,
-            content: Column(children: [
+          title: const AppText('Identity'),
+          isActive: _step >= 0,
+          content: Column(
+            children: [
               _field('Full name', _name),
               _field('Email', _email),
               _field('Phone', _phone),
-              _field('City / address', _city)
-            ])),
+              _field('City / address', _city),
+            ],
+          ),
+        ),
         Step(
-            title: const Text('Profession'),
-            isActive: _step >= 1,
-            content: Column(children: [
+          title: const AppText('Profession'),
+          isActive: _step >= 1,
+          content: Column(
+            children: [
               DropdownButtonFormField<String>(
-                  initialValue: _category,
-                  items: categories
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                      .toList(),
-                  onChanged: (v) => setState(() => _category = v ?? _category),
-                  decoration: const InputDecoration(labelText: 'Category')),
+                initialValue: _category,
+                items: categories
+                    .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                    .toList(),
+                onChanged: (v) => setState(() => _category = v ?? _category),
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
               _field('Description', _description, maxLines: 3),
-              _field('Qualifications / documents', _qualifications,
-                  maxLines: 3),
-              _field('SIRET / business information', _businessId)
-            ])),
+              _field(
+                'Qualifications / documents',
+                _qualifications,
+                maxLines: 3,
+              ),
+              _field('SIRET / business information', _businessId),
+            ],
+          ),
+        ),
         Step(
-            title: const Text('Services & pricing'),
-            isActive: _step >= 2,
-            content: Column(children: [
+          title: const AppText('Services & pricing'),
+          isActive: _step >= 2,
+          content: Column(
+            children: [
               _field('Services (one per line)', _services, maxLines: 4),
               _field('Pricing methods and amounts', _pricing, maxLines: 4),
-              const Text(
-                  'The professional can edit these after accepting. Their permissions do not include general admin access.',
-                  style: TextStyle(color: Colors.white70))
-            ])),
+              const AppText(
+                'The professional can edit these after accepting. Their permissions do not include general admin access.',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _field(String label, TextEditingController controller,
-          {int maxLines = 1}) =>
-      Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: TextField(
-              controller: controller,
-              maxLines: maxLines,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                  labelText: label,
-                  labelStyle: const TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: const Color(0xFF004D40),
-                  border: const OutlineInputBorder())));
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: TextField(
+      controller: controller,
+      maxLines: maxLines,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white70),
+        filled: true,
+        fillColor: const Color(0xFF004D40),
+        border: const OutlineInputBorder(),
+      ),
+    ),
+  );
 }

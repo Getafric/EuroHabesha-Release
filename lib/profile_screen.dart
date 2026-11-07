@@ -1,19 +1,29 @@
+import 'l10n/app_ui.dart';
+
+import 'dart:async';
+
+import 'professional_activity_flow.dart';
+import 'member_interface_text.dart';
+import 'advertisement_request_screen.dart';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'edit_personal_profile_screen.dart';
 import 'app_session.dart';
 import 'profile_settings_screen.dart';
 import 'events_screen.dart';
 import 'profile_type_screen.dart';
 import 'my_orders_screen.dart';
-import 'business_dashboard_screen.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
+
 class _ProfileScreenState extends State<ProfileScreen> {
   final Color primaryDarkGreen = const Color(0xFF061E12);
   final Color primaryGold = const Color(0xFFFFD700);
@@ -27,6 +37,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _photoUrl;
   bool _showCityPublicly = false;
   bool _hasProfessionalProfile = false;
+  bool _professionalLoading = true;
+  bool _professionalLoadFailed = false;
+  bool _hasApprovedProfessionalProfile = false;
+  int _professionalLoadVersion = 0;
+  final List<StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
+  _professionalWatchers = [];
+
+  @override
+  void dispose() {
+    for (final watcher in _professionalWatchers) {
+      watcher.cancel();
+    }
+    super.dispose();
+  }
+
   String _professionalProfileLabel = '';
   @override
   void initState() {
@@ -37,61 +62,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
     userCity = AppSession.city;
     userPhone = AppSession.phone;
     _loadProfessionalProfile();
+    final professionalUser = FirebaseAuth.instance.currentUser;
+    if (professionalUser != null && !professionalUser.isAnonymous) {
+      for (final source in const [
+        'businessSubmissions',
+        'jobSubmissions',
+        'employerSubmissions',
+        'eventSubmissions',
+      ]) {
+        _professionalWatchers.add(
+          FirebaseFirestore.instance
+              .collection(source)
+              .where('ownerId', isEqualTo: professionalUser.uid)
+              .snapshots()
+              .listen(
+                (_) {
+                  if (mounted) {
+                    _loadProfessionalProfile();
+                  }
+                },
+                onError: (Object error) {
+                  if (mounted) {
+                    setState(() {
+                      _professionalLoading = false;
+                      _professionalLoadFailed = true;
+                    });
+                  }
+                },
+              ),
+        );
+      }
+    }
     _loadPersonalProfile();
   }
+
   Future<void> _loadProfessionalProfile() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      return;
-    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) return;
+    final loadVersion = ++_professionalLoadVersion;
     try {
-      final business = await FirebaseFirestore.instance
-          .collection('businessSubmissions')
-          .where('ownerId', isEqualTo: uid)
-          .limit(1)
-          .get();
-      if (business.docs.isNotEmpty) {
-        final data = business.docs.first.data();
-        final fields = Map<String, dynamic>.from(
-          data['fields'] ?? <String, dynamic>{},
-        );
-        final businessName = fields['title']?.toString().trim();
-        if (!mounted) return;
-        setState(() {
-          _hasProfessionalProfile = true;
-          _professionalProfileLabel =
-              businessName != null && businessName.isNotEmpty
-                  ? businessName
-                  : 'Mon entreprise';
-        });
+      final entries = await ProfessionalProfileLookup.load(user.uid);
+      if (!mounted ||
+          loadVersion != _professionalLoadVersion ||
+          FirebaseAuth.instance.currentUser?.uid != user.uid) {
         return;
       }
-      final job = await FirebaseFirestore.instance
-          .collection('jobSubmissions')
-          .where('ownerId', isEqualTo: uid)
-          .limit(1)
-          .get();
-      if (job.docs.isNotEmpty) {
-        final data = job.docs.first.data();
-        final fields = Map<String, dynamic>.from(
-          data['fields'] ?? <String, dynamic>{},
+      setState(() {
+        _professionalLoading = false;
+        _professionalLoadFailed = false;
+        _hasProfessionalProfile = entries.isNotEmpty;
+        _hasApprovedProfessionalProfile = entries.any(
+          (entry) => activityPublicationApproved(entry.data['status']),
         );
-        final businessName = fields['title']?.toString().trim();
-        if (!mounted) return;
+        _professionalProfileLabel = entries.isEmpty ? '' : entries.first.title;
+      });
+    } catch (error) {
+      if (mounted && loadVersion == _professionalLoadVersion) {
         setState(() {
-          _hasProfessionalProfile = true;
-          _professionalProfileLabel =
-              businessName != null && businessName.isNotEmpty
-                  ? businessName
-                  : 'Mon activité professionnelle';
+          _professionalLoading = false;
+          _professionalLoadFailed = true;
         });
       }
-    } catch (e) {
-      debugPrint(
-        'Erreur chargement profil professionnel: $e',
-      );
+      debugPrint('Chargement du profil professionnel : $error');
     }
   }
+
   Future<void> _openEditProfile() async {
     final saved = await Navigator.push<bool>(
       context,
@@ -99,9 +134,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (saved == true) {
       await _loadPersonalProfile();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil enregistré avec succès.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: AppText('Profil enregistré avec succès.')),
+        );
+      }
     }
   }
 
@@ -109,11 +146,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       final d = doc.data() ?? <String, dynamic>{};
       if (!mounted) return;
       setState(() {
-        userName = (d['displayName'] ?? user.displayName ?? userName).toString();
+        userName = (d['displayName'] ?? user.displayName ?? userName)
+            .toString();
         userEmail = user.email ?? userEmail;
         userCity = (d['city'] ?? '').toString();
         userPhone = (d['phone'] ?? '').toString();
@@ -124,13 +165,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint('Erreur chargement profil personnel: $e');
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: Text('profile.title'.tr(),
-            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        title: AppText(
+          'profile.title'.tr(),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: primaryDarkGreen,
         centerTitle: true,
         iconTheme: IconThemeData(color: primaryGold),
@@ -146,7 +190,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: cardGreen,
-                    backgroundImage: _photoUrl != null && _photoUrl!.trim().isNotEmpty
+                    backgroundImage:
+                        _photoUrl != null && _photoUrl!.trim().isNotEmpty
                         ? NetworkImage(_photoUrl!)
                         : null,
                     child: _photoUrl == null || _photoUrl!.trim().isEmpty
@@ -161,9 +206,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                            color: primaryGold, shape: BoxShape.circle),
-                        child:
-                            Icon(Icons.edit, color: primaryDarkGreen, size: 16),
+                          color: primaryGold,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.edit,
+                          color: primaryDarkGreen,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -171,18 +221,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(userName,
-                style: TextStyle(
-                    color: primaryGold,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              userName,
+              style: TextStyle(
+                color: primaryGold,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 2),
             Text(
-                _isGuest
-                    ? 'Browse freely. Sign in only when you want to post or contact.'
-                    : '${_showCityPublicly && userCity.trim().isNotEmpty ? '$userCity • ' : ''}$userEmail',
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-                textAlign: TextAlign.center),
+              _isGuest
+                  ? 'Browse freely. Sign in only when you want to post or contact.'
+                  : '${_showCityPublicly && userCity.trim().isNotEmpty ? '$userCity • ' : ''}$userEmail',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 25),
             if (!_isGuest && !AppSession.isSuperAdmin) ...[
               const VerificationStatusCard(),
@@ -198,23 +252,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Edit Profile
                   ListTile(
                     leading: Icon(Icons.person_outline, color: primaryGold),
-                    title: Text('profile.edit_profile'.tr(),
-                        style: TextStyle(color: Colors.white)),
-                    trailing: const Icon(Icons.arrow_forward_ios,
-                        color: Colors.white54, size: 16),
+                    title: AppText(
+                      'profile.edit_profile'.tr(),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white54,
+                      size: 16,
+                    ),
                     onTap: _openEditProfile,
                   ),
                   const Divider(color: Colors.white24, height: 1),
                   // Profile Settings
                   ListTile(
                     leading: Icon(Icons.settings_outlined, color: primaryGold),
-                    title: Text(
+                    title: AppText(
                       'profile.settings'.tr(),
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                     ),
-                    subtitle: Text(
+                    subtitle: AppText(
                       'profile.settings_subtitle'.tr(),
-                      style: TextStyle(color: Colors.white38, fontSize: 11),
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
                     ),
                     trailing: const Icon(
                       Icons.arrow_forward_ios,
@@ -238,16 +300,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Icons.receipt_long_outlined,
                         color: primaryGold,
                       ),
-                      title: Text(
+                      title: AppText(
                         'profile.my_orders'.tr(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      subtitle: Text(
+                      subtitle: AppText(
                         'profile.my_orders_subtitle'.tr(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white38,
                           fontSize: 11,
                         ),
@@ -266,107 +328,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       },
                     ),
-                    const Divider(
-                      color: Colors.white24,
-                      height: 1,
-                    ),
+                    const Divider(color: Colors.white24, height: 1),
                   ],
-                  // Créer mon profil / Espace professionnel
+                  // One professional entry; extra activities belong in the professional space.
                   if (!_isGuest) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 0,
+                        vertical: 12,
                       ),
                       child: Material(
-                        color: primaryGold,
-                        borderRadius: BorderRadius.circular(18),
+                        color: const Color(0xFFFFD700),
+                        borderRadius: BorderRadius.circular(24),
                         clipBehavior: Clip.antiAlias,
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                            horizontal: 16,
+                            vertical: 12,
                           ),
                           leading: Container(
-                            width: 52,
-                            height: 52,
+                            width: 56,
+                            height: 56,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF062E25),
-                              borderRadius: BorderRadius.circular(14),
+                              color: const Color(0xFF061E12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.business_center_outlined,
-                              color: primaryGold,
-                              size: 32,
+                              color: Color(0xFFFFD700),
+                              size: 30,
                             ),
                           ),
                           title: Text(
-                            _hasProfessionalProfile
-                                ? 'Mon espace professionnel'
-                                : 'Créer mon profil',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            _professionalLoading
+                                ? memberText(
+                                    context,
+                                    'Chargement de mes activités…',
+                                    'Loading my activities…',
+                                  )
+                                : _professionalLoadFailed
+                                ? memberText(
+                                    context,
+                                    'Réessayer le chargement',
+                                    'Retry loading',
+                                  )
+                                : _hasApprovedProfessionalProfile
+                                ? memberText(
+                                    context,
+                                    'Mon espace professionnel',
+                                    'My professional space',
+                                  )
+                                : _hasProfessionalProfile
+                                ? memberText(
+                                    context,
+                                    'Suivre ma demande',
+                                    'Track my application',
+                                  )
+                                : memberText(
+                                    context,
+                                    'Créer et publier',
+                                    'Create and publish',
+                                  ),
                             style: const TextStyle(
-                              color: Color(0xFF062E25),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              _hasProfessionalProfile &&
-                                      _professionalProfileLabel.isNotEmpty
-                                  ? _professionalProfileLabel
-                                  : 'Créer une activité professionnelle',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF164B3F),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          subtitle: Text(
+                            _hasProfessionalProfile
+                                ? _professionalProfileLabel
+                                : memberText(
+                                    context,
+                                    'Créer une activité professionnelle',
+                                    'Create a professional activity',
+                                  ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.black87),
                           ),
                           trailing: const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Color(0xFF062E25),
-                            size: 18,
+                            Icons.chevron_right,
+                            color: Colors.black,
                           ),
-                          onTap: () async {
-                            final uid = FirebaseAuth.instance.currentUser?.uid;
-                            if (uid != null) {
-                              final business = await FirebaseFirestore.instance
-                                  .collection('businessSubmissions')
-                                  .where('ownerId', isEqualTo: uid)
-                                  .limit(1)
-                                  .get();
-                              final job = await FirebaseFirestore.instance
-                                  .collection('jobSubmissions')
-                                  .where('ownerId', isEqualTo: uid)
-                                  .limit(1)
-                                  .get();
-                              if (!mounted) return;
-                              if (business.docs.isNotEmpty ||
-                                  job.docs.isNotEmpty) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const BusinessDashboardScreen(),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-                            if (!mounted) return;
-                            await Navigator.push<String>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ProfileTypeScreen(),
-                              ),
-                            );
-                          },
+                          onTap: _professionalLoading
+                              ? null
+                              : () async {
+                                  if (_professionalLoadFailed) {
+                                    await _loadProfessionalProfile();
+                                    return;
+                                  }
+                                  await Navigator.push<void>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => _hasProfessionalProfile
+                                          ? const ProfileTypeScreen()
+                                          : const SubmissionMenuScreen(),
+                                    ),
+                                  );
+                                  if (mounted) {
+                                    await _loadProfessionalProfile();
+                                  }
+                                },
                         ),
                       ),
                     ),
@@ -377,13 +439,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Icons.confirmation_number_outlined,
                         color: primaryGold,
                       ),
-                      title: Text(
+                      title: AppText(
                         'profile.my_tickets'.tr(),
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                       ),
-                      subtitle: Text(
+                      subtitle: AppText(
                         'profile.my_tickets_subtitle'.tr(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white38,
                           fontSize: 11,
                         ),
@@ -400,18 +462,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ),
-                    const Divider(
-                      color: Colors.white24,
-                      height: 1,
-                    ),
+                    const Divider(color: Colors.white24, height: 1),
                     ListTile(
-                      leading: Icon(
-                        Icons.bookmark_outline,
-                        color: primaryGold,
-                      ),
-                      title: Text(
+                      leading: Icon(Icons.bookmark_outline, color: primaryGold),
+                      title: AppText(
                         'profile.saved_listings'.tr(),
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                       ),
                       trailing: const Icon(
                         Icons.arrow_forward_ios,
@@ -427,20 +483,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       },
                     ),
-                    const Divider(
-                      color: Colors.white24,
-                      height: 1,
-                    ),
+                    const Divider(color: Colors.white24, height: 1),
                   ],
                   // Log Out
                   ListTile(
-                    leading: Icon(_isGuest ? Icons.login : Icons.logout,
-                        color: Colors.orangeAccent),
+                    leading: Icon(
+                      _isGuest ? Icons.login : Icons.logout,
+                      color: Colors.orangeAccent,
+                    ),
                     title: Text(
-                        _isGuest
-                            ? 'profile.sign_in_register'.tr()
-                            : 'profile.log_out'.tr(),
-                        style: const TextStyle(color: Colors.orangeAccent)),
+                      _isGuest
+                          ? 'profile.sign_in_register'.tr()
+                          : 'profile.log_out'.tr(),
+                      style: const TextStyle(color: Colors.orangeAccent),
+                    ),
                     onTap: () {
                       if (_isGuest) {
                         Navigator.pushNamed(context, '/login');
@@ -451,21 +507,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context: context,
                         builder: (dialogContext) => AlertDialog(
                           backgroundColor: cardGreen,
-                          title: Text('profile.log_out'.tr(),
-                              style: TextStyle(
-                                  color: Colors.orangeAccent,
-                                  fontWeight: FontWeight.bold)),
-                          content: Text('profile.log_out_confirm'.tr(),
-                              style: TextStyle(color: Colors.white70)),
+                          title: AppText(
+                            'profile.log_out'.tr(),
+                            style: const TextStyle(
+                              color: Colors.orangeAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          content: AppText(
+                            'profile.log_out_confirm'.tr(),
+                            style: const TextStyle(color: Colors.white70),
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(dialogContext),
-                              child: Text('common.cancel'.tr(),
-                                  style: TextStyle(color: primaryGold)),
+                              child: AppText(
+                                'common.cancel'.tr(),
+                                style: TextStyle(color: primaryGold),
+                              ),
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orangeAccent),
+                                backgroundColor: Colors.orangeAccent,
+                              ),
                               onPressed: () async {
                                 await FirebaseAuth.instance.signOut();
                                 AppSession.signOut();
@@ -475,14 +539,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Navigator.pop(dialogContext);
                                 Navigator.of(profileContext)
                                     .pushNamedAndRemoveUntil(
-                                  '/login',
-                                  (route) => false,
-                                );
+                                      '/login',
+                                      (route) => false,
+                                    );
                               },
-                              child: Text('profile.log_out'.tr(),
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold)),
+                              child: AppText(
+                                'profile.log_out'.tr(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -500,6 +567,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
 // ==========================================
 // ── ማይ ሴቭድ ሊስቲንግ ገጽ (Saved Listings Screen) ──
 // ==========================================
@@ -515,26 +583,31 @@ class SavedListingsScreen extends StatelessWidget {
       {
         'title': 'Habesha Market Lyon',
         'category': 'Grocery & Store',
-        'city': 'Lyon, France'
+        'city': 'Lyon, France',
       },
       {
         'title': 'Getafric Production',
         'category': 'Photography & Video',
-        'city': 'Lyon, France'
+        'city': 'Lyon, France',
       },
     ];
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text('My Saved Listings',
-            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold)),
+        title: const AppText(
+          'My Saved Listings',
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: primaryDarkGreen,
         iconTheme: const IconThemeData(color: primaryGold),
       ),
       body: savedItems.isEmpty
           ? const Center(
-              child: Text('No saved listings yet.',
-                  style: TextStyle(color: Colors.white54)))
+              child: AppText(
+                'No saved listings yet.',
+                style: TextStyle(color: Colors.white54),
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: savedItems.length,
@@ -544,17 +617,25 @@ class SavedListingsScreen extends StatelessWidget {
                   color: cardGreen,
                   margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
-                    title: Text(item['title']!,
-                        style: const TextStyle(
-                            color: primaryGold,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16)),
-                    subtitle: Text('${item['category']} • ${item['city']}',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
+                    title: Text(
+                      item['title']!,
+                      style: const TextStyle(
+                        color: primaryGold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: AppText(
+                      '${item['category']} • ${item['city']}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
                     trailing: const Icon(Icons.bookmark, color: primaryGold),
                   ),
                 );

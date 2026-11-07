@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
 
 class AuthComponents {
@@ -31,20 +33,24 @@ class AuthComponents {
               ),
               const SizedBox(height: 20),
 
-              const Text(
+              const AppText(
                 'Join Euro Habesha',
                 style: TextStyle(
-                    color: primaryGold,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
+                  color: primaryGold,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
 
-              const Text(
+              const AppText(
                 'Create an account to post,\nmessage, and connect with the\ncommunity.',
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 30),
 
@@ -84,12 +90,13 @@ class AuthComponents {
               // ── Maybe Later ──
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
+                child: const AppText(
                   'Maybe Later',
                   style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -99,21 +106,23 @@ class AuthComponents {
     );
   }
 
-  static Widget _buildAuthButton(
-      {required IconData icon,
-      required String label,
-      required Color bgColor,
-      required Color textColor,
-      required Color iconColor,
-      required VoidCallback onTap}) {
+  static Widget _buildAuthButton({
+    required IconData icon,
+    required String label,
+    required Color bgColor,
+    required Color textColor,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: bgColor,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         onPressed: onTap,
         child: Row(
@@ -121,11 +130,14 @@ class AuthComponents {
           children: [
             Icon(icon, color: iconColor, size: 24),
             const SizedBox(width: 10),
-            Text(label,
-                style: TextStyle(
-                    color: textColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),

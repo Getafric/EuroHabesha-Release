@@ -5,7 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 /// Aucun achat, aucun droit professionnel et aucune écriture Firebase.
 class StoreSubscriptionService {
   StoreSubscriptionService({InAppPurchase? store})
-      : _store = store ?? InAppPurchase.instance;
+    : _store = store ?? InAppPurchase.instance;
 
   final InAppPurchase _store;
 
@@ -59,7 +59,9 @@ class StoreSubscriptionService {
       }
 
       final response = await _store.queryProductDetails(ids.values.toSet());
-      final byId = {for (final product in response.productDetails) product.id: product};
+      final byId = {
+        for (final product in response.productDetails) product.id: product,
+      };
       final products = <String, ProductDetails>{};
       for (final entry in ids.entries) {
         final product = byId[entry.value];
@@ -92,6 +94,7 @@ class StoreSubscriptionCatalog {
   });
 
   final bool available;
+
   /// Clés : silver, gold, vip. Le prix localisé est dans ProductDetails.price.
   final Map<String, ProductDetails> products;
   final List<String> missingProductIds;

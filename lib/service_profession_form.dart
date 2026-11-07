@@ -1,4 +1,7 @@
+import 'professional_activity_text.dart';
+
 import 'package:flutter/material.dart';
+
 import 'service_profession.dart';
 
 class ServiceProfessionForm extends StatefulWidget {
@@ -38,8 +41,8 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
   }
 
   InputDecoration decoration(String label, [String? hint]) => InputDecoration(
-    labelText: label,
-    hintText: hint,
+    labelText: activityText(context, label),
+    hintText: hint == null ? null : activityText(context, hint),
     labelStyle: const TextStyle(color: Colors.white70),
     hintStyle: const TextStyle(color: Colors.white54),
     filled: true,
@@ -50,13 +53,14 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
       FormField<List<String>>(
         key: ValueKey('${widget.definition.category}-$key'),
         initialValue: serviceChoices(values[key], options),
-        validator: (v) =>
-            v == null || v.isEmpty ? 'Choisissez au moins une option.' : null,
+        validator: (v) => v == null || v.isEmpty
+            ? activityText(context, "Choisissez au moins une option.")
+            : null,
         builder: (field) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              label,
+              activityText(context, label),
               style: const TextStyle(color: gold, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -66,7 +70,7 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
               children: options
                   .map(
                     (v) => FilterChip(
-                      label: Text(v),
+                      label: Text(activityText(context, v)),
                       selected: (field.value ?? []).contains(v),
                       selectedColor: gold,
                       backgroundColor: green,
@@ -114,7 +118,7 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
             decoration: decoration(f.label, f.hint),
             validator: (v) =>
                 f.key == 'languages' && (v?.trim().isEmpty ?? true)
-                ? 'Indiquez les langues proposées.'
+                ? activityText(context, "Indiquez les langues proposées.")
                 : null,
             onChanged: (v) =>
                 change('extras', {...serviceMap(values['extras']), f.key: v}),
@@ -128,7 +132,12 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
           style: const TextStyle(color: Colors.white),
           decoration: decoration('Base de tarif *'),
           items: p.units
-              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+              .map(
+                (v) => DropdownMenuItem(
+                  value: v,
+                  child: Text(activityText(context, v)),
+                ),
+              )
               .toList(),
           onChanged: (v) {
             if (v != null) change('unit', v);
@@ -144,7 +153,7 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
             style: const TextStyle(color: Colors.white),
             decoration: decoration('Tarif indicatif *', 'Ex. 45,00'),
             validator: (v) => serviceRate(v) == null
-                ? 'Indiquez un montant positif valide.'
+                ? activityText(context, "Indiquez un montant positif valide.")
                 : null,
             onChanged: (v) => change('rate', v),
           ),
@@ -156,7 +165,12 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
             style: const TextStyle(color: Colors.white),
             decoration: decoration('Devise'),
             items: serviceCurrencies
-                .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(activityText(context, v)),
+                  ),
+                )
                 .toList(),
             onChanged: (v) {
               if (v != null) change('currency', v);
@@ -164,8 +178,11 @@ class _ServiceProfessionFormState extends State<ServiceProfessionForm> {
           ),
         ],
         const SizedBox(height: 12),
-        const Text(
-          'Tarif de présentation. Le montant et les disponibilités sont à confirmer avec le client avant accord.',
+        Text(
+          activityText(
+            context,
+            "Tarif de présentation. Le montant et les disponibilités sont à confirmer avec le client avant accord.",
+          ),
           style: TextStyle(color: Colors.white70),
         ),
       ],

@@ -1,4 +1,7 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:async';
+
 import 'business_checkout_screen.dart';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -54,12 +57,16 @@ Future<bool> _confirm(
         context: context,
         builder: (dialogContext) => AlertDialog(
           backgroundColor: _green,
-          title: Text(title, style: const TextStyle(color: _gold)),
-          content: Text(message, style: const TextStyle(color: Colors.white)),
+          title: AppText(title, style: const TextStyle(color: _gold)),
+          content: AppText(
+            message,
+            style: const TextStyle(color: Colors.white),
+          ),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(foregroundColor: _gold),
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Annuler'),
+              child: const AppText('Annuler'),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
@@ -67,7 +74,7 @@ Future<bool> _confirm(
                 foregroundColor: _dark,
               ),
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Confirmer'),
+              child: const AppText('Confirmer'),
             ),
           ],
         ),
@@ -270,8 +277,8 @@ class _StripeLiveConnectionCardState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Stripe Connect — CONNEXION RÉELLE',
+          const AppText(
+            'Stripe Connect',
             style: TextStyle(
               color: _gold,
               fontSize: 18,
@@ -293,7 +300,7 @@ class _StripeLiveConnectionCardState
           ],
           if (data?['hasAccount'] == true) ...[
             const SizedBox(height: 8),
-            Text(
+            AppText(
               'Informations transmises : ${data?['detailsSubmitted'] == true ? 'Oui' : 'À compléter'}\n'
               'Paiements autorisés par Stripe : ${data?['chargesEnabled'] == true ? 'Oui' : 'En attente'}\n'
               'Versements autorisés par Stripe : ${data?['payoutsEnabled'] == true ? 'Oui' : 'En attente'}',
@@ -301,9 +308,8 @@ class _StripeLiveConnectionCardState
             ),
           ],
           const SizedBox(height: 12),
-          const Text(
-            'Cette étape relie votre compte. L’activation des commandes '
-            'se règle séparément. Les essais TEST restent indépendants.',
+          const AppText(
+            'Connectez votre établissement, terminez les informations demandées par Stripe, puis actualisez. Activez ensuite le paiement en ligne si votre compte est prêt.',
             style: TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 12),
@@ -323,15 +329,16 @@ class _StripeLiveConnectionCardState
                     ? connect
                     : null,
                 icon: const Icon(Icons.account_balance_outlined),
-                label: Text(
+                label: AppText(
                   data?['hasAccount'] == true
                       ? 'Continuer sur Stripe réel'
                       : 'Connecter mon compte Stripe réel',
                 ),
               ),
               TextButton(
+                style: TextButton.styleFrom(foregroundColor: _gold),
                 onPressed: busy ? null : refresh,
-                child: const Text('Actualiser'),
+                child: const AppText('Actualiser'),
               ),
             ],
           ),
@@ -395,13 +402,13 @@ class _StripeLiveAdminScreenState extends _LiveState<StripeLiveAdminScreen> {
     appBar: AppBar(
       backgroundColor: _dark,
       foregroundColor: _gold,
-      title: const Text('Connexions Stripe réelles'),
+      title: const AppText('Connexions Stripe réelles'),
     ),
     body: SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          const AppText(
             'Contrôle Super Admin',
             style: TextStyle(
               color: _gold,
@@ -421,7 +428,7 @@ class _StripeLiveAdminScreenState extends _LiveState<StripeLiveAdminScreen> {
           ],
           if (data?['platformName'] != null) ...[
             const SizedBox(height: 12),
-            Text(
+            AppText(
               'Plateforme Stripe : ${data?['platformName']}',
               style: const TextStyle(color: _gold),
             ),
@@ -453,7 +460,7 @@ class _StripeLiveAdminScreenState extends _LiveState<StripeLiveAdminScreen> {
           ),
           TextButton(
             onPressed: busy ? null : refresh,
-            child: const Text('Vérifier à nouveau'),
+            child: const AppText('Vérifier à nouveau'),
           ),
           const SizedBox(height: 20),
           FilledButton(
@@ -467,10 +474,10 @@ class _StripeLiveAdminScreenState extends _LiveState<StripeLiveAdminScreen> {
                 builder: (_) => const OrderPaymentAdminScreen(),
               ),
             ),
-            child: const Text('Paiements des commandes et commissions'),
+            child: const AppText('Paiements des commandes et commissions'),
           ),
           const SizedBox(height: 20),
-          const Text(
+          const AppText(
             'Les commandes, tickets et abonnements ne sont pas débités '
             'par cette étape. Les réglages de frais existants restent conservés. '
             'Le paiement des articles physiques du menu se règle dans '

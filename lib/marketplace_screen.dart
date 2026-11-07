@@ -1,7 +1,10 @@
+import 'l10n/app_ui.dart';
+import 'member_interface_text.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'cash_on_delivery_order_screen.dart';
-import 'dynamic_submission_screen.dart';
 import 'chat_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -46,10 +49,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       'time': 'Listed 2 hours ago',
       'sellerName': 'Abebe Kebede',
       'sellerPhone': '+33 6 12 34 56 78',
-      'description':
-          'Original Ethiopian clay coffee set (Jebena, 6 Sini, and Zelencha). Perfect condition, imported directly from Addis Ababa.',
-      'image':
-          'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
+      'description': 'Original Ethiopian clay coffee set (Jebena, 6 Sini, and Zelencha). Perfect condition, imported directly from Addis Ababa.',
+      'image': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
     },
     {
       'title': 'iPhone 13 Pro Max - 256GB',
@@ -60,10 +61,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       'time': 'Listed 5 hours ago',
       'sellerName': 'Dawit M.',
       'sellerPhone': '+33 6 98 76 54 32',
-      'description':
-          'Battery health 88%. No scratches. Comes with original box and charger cable. Cash or instant transfer upon meetup in Paris.',
-      'image':
-          'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
+      'description': 'Battery health 88%. No scratches. Comes with original box and charger cable. Cash or instant transfer upon meetup in Paris.',
+      'image': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
     },
     {
       'title': 'Volkswagen Golf 7 - 2018',
@@ -74,10 +73,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       'time': 'Listed 1 day ago',
       'sellerName': 'Samrawit T.',
       'sellerPhone': '+33 6 55 44 33 22',
-      'description':
-          'Diesel, Manual transmission, 140,000 km. Technical control (CT) passed last month. Full service history available.',
-      'image':
-          'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=800&q=80',
+      'description': 'Diesel, Manual transmission, 140,000 km. Technical control (CT) passed last month. Full service history available.',
+      'image': 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=800&q=80',
     },
     {
       'title': 'Ethiopian Traditional Dress (Habesha Kemis)',
@@ -88,10 +85,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       'time': 'Listed 2 days ago',
       'sellerName': 'Marta E.',
       'sellerPhone': '+49 151 23456789',
-      'description':
-          'Hand-woven Habesha Kemis with traditional Tibeb. Size Medium-Large. Brand new, never worn.',
-      'image':
-          'https://images.unsplash.com/photo-1583391733958-d15317a86976?auto=format&fit=crop&w=800&q=80',
+      'description': 'Hand-woven Habesha Kemis with traditional Tibeb. Size Medium-Large. Brand new, never worn.',
+      'image': 'https://images.unsplash.com/photo-1583391733958-d15317a86976?auto=format&fit=crop&w=800&q=80',
     },
   ];
   // ፖስት ማድረጊያ መቆጣጠሪያዎች (Controllers)
@@ -103,29 +98,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text('Marketplace',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          memberText(context, 'Marché', 'Marketplace'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_circle_outline, color: primaryGold),
-            tooltip: 'Post Listing',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const DynamicSubmissionScreen(
-                        type: SubmissionType.marketplace)),
-              );
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream:
-            FirebaseFirestore.instance.collection('marketplace').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('marketplace')
+            .snapshots(),
         builder: (context, snapshot) {
           final List<Map<String, dynamic>> combined = [];
 
@@ -136,30 +120,38 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               if (status == 'published' || status == 'approved') {
                 final fields = Map<String, dynamic>.from(data['fields'] ?? {});
 
-                final title = fields['title']?.toString() ??
+                final title =
+                    fields['title']?.toString() ??
                     data['title']?.toString() ??
                     'Listing';
-                final price = fields['price']?.toString() ??
+                final price =
+                    fields['price']?.toString() ??
                     data['price']?.toString() ??
                     '€0';
-                final location = fields['cityAddress']?.toString() ??
+                final location =
+                    fields['cityAddress']?.toString() ??
                     data['location']?.toString() ??
                     'Europe';
-                final itemCat = fields['itemCategory']?.toString() ??
+                final itemCat =
+                    fields['itemCategory']?.toString() ??
                     data['category']?.toString() ??
                     'All';
-                final condition = fields['condition']?.toString() ??
+                final condition =
+                    fields['condition']?.toString() ??
                     data['condition']?.toString() ??
                     'Good';
-                final desc = fields['description']?.toString() ??
+                final desc =
+                    fields['description']?.toString() ??
                     data['description']?.toString() ??
                     '';
 
-                final seller = fields['sellerName']?.toString() ??
+                final seller =
+                    fields['sellerName']?.toString() ??
                     data['submitterName']?.toString() ??
                     data['sellerName']?.toString() ??
                     'Habesha Member';
-                final phone = fields['sellerPhone']?.toString() ??
+                final phone =
+                    fields['sellerPhone']?.toString() ??
                     fields['phone']?.toString() ??
                     data['sellerPhone']?.toString() ??
                     '';
@@ -188,17 +180,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 addPhotos(media['photoUrls']);
                 addPhotos(marketplaceDetails['photoUrls']);
 
-                final legacyImage = fields['imageUrl']
-                            ?.toString()
-                            .trim()
-                            .isNotEmpty ==
-                        true
+                final legacyImage =
+                    fields['imageUrl']?.toString().trim().isNotEmpty == true
                     ? fields['imageUrl'].toString().trim()
                     : fields['image']?.toString().trim().isNotEmpty == true
-                        ? fields['image'].toString().trim()
-                        : data['imageUrl']?.toString().trim().isNotEmpty == true
-                            ? data['imageUrl'].toString().trim()
-                            : data['image']?.toString().trim() ?? '';
+                    ? fields['image'].toString().trim()
+                    : data['imageUrl']?.toString().trim().isNotEmpty == true
+                    ? data['imageUrl'].toString().trim()
+                    : data['image']?.toString().trim() ?? '';
 
                 if (legacyImage.isNotEmpty &&
                     !photoUrls.contains(legacyImage)) {
@@ -240,8 +229,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           final filtered = combined.where((product) {
             if (selectedCategory == 'All') return true;
 
-            final category =
-                (product['category'] ?? '').toString().trim().toLowerCase();
+            final category = (product['category'] ?? '')
+                .toString()
+                .trim()
+                .toLowerCase();
 
             final aliases = <String, List<String>>{
               'Habesha & Traditional': [
@@ -249,27 +240,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 'habesha products',
                 'traditional / habesha',
               ],
-              'Traditional Clothing': [
-                'traditional clothing',
-              ],
-              'Coffee & Ceremony': [
-                'coffee & ceremony',
-                'coffee',
-              ],
-              'Food & Spices': [
-                'food & spices',
-                'food',
-              ],
+              'Traditional Clothing': ['traditional clothing'],
+              'Coffee & Ceremony': ['coffee & ceremony', 'coffee'],
+              'Food & Spices': ['food & spices', 'food'],
               'Jewelry & Accessories': [
                 'jewelry & accessories',
                 'jewelry',
                 'accessories',
               ],
-              'Art & Decoration': [
-                'art & decoration',
-                'art',
-                'decoration',
-              ],
+              'Art & Decoration': ['art & decoration', 'art', 'decoration'],
               'Vehicles': [
                 'vehicles',
                 'vehicle',
@@ -284,28 +263,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 'phone',
                 'electronics',
               ],
-              'Home & Furniture': [
-                'home & furniture',
-                'home',
-                'furniture',
-              ],
-              'Fashion': [
-                'fashion',
-                'clothing',
-                'shoes',
-              ],
-              'Beauty': [
-                'beauty',
-              ],
-              'Baby & Kids': [
-                'baby & kids',
-                'baby',
-                'kids',
-              ],
-              'Other': [
-                'other',
-                'services',
-              ],
+              'Home & Furniture': ['home & furniture', 'home', 'furniture'],
+              'Fashion': ['fashion', 'clothing', 'shoes'],
+              'Beauty': ['beauty'],
+              'Baby & Kids': ['baby & kids', 'baby', 'kids'],
+              'Other': ['other', 'services'],
             };
 
             final accepted =
@@ -317,32 +279,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           return Column(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryGold,
-                        foregroundColor: primaryDarkGreen,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                      ),
-                      icon: const Icon(Icons.edit_square, size: 18),
-                      label: const Text('Sell',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const DynamicSubmissionScreen(
-                                  type: SubmissionType.marketplace)),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 10),
                     Expanded(
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -355,16 +297,19 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                               child: Container(
                                 margin: const EdgeInsets.only(right: 8),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 8),
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? primaryGold.withValues(alpha: 0.2)
                                       : cardGreen,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: isSelected
-                                          ? primaryGold
-                                          : Colors.transparent),
+                                    color: isSelected
+                                        ? primaryGold
+                                        : Colors.transparent,
+                                  ),
                                 ),
                                 child: Text(
                                   cat,
@@ -390,18 +335,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               Expanded(
                 child: filtered.isEmpty
                     ? const Center(
-                        child: Text('No listings in this category.',
-                            style: TextStyle(color: Colors.white54)))
+                        child: AppText(
+                          'No listings in this category.',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      )
                     : GridView.builder(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.72,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.72,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final product = filtered[index];
@@ -439,17 +389,19 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         children: [
           Expanded(
             child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: Image.network(
-                product['image'] ??
-                    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+                product['image'] ?? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: Colors.white10,
-                  child: const Icon(Icons.image_not_supported,
-                      color: Colors.white38),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    color: Colors.white38,
+                  ),
                 ),
               ),
             ),
@@ -462,9 +414,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 Text(
                   product['price'] ?? '€0',
                   style: TextStyle(
-                      color: primaryGold,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold),
+                    color: primaryGold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -476,14 +429,19 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    const Icon(Icons.location_on,
-                        color: Colors.white54, size: 11),
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.white54,
+                      size: 11,
+                    ),
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
                         product['location'] ?? 'Europe',
                         style: const TextStyle(
-                            color: Colors.white54, fontSize: 10),
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -502,10 +460,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 class ProductDetailScreen extends StatelessWidget {
   final Map<String, dynamic> product;
 
-  const ProductDetailScreen({
-    super.key,
-    required this.product,
-  });
+  const ProductDetailScreen({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -523,8 +478,8 @@ class ProductDetailScreen extends StatelessWidget {
 
     final String location =
         product['location']?.toString().trim().isNotEmpty == true
-            ? product['location'].toString().trim()
-            : 'Europe';
+        ? product['location'].toString().trim()
+        : 'Europe';
 
     final String time = product['time']?.toString().trim().isNotEmpty == true
         ? product['time'].toString().trim()
@@ -532,23 +487,24 @@ class ProductDetailScreen extends StatelessWidget {
 
     final String condition =
         product['condition']?.toString().trim().isNotEmpty == true
-            ? product['condition'].toString().trim()
-            : 'Good';
+        ? product['condition'].toString().trim()
+        : 'Good';
 
     final String sellerName =
         product['sellerName']?.toString().trim().isNotEmpty == true
-            ? product['sellerName'].toString().trim()
-            : 'Habesha Member';
+        ? product['sellerName'].toString().trim()
+        : 'Habesha Member';
 
     final String sellerPhone = product['sellerPhone']?.toString().trim() ?? '';
 
     final String description =
         product['description']?.toString().trim().isNotEmpty == true
-            ? product['description'].toString().trim()
-            : 'No description provided for this item.';
+        ? product['description'].toString().trim()
+        : 'No description provided for this item.';
 
-    final String sellerInitial =
-        sellerName.isNotEmpty ? sellerName[0].toUpperCase() : 'H';
+    final String sellerInitial = sellerName.isNotEmpty
+        ? sellerName[0].toUpperCase()
+        : 'H';
 
     // ---------------------------------------------------------
     // PHOTOS
@@ -590,18 +546,15 @@ class ProductDetailScreen extends StatelessWidget {
 
     final String sellerId =
         product['submittedBy']?.toString().trim().isNotEmpty == true
-            ? product['submittedBy'].toString().trim()
-            : product['ownerId']?.toString().trim().isNotEmpty == true
-                ? product['ownerId'].toString().trim()
-                : product['creatorId']?.toString().trim() ?? '';
+        ? product['submittedBy'].toString().trim()
+        : product['ownerId']?.toString().trim().isNotEmpty == true
+        ? product['ownerId'].toString().trim()
+        : product['creatorId']?.toString().trim() ?? '';
 
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 16),
-        ),
+        title: Text(title, style: const TextStyle(fontSize: 16)),
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
       ),
@@ -626,11 +579,7 @@ class ProductDetailScreen extends StatelessWidget {
                       Image.network(
                         photoUrls[index],
                         fit: BoxFit.cover,
-                        errorBuilder: (
-                          context,
-                          error,
-                          stackTrace,
-                        ) {
+                        errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.white10,
                             alignment: Alignment.center,
@@ -657,7 +606,7 @@ class ProductDetailScreen extends StatelessWidget {
                               color: Colors.black54,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(
+                            child: AppText(
                               '${index + 1}/${photoUrls.length}',
                               style: const TextStyle(
                                 color: Colors.white,
@@ -761,7 +710,7 @@ class ProductDetailScreen extends StatelessWidget {
                         color: primaryGold.withValues(alpha: 0.5),
                       ),
                     ),
-                    child: Text(
+                    child: AppText(
                       'Condition: $condition',
                       style: const TextStyle(
                         color: primaryGold,
@@ -771,13 +720,10 @@ class ProductDetailScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const Divider(
-                    color: Colors.white24,
-                    height: 30,
-                  ),
+                  const Divider(color: Colors.white24, height: 30),
 
                   // SELLER
-                  const Text(
+                  const AppText(
                     'Seller Information',
                     style: TextStyle(
                       color: primaryGold,
@@ -819,7 +765,7 @@ class ProductDetailScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
+                              const AppText(
                                 'Member of Euro Habesha Community',
                                 style: TextStyle(
                                   color: Colors.white54,
@@ -838,13 +784,10 @@ class ProductDetailScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const Divider(
-                    color: Colors.white24,
-                    height: 30,
-                  ),
+                  const Divider(color: Colors.white24, height: 30),
 
                   // DESCRIPTION
-                  const Text(
+                  const AppText(
                     'Description',
                     style: TextStyle(
                       color: primaryGold,
@@ -874,26 +817,22 @@ class ProductDetailScreen extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: cardGreen,
                             foregroundColor: primaryGold,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(
-                                color: primaryGold,
-                              ),
+                              side: const BorderSide(color: primaryGold),
                             ),
                           ),
                           icon: const Icon(Icons.chat),
-                          label: const Text(
+                          label: const AppText(
                             'Send Message',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           onPressed: () async {
                             await openDirectChat(
                               context: context,
+                              publicContactCollection: 'marketplace',
+                              publicContactId: product['id']?.toString(),
                               otherUserId: sellerId,
                               otherUserName: sellerName,
                             );
@@ -906,19 +845,15 @@ class ProductDetailScreen extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryGold,
                             foregroundColor: primaryDarkGreen,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           icon: const Icon(Icons.shopping_bag),
-                          label: const Text(
+                          label: const AppText(
                             'Order COD',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           onPressed: () {
                             Navigator.push(

@@ -1,16 +1,16 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'order_receipt_screen.dart';
 
 class BusinessOrderDetailScreen extends StatelessWidget {
   final String orderId;
 
-  const BusinessOrderDetailScreen({
-    super.key,
-    required this.orderId,
-  });
+  const BusinessOrderDetailScreen({super.key, required this.orderId});
 
   static const Color primaryDarkGreen = Color(0xFF061E12);
   static const Color primaryGold = Color(0xFFFFD700);
@@ -128,9 +128,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
         final latestStatus = snapshot.data()?['status']?.toString() ?? '';
 
         if (latestStatus != currentStatus) {
-          throw Exception(
-            'Le statut de la commande a déjà changé.',
-          );
+          throw Exception('Le statut de la commande a déjà changé.');
         }
 
         transaction.update(reference, update);
@@ -140,11 +138,9 @@ class BusinessOrderDetailScreen extends StatelessWidget {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Commande mise à jour.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: AppText('Commande mise à jour.')));
     } catch (error) {
       if (!context.mounted) {
         return;
@@ -152,28 +148,20 @@ class BusinessOrderDetailScreen extends StatelessWidget {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Impossible de modifier la commande : $error',
-          ),
+          content: AppText('Impossible de modifier la commande : $error'),
         ),
       );
     }
   }
 
-  Future<void> _callPhone(
-    BuildContext context,
-    String phoneNumber,
-  ) async {
+  Future<void> _callPhone(BuildContext context, String phoneNumber) async {
     final cleanNumber = phoneNumber.trim();
 
     if (cleanNumber.isEmpty) {
       return;
     }
 
-    final uri = Uri(
-      scheme: 'tel',
-      path: cleanNumber,
-    );
+    final uri = Uri(scheme: 'tel', path: cleanNumber);
 
     if (!await launchUrl(uri)) {
       if (!context.mounted) {
@@ -181,11 +169,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Impossible d’ouvrir le téléphone.',
-          ),
-        ),
+        const SnackBar(content: AppText('Impossible d’ouvrir le téléphone.')),
       );
     }
   }
@@ -206,11 +190,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Paiement marqué comme payé.',
-          ),
-        ),
+        const SnackBar(content: AppText('Paiement marqué comme payé.')),
       );
     } catch (error) {
       if (!context.mounted) {
@@ -219,19 +199,13 @@ class BusinessOrderDetailScreen extends StatelessWidget {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Impossible de mettre à jour le paiement : $error',
-          ),
+          content: AppText('Impossible de mettre à jour le paiement : $error'),
         ),
       );
     }
   }
 
-  Widget _infoRow(
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _infoRow(IconData icon, String label, String value) {
     if (value.trim().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -241,11 +215,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: Colors.white54,
-            size: 19,
-          ),
+          Icon(icon, color: Colors.white54, size: 19),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -253,18 +223,12 @@ class BusinessOrderDetailScreen extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 11,
-                  ),
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],
             ),
@@ -279,15 +243,23 @@ class BusinessOrderDetailScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(
-            color: emphasized ? primaryGold : Colors.white70,
-            fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
-          ))),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: emphasized ? primaryGold : Colors.white70,
+                fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
           const SizedBox(width: 12),
-          Text(value, style: TextStyle(
-            color: emphasized ? primaryGold : Colors.white,
-            fontWeight: FontWeight.bold,
-          )),
+          Text(
+            value,
+            style: TextStyle(
+              color: emphasized ? primaryGold : Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -295,16 +267,11 @@ class BusinessOrderDetailScreen extends StatelessWidget {
 
   Widget _statusBadge(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: primaryGold.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.4)),
       ),
       child: Text(
         text,
@@ -327,12 +294,9 @@ class BusinessOrderDetailScreen extends StatelessWidget {
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
         elevation: 0,
-        title: const Text(
+        title: const AppText(
           'Détail de la commande',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -343,9 +307,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
+              child: CircularProgressIndicator(color: primaryGold),
             );
           }
 
@@ -353,13 +315,11 @@ class BusinessOrderDetailScreen extends StatelessWidget {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
+                child: AppText(
                   'Impossible de charger la commande.\n'
                   '${snapshot.error}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                  ),
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ),
             );
@@ -369,11 +329,9 @@ class BusinessOrderDetailScreen extends StatelessWidget {
               !snapshot.data!.exists ||
               snapshot.data!.data() == null) {
             return const Center(
-              child: Text(
+              child: AppText(
                 'Commande introuvable.',
-                style: TextStyle(
-                  color: Colors.white70,
-                ),
+                style: TextStyle(color: Colors.white70),
               ),
             );
           }
@@ -407,8 +365,12 @@ class BusinessOrderDetailScreen extends StatelessWidget {
           final businessFee = _toDouble(data['businessFee']);
           final sellerNet = _toDouble(data['sellerNet']);
           final canViewFinancials = isSeller;
-          final rawPaymentMethod = data['paymentMethod']?.toString().toLowerCase() ?? '';
-          final isCashPayment = rawPaymentMethod.contains('cash') || rawPaymentMethod.contains('cod') || rawPaymentMethod.contains('delivery');
+          final rawPaymentMethod =
+              data['paymentMethod']?.toString().toLowerCase() ?? '';
+          final isCashPayment =
+              rawPaymentMethod.contains('cash') ||
+              rawPaymentMethod.contains('cod') ||
+              rawPaymentMethod.contains('delivery');
 
           final shortOrderId = orderId.length > 8
               ? orderId.substring(0, 8).toUpperCase()
@@ -422,12 +384,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
               data['paymentStatus'] == 'paid' || data['isPaid'] == true;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              8,
-              16,
-              32,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
               Container(
                 padding: const EdgeInsets.all(18),
@@ -453,7 +410,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              const AppText(
                                 'COMMANDE',
                                 style: TextStyle(
                                   color: Colors.white54,
@@ -461,7 +418,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Text(
+                              AppText(
                                 '#$shortOrderId',
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -472,9 +429,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        _statusBadge(
-                          _statusText(status),
-                        ),
+                        _statusBadge(_statusText(status)),
                       ],
                     ),
                     const SizedBox(height: 18),
@@ -492,14 +447,10 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                     if (sellerContact.isNotEmpty)
                       Text(
                         sellerContact,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                        ),
+                        style: const TextStyle(color: Colors.white70),
                       ),
                     const SizedBox(height: 14),
-                    const Divider(
-                      color: Colors.white12,
-                    ),
+                    const Divider(color: Colors.white12),
                     const SizedBox(height: 10),
                     _infoRow(
                       Icons.calendar_today_outlined,
@@ -516,14 +467,9 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(10),
-                          onTap: () => _callPhone(
-                            context,
-                            buyerPhone,
-                          ),
+                          onTap: () => _callPhone(context, buyerPhone),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
                               children: [
                                 const Icon(
@@ -537,7 +483,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      const AppText(
                                         'Téléphone',
                                         style: TextStyle(
                                           color: Colors.white54,
@@ -583,7 +529,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    const AppText(
                       'Articles',
                       style: TextStyle(
                         color: primaryGold,
@@ -593,11 +539,9 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     if (items.isEmpty)
-                      const Text(
+                      const AppText(
                         'Aucun détail disponible.',
-                        style: TextStyle(
-                          color: Colors.white60,
-                        ),
+                        style: TextStyle(color: Colors.white60),
                       )
                     else
                       ...items.map((item) {
@@ -611,9 +555,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                         final unitPrice = item['price'];
 
                         return Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 13,
-                          ),
+                          padding: const EdgeInsets.only(bottom: 13),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -622,14 +564,10 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                                 height: 30,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: primaryGold.withValues(
-                                    alpha: 0.12,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    8,
-                                  ),
+                                  color: primaryGold.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(
+                                child: AppText(
                                   '$quantity×',
                                   style: const TextStyle(
                                     color: primaryGold,
@@ -652,10 +590,8 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                                     ),
                                     if (unitPrice != null)
                                       Padding(
-                                        padding: const EdgeInsets.only(
-                                          top: 2,
-                                        ),
-                                        child: Text(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: AppText(
                                           '${_formatMoney(unitPrice)} / unité',
                                           style: const TextStyle(
                                             color: Colors.white54,
@@ -670,11 +606,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                               Text(
                                 _formatMoney(
                                   lineTotal ??
-                                      ((_toDouble(
-                                                unitPrice,
-                                              ) ??
-                                              0) *
-                                          quantity),
+                                      ((_toDouble(unitPrice) ?? 0) * quantity),
                                 ),
                                 style: const TextStyle(
                                   color: primaryGold,
@@ -685,13 +617,11 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                           ),
                         );
                       }),
-                    const Divider(
-                      color: Colors.white12,
-                    ),
+                    const Divider(color: Colors.white12),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Text(
+                        const AppText(
                           'TOTAL',
                           style: TextStyle(
                             color: Colors.white,
@@ -720,29 +650,50 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: cardGreen,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: primaryGold.withValues(alpha: 0.35)),
+                    border: Border.all(
+                      color: primaryGold.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Détail financier professionnel',
-                        style: TextStyle(color: primaryGold, fontSize: 17, fontWeight: FontWeight.bold)),
+                      const AppText(
+                        'Détail financier professionnel',
+                        style: TextStyle(
+                          color: primaryGold,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       _financialRow('Montant de la vente', _formatMoney(total)),
-                      _financialRow('Commission Euro Habesha',
-                        businessFee == null ? 'Non renseignée' : _formatMoney(businessFee)),
+                      _financialRow(
+                        'Commission Euro Habesha',
+                        businessFee == null
+                            ? 'Non renseignée'
+                            : _formatMoney(businessFee),
+                      ),
                       const Divider(color: Colors.white24, height: 24),
-                      _financialRow('Net professionnel théorique',
-                        sellerNet == null ? 'Non renseigné' : _formatMoney(sellerNet), emphasized: true),
+                      _financialRow(
+                        'Net professionnel théorique',
+                        sellerNet == null
+                            ? 'Non renseigné'
+                            : _formatMoney(sellerNet),
+                        emphasized: true,
+                      ),
                       if (businessFee == null || sellerNet == null) ...[
                         const SizedBox(height: 10),
-                        const Text('Cette commande ne contient pas tous les détails de commission. Aucun montant n’a été estimé.',
-                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        const AppText(
+                          'Cette commande ne contient pas tous les détails de commission. Aucun montant n’a été estimé.',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
                       ],
                       if (isCashPayment) ...[
                         const SizedBox(height: 10),
-                        const Text('Paiement en espèces : la commission plateforme n’est pas encaissée automatiquement.',
-                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        const AppText(
+                          'Paiement en espèces : la commission plateforme n’est pas encaissée automatiquement.',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
                       ],
                     ],
                   ),
@@ -759,7 +710,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      const AppText(
                         'Note du client',
                         style: TextStyle(
                           color: primaryGold,
@@ -767,12 +718,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 7),
-                      Text(
-                        notes,
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
+                      Text(notes, style: const TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
@@ -787,7 +733,7 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    const AppText(
                       'Paiement',
                       style: TextStyle(
                         color: primaryGold,
@@ -822,24 +768,14 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () => _markAsPaid(
-                            context,
-                            document.reference,
-                          ),
-                          icon: const Icon(
-                            Icons.payments_outlined,
-                          ),
-                          label: const Text(
-                            'Marquer comme payé',
-                          ),
+                          onPressed: () =>
+                              _markAsPaid(context, document.reference),
+                          icon: const Icon(Icons.payments_outlined),
+                          label: const AppText('Marquer comme payé'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: primaryGold,
-                            side: const BorderSide(
-                              color: primaryGold,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 13,
-                            ),
+                            side: const BorderSide(color: primaryGold),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
                           ),
                         ),
                       ),
@@ -855,24 +791,16 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => OrderReceiptScreen(
-                          orderId: orderId,
-                        ),
+                        builder: (_) => OrderReceiptScreen(orderId: orderId),
                       ),
                     );
                   },
-                  icon: const Icon(
-                    Icons.receipt_long_outlined,
-                  ),
-                  label: const Text(
-                    'Voir / télécharger le reçu',
-                  ),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const AppText('Voir / télécharger le reçu'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryGold,
                     foregroundColor: primaryDarkGreen,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -891,11 +819,9 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white70,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text('Refuser'),
+                          child: const AppText('Refuser'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -910,11 +836,9 @@ class BusinessOrderDetailScreen extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryGold,
                             foregroundColor: primaryDarkGreen,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text('Accepter'),
+                          child: const AppText('Accepter'),
                         ),
                       ),
                     ],
@@ -981,17 +905,10 @@ class _ActionButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: BusinessOrderDetailScreen.primaryGold,
           foregroundColor: BusinessOrderDetailScreen.primaryDarkGreen,
-          padding: const EdgeInsets.symmetric(
-            vertical: 14,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
         ),
         icon: Icon(icon),
-        label: Text(
-          text,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        label: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }

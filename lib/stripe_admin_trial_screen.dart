@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -105,9 +107,11 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: _green,
-        title: const Text('Ouvrir un essai fictif',
-            style: TextStyle(color: _gold)),
-        content: Text(
+        title: const AppText(
+          'Ouvrir un essai fictif',
+          style: TextStyle(color: _gold),
+        ),
+        content: AppText(
           'Pays choisi : ${_countries[_country]}.\n\n'
           'Un compte Stripe TEST indépendant sera créé ou réutilisé. '
           'Utilisez les données de test proposées par Stripe. '
@@ -117,13 +121,15 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler', style: TextStyle(color: _gold)),
+            child: const AppText('Annuler', style: TextStyle(color: _gold)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: _gold, foregroundColor: _dark),
+              backgroundColor: _gold,
+              foregroundColor: _dark,
+            ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Continuer en TEST'),
+            child: const AppText('Continuer en TEST'),
           ),
         ],
       ),
@@ -159,14 +165,14 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
             .httpsCallable('createConnectTestAccount')
             .call<Map<String, dynamic>>(arguments);
         if (!_current(uid, country, revision)) {
-        return;
-      }
+          return;
+        }
         final result = await _functions
             .httpsCallable('createConnectTestOnboardingLink')
             .call<Map<String, dynamic>>(arguments);
         if (!_current(uid, country, revision)) {
-        return;
-      }
+          return;
+        }
         final raw = result.data['url'];
         final uri = raw is String ? Uri.tryParse(raw) : null;
         if (result.data['environment'] != 'test' ||
@@ -177,13 +183,16 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
             !(uri.host == 'stripe.com' || uri.host.endsWith('.stripe.com'))) {
           throw StateError('Lien d’essai Stripe invalide.');
         }
-        final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        final opened = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
         if (!opened) {
           throw StateError('Impossible d’ouvrir Stripe.');
         }
         if (!_current(uid, country, revision)) {
-        return;
-      }
+          return;
+        }
       }
       final result = await _functions
           .httpsCallable('getConnectTestAccountStatus')
@@ -199,18 +208,24 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
       setState(() {
         _status = Map<String, dynamic>.from(result.data);
         if (openStripe) {
-          _message = 'Terminez le formulaire TEST chez Stripe, puis revenez '
+          _message =
+              'Terminez le formulaire TEST chez Stripe, puis revenez '
               'ici et appuyez sur Actualiser.';
         }
       });
     } on FirebaseFunctionsException catch (error) {
       if (_current(uid, country, revision)) {
-        setState(() => _message = error.message ?? 'Essai Stripe indisponible.');
+        setState(
+          () => _message = error.message ?? 'Essai Stripe indisponible.',
+        );
       }
     } catch (_) {
       if (_current(uid, country, revision)) {
-        setState(() => _message = 'Impossible de terminer l’essai. '
-            'Vérifiez votre connexion et réessayez.');
+        setState(
+          () => _message =
+              'Impossible de terminer l’essai. '
+              'Vérifiez votre connexion et réessayez.',
+        );
       }
     } finally {
       if (_current(uid, country, revision)) {
@@ -228,25 +243,30 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
       appBar: AppBar(
         backgroundColor: _dark,
         foregroundColor: _gold,
-        title: const Text('Essai privé Stripe'),
+        title: const AppText('Essai privé Stripe'),
       ),
       body: !_isAdmin
           ? const Center(
-              child: Text('Réservé au compte Super Admin vérifié.',
-                  style: TextStyle(color: Colors.white)),
+              child: AppText(
+                'Réservé au compte Super Admin vérifié.',
+                style: TextStyle(color: Colors.white),
+              ),
             )
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
                 const Icon(Icons.science_outlined, color: _gold, size: 48),
                 const SizedBox(height: 14),
-                const Text('COMPTE FICTIF · STRIPE TEST',
-                    style: TextStyle(
-                        color: _gold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20)),
+                const AppText(
+                  'COMPTE FICTIF · STRIPE TEST',
+                  style: TextStyle(
+                    color: _gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
                 const SizedBox(height: 12),
-                const Text(
+                const AppText(
                   'Cet essai est indépendant de vos établissements. '
                   'Aucun dossier professionnel réel, SMS Firebase ou badge '
                   'Vérifié n’est nécessaire pour cet essai privé. '
@@ -262,14 +282,18 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
                     labelText: 'Pays de l’essai',
                     labelStyle: TextStyle(color: _gold),
                     enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _gold)),
+                      borderSide: BorderSide(color: _gold),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _gold, width: 2)),
+                      borderSide: BorderSide(color: _gold, width: 2),
+                    ),
                   ),
                   items: [
                     for (final entry in _countries.entries)
                       DropdownMenuItem(
-                          value: entry.key, child: Text(entry.value)),
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
                   ],
                   onChanged: _busy
                       ? null
@@ -294,18 +318,20 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
                           _busy
                               ? 'Opération en cours…'
                               : _status == null
-                                  ? 'Choisissez un pays puis ouvrez l’essai.'
-                                  : !hasAccount
-                                      ? 'Aucun compte fictif pour ce pays.'
-                                      : completed
-                                          ? 'Formulaire de test terminé.'
-                                          : 'Compte fictif créé : formulaire à terminer.',
+                              ? 'Choisissez un pays puis ouvrez l’essai.'
+                              : !hasAccount
+                              ? 'Aucun compte fictif pour ce pays.'
+                              : completed
+                              ? 'Formulaire de test terminé.'
+                              : 'Compte fictif créé : formulaire à terminer.',
                           style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         if (hasAccount) ...[
                           const SizedBox(height: 10),
-                          Text(
+                          AppText(
                             'Paiements simulés : ${_status?['chargesEnabled'] == true ? 'prêts' : 'en attente'}\n'
                             'Virements simulés : ${_status?['payoutsEnabled'] == true ? 'prêts' : 'en attente'}',
                             style: const TextStyle(color: Colors.white70),
@@ -313,8 +339,7 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
                         ],
                         if (_message != null) ...[
                           const SizedBox(height: 12),
-                          Text(_message!,
-                              style: const TextStyle(color: _gold)),
+                          Text(_message!, style: const TextStyle(color: _gold)),
                         ],
                       ],
                     ),
@@ -323,26 +348,32 @@ class _StripeAdminTrialScreenState extends State<StripeAdminTrialScreen>
                 const SizedBox(height: 14),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
-                      backgroundColor: _gold,
-                      foregroundColor: _dark,
-                      padding: const EdgeInsets.all(16)),
+                    backgroundColor: _gold,
+                    foregroundColor: _dark,
+                    padding: const EdgeInsets.all(16),
+                  ),
                   onPressed: _busy || _country == null ? null : _confirmOpen,
                   icon: const Icon(Icons.open_in_new),
-                  label: Text(hasAccount
-                      ? 'Continuer mon essai Stripe'
-                      : 'Ouvrir mon essai Stripe TEST'),
+                  label: Text(
+                    hasAccount
+                        ? 'Continuer mon essai Stripe'
+                        : 'Ouvrir mon essai Stripe TEST',
+                  ),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                      foregroundColor: _gold,
-                      side: const BorderSide(color: _gold)),
-                  onPressed: _busy || _country == null ? null : () => _perform(),
+                    foregroundColor: _gold,
+                    side: const BorderSide(color: _gold),
+                  ),
+                  onPressed: _busy || _country == null
+                      ? null
+                      : () => _perform(),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Actualiser mon essai'),
+                  label: const AppText('Actualiser mon essai'),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                const AppText(
                   'Dans le formulaire Stripe, utilisez les possibilités de test '
                   'prévues par Stripe. Si Stripe TEST demande un code SMS, '
                   'le code de simulation est 000000. Ce code ne concerne pas '

@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'banner_destination.dart';
 import 'jobs_screen.dart';
 
@@ -13,7 +16,7 @@ Future<void> showJobBanner(
   if (id == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
+        content: AppText(
           'Le lien de cette publicité doit être corrigé par l’administrateur.',
         ),
       ),
@@ -69,7 +72,7 @@ Future<void> showJobBanner(
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),
           style: TextButton.styleFrom(foregroundColor: gold),
-          child: const Text('Fermer'),
+          child: const AppText('Fermer'),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(dialogContext, true),
@@ -77,7 +80,7 @@ Future<void> showJobBanner(
             backgroundColor: gold,
             foregroundColor: dark,
           ),
-          child: const Text('Voir la fiche'),
+          child: const AppText('Voir la fiche'),
         ),
       ],
     ),
@@ -94,7 +97,7 @@ Future<void> showJobBanner(
         (status.isNotEmpty &&
             !const ['approved', 'published'].contains(status))) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cette fiche n’est plus disponible.')),
+        const SnackBar(content: AppText('Cette fiche n’est plus disponible.')),
       );
       return;
     }
@@ -137,7 +140,7 @@ Future<void> showJobBanner(
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
+        content: AppText(
           'Impossible d’ouvrir cette fiche. Réessayez dans un instant.',
         ),
       ),

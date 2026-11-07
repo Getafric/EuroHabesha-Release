@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'business_cart_screen.dart';
 import 'professional_capabilities.dart';
 
@@ -174,7 +177,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                                   latest.data()?['ordersEnabled'] == false) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text(
+                                    content: AppText(
                                       'Les commandes sont désactivées pour cet établissement.',
                                     ),
                                   ),
@@ -197,7 +200,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text(
+                                    content: AppText(
                                       'Vérification impossible. Vérifiez la connexion puis réessayez.',
                                     ),
                                   ),
@@ -222,7 +225,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         alignment: Alignment.center,
-                        child: Text(
+                        child: AppText(
                           '$cartItemCount',
                           style: const TextStyle(
                             color: primaryDarkGreen,
@@ -248,7 +251,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                 return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text(
+                    child: AppText(
                       'Impossible de charger les produits.\n${snapshot.error}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white70),
@@ -270,7 +273,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                           size: 64,
                         ),
                         SizedBox(height: 18),
-                        Text(
+                        AppText(
                           'Produits et services bientôt disponibles',
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -280,7 +283,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                           ),
                         ),
                         SizedBox(height: 8),
-                        Text(
+                        AppText(
                           'Ce professionnel n’a pas encore publié d’articles.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white70),
@@ -383,7 +386,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                                   ],
                                   if (hasPrice) ...[
                                     const SizedBox(height: 9),
-                                    Text(
+                                    AppText(
                                       '${numericPrice.toStringAsFixed(2).replaceAll('.', ',')} €',
                                       style: const TextStyle(
                                         color: primaryGold,
@@ -415,7 +418,7 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                                     _addToCart(doc.id, item);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(
+                                        content: AppText(
                                           '$name ajouté au panier.',
                                         ),
                                         duration: const Duration(
@@ -429,7 +432,9 @@ class _BusinessMenuScreenState extends State<BusinessMenuScreen> {
                               canOrder
                                   ? 'Ajouter au panier'
                                   : 'Commandes désactivées',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),

@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'chat_screen.dart';
 import 'business_order_detail_screen.dart';
 import 'cash_on_delivery_order_screen.dart';
@@ -18,9 +21,7 @@ class NotificationScreen extends StatelessWidget {
   Future<void> _markAsRead(
     DocumentReference<Map<String, dynamic>> reference,
   ) async {
-    await reference.update({
-      'read': true,
-    });
+    await reference.update({'read': true});
   }
 
   Future<void> _markAllAsRead(String userId) async {
@@ -36,9 +37,7 @@ class NotificationScreen extends StatelessWidget {
       final type = data['type']?.toString().trim() ?? '';
 
       if (type != 'message' && data['read'] != true) {
-        batch.update(document.reference, {
-          'read': true,
-        });
+        batch.update(document.reference, {'read': true});
       }
     }
     await batch.commit();
@@ -125,15 +124,21 @@ class NotificationScreen extends StatelessWidget {
 
     final resourceId =
         notification['resourceId']?.toString().trim().isNotEmpty == true
-            ? notification['resourceId'].toString().trim()
-            : notification['orderId']?.toString().trim() ?? '';
+        ? notification['resourceId'].toString().trim()
+        : notification['orderId']?.toString().trim() ?? '';
 
     if (!context.mounted) {
       return;
     }
 
-    if (['advertisementRequest', 'localCampaign', 'appointment', 'tableReservation', 'restaurantReservation', 'reservation']
-        .contains(routeType)) {
+    if ([
+      'advertisementRequest',
+      'localCampaign',
+      'appointment',
+      'tableReservation',
+      'restaurantReservation',
+      'reservation',
+    ].contains(routeType)) {
       await NotificationService.instance.openNotification(notification);
       return;
     }
@@ -147,9 +152,7 @@ class NotificationScreen extends StatelessWidget {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminInvitationScreen(
-              invitationId: resourceId,
-            ),
+            builder: (_) => AdminInvitationScreen(invitationId: resourceId),
           ),
         );
         break;
@@ -162,9 +165,7 @@ class NotificationScreen extends StatelessWidget {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => BusinessOrderDetailScreen(
-              orderId: resourceId,
-            ),
+            builder: (_) => BusinessOrderDetailScreen(orderId: resourceId),
           ),
         );
         break;
@@ -177,9 +178,8 @@ class NotificationScreen extends StatelessWidget {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => CashOnDeliveryOrderTrackingScreen(
-              orderId: resourceId,
-            ),
+            builder: (_) =>
+                CashOnDeliveryOrderTrackingScreen(orderId: resourceId),
           ),
         );
         break;
@@ -228,10 +228,7 @@ class NotificationScreen extends StatelessWidget {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ChatThreadScreen(
-              chatId: resourceId,
-              title: title,
-            ),
+            builder: (_) => ChatThreadScreen(chatId: resourceId, title: title),
           ),
         );
         break;
@@ -251,11 +248,9 @@ class NotificationScreen extends StatelessWidget {
       return const Scaffold(
         backgroundColor: primaryDarkGreen,
         body: Center(
-          child: Text(
+          child: AppText(
             'Vous devez être connecté.',
-            style: TextStyle(
-              color: Colors.white,
-            ),
+            style: TextStyle(color: Colors.white),
           ),
         ),
       );
@@ -264,24 +259,16 @@ class NotificationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'Notifications',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryDarkGreen,
-        iconTheme: const IconThemeData(
-          color: primaryGold,
-        ),
+        iconTheme: const IconThemeData(color: primaryGold),
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.done_all,
-              color: Colors.white70,
-            ),
+            icon: const Icon(Icons.done_all, color: Colors.white70),
             tooltip: 'Tout marquer comme lu',
             onPressed: () => _markAllAsRead(user.uid),
           ),
@@ -290,23 +277,18 @@ class NotificationScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('notifications')
-            .where(
-              'recipientId',
-              isEqualTo: user.uid,
-            )
+            .where('recipientId', isEqualTo: user.uid)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
+                child: AppText(
                   'Impossible de charger les notifications.\n'
                   '${snapshot.error}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                  ),
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ),
             );
@@ -314,9 +296,7 @@ class NotificationScreen extends StatelessWidget {
 
           if (!snapshot.hasData) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
+              child: CircularProgressIndicator(color: primaryGold),
             );
           }
 
@@ -356,12 +336,9 @@ class NotificationScreen extends StatelessWidget {
                     size: 55,
                   ),
                   SizedBox(height: 12),
-                  Text(
+                  AppText(
                     'Aucune notification',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 ],
               ),
@@ -395,9 +372,7 @@ class NotificationScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isUnread
-                        ? primaryGold.withValues(
-                            alpha: 0.5,
-                          )
+                        ? primaryGold.withValues(alpha: 0.5)
                         : Colors.transparent,
                   ),
                 ),
@@ -407,20 +382,16 @@ class NotificationScreen extends StatelessWidget {
                     vertical: 8,
                   ),
                   leading: CircleAvatar(
-                    backgroundColor: primaryGold.withValues(
-                      alpha: 0.15,
-                    ),
-                    child: Icon(
-                      _notificationIcon(type),
-                      color: primaryGold,
-                    ),
+                    backgroundColor: primaryGold.withValues(alpha: 0.15),
+                    child: Icon(_notificationIcon(type), color: primaryGold),
                   ),
                   title: Text(
                     title,
                     style: TextStyle(
                       color: isUnread ? Colors.white : Colors.white70,
-                      fontWeight:
-                          isUnread ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isUnread
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: 14,
                     ),
                   ),
@@ -441,9 +412,7 @@ class NotificationScreen extends StatelessWidget {
                       Text(
                         _formatTime(createdAt),
                         style: TextStyle(
-                          color: primaryGold.withValues(
-                            alpha: 0.7,
-                          ),
+                          color: primaryGold.withValues(alpha: 0.7),
                           fontSize: 10,
                         ),
                       ),
@@ -461,19 +430,14 @@ class NotificationScreen extends StatelessWidget {
                   ),
                   onTap: () async {
                     if (isUnread) {
-                      await _markAsRead(
-                        document.reference,
-                      );
+                      await _markAsRead(document.reference);
                     }
 
                     if (!context.mounted) {
                       return;
                     }
 
-                    await _openNotification(
-                      context,
-                      notification,
-                    );
+                    await _openNotification(context, notification);
                   },
                 ),
               );

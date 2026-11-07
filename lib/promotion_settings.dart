@@ -1,7 +1,10 @@
+import 'l10n/app_ui.dart';
 import 'admin_professional_subscriptions_screen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 
 /// Free launch only. Billing needs a separate verified integration before release.
@@ -97,14 +100,16 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Réglages des promotions enregistrés.')),
+        const SnackBar(
+          content: AppText('Réglages des promotions enregistrés.'),
+        ),
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Enregistrement impossible : $error')),
+        SnackBar(content: AppText('Enregistrement impossible : $error')),
       );
     } finally {
       if (mounted) {
@@ -127,13 +132,13 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: _dark,
     appBar: AppBar(
-      title: const Text('Promotions et paiements'),
+      title: const AppText('Promotions et paiements'),
       backgroundColor: _dark,
       foregroundColor: _gold,
     ),
     body: !AppSession.isSuperAdmin
         ? const Center(
-            child: Text(
+            child: AppText(
               'Réservé au Super Admin.',
               style: TextStyle(color: Colors.white),
             ),
@@ -145,7 +150,7 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(24),
-                    child: Text(
+                    child: AppText(
                       'Impossible de lire les réglages des promotions. '
                       'Vérifiez les autorisations puis réessayez.',
                       style: TextStyle(color: Colors.white),
@@ -168,7 +173,7 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  const Text(
+                  const AppText(
                     'Tu décides quand ouvrir les demandes',
                     style: TextStyle(
                       color: _gold,
@@ -184,7 +189,7 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                         Icons.campaign_outlined,
                         color: _gold,
                       ),
-                      title: const Text(
+                      title: const AppText(
                         'Demandes de promotion',
                         style: TextStyle(color: Colors.white),
                       ),
@@ -205,11 +210,11 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                     color: _green,
                     child: ListTile(
                       leading: Icon(Icons.verified_user_outlined, color: _gold),
-                      title: Text(
+                      title: AppText(
                         'Validation admin toujours requise',
                         style: TextStyle(color: Colors.white),
                       ),
-                      subtitle: Text(
+                      subtitle: AppText(
                         'Aucune publication directe par le professionnel.',
                         style: TextStyle(color: Colors.white70),
                       ),
@@ -226,11 +231,11 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                         Icons.workspace_premium_outlined,
                         color: _gold,
                       ),
-                      title: const Text(
+                      title: const AppText(
                         'Silver · Gold · VIP',
                         style: TextStyle(color: Colors.white),
                       ),
-                      subtitle: const Text(
+                      subtitle: const AppText(
                         'Configurer la présentation et les avantages futurs. Achats fermés.',
                         style: TextStyle(color: Colors.white70),
                       ),
@@ -251,14 +256,14 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          const AppText(
                             'Ancien réglage préparatoire',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Text(
+                          const AppText(
                             'Conservé pour compatibilité. Les trois formules se préparent dans Silver · Gold · VIP ; ce réglage ne limite pas les demandes gratuites.',
                             style: TextStyle(color: Colors.white70),
                           ),
@@ -268,7 +273,7 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                             children: [3, 4]
                                 .map(
                                   (limit) => ChoiceChip(
-                                    label: Text('$limit promotions'),
+                                    label: AppText('$limit promotions'),
                                     selected: settings.monthlyLimit == limit,
                                     onSelected: canEdit
                                         ? (_) => _save(monthlyLimit: limit)
@@ -295,11 +300,11 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                         Icons.account_balance_wallet_outlined,
                         color: _gold,
                       ),
-                      title: Text(
+                      title: AppText(
                         'Moyens d’encaissement : à préparer',
                         style: TextStyle(color: Colors.white),
                       ),
-                      subtitle: Text(
+                      subtitle: AppText(
                         'Aucun compte Stripe, PayPal ou bancaire n’est connecté '
                         'par cet écran. L’intégration publicitaire sera traitée séparément.',
                         style: TextStyle(color: Colors.white70),
@@ -307,7 +312,7 @@ class _PromotionSettingsScreenState extends State<PromotionSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  const AppText(
                     'La suspension concerne les nouvelles demandes. Les demandes '
                     'déjà envoyées et leurs conditions restent conservées.',
                     style: TextStyle(color: Colors.white70),

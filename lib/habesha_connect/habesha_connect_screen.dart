@@ -1,3 +1,8 @@
+import '../l10n/app_ui.dart';
+import '../etape10/community_pages.dart';
+import 'connect_space_pages.dart';
+import '../member_interface_text.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -21,13 +26,13 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   String _searchQuery = '';
+  bool _showAllTopics = false;
 
   final List<_ConnectCategory> _categories = const [
     _ConnectCategory(
       title: 'Groupes & Associations',
       icon: Icons.groups_rounded,
-      description:
-          'Associations, groupes locaux, églises, mosquées et organisations communautaires.',
+      description: 'Associations, groupes locaux, églises, mosquées et organisations communautaires.',
     ),
     _ConnectCategory(
       title: 'Habesha par ville',
@@ -96,8 +101,8 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
     }
 
     return _categories.where((category) {
-      return category.title.toLowerCase().contains(query) ||
-          category.description.toLowerCase().contains(query);
+      return ui(context, category.title).toLowerCase().contains(query) ||
+          ui(context, category.description).toLowerCase().contains(query);
     }).toList();
   }
 
@@ -129,13 +134,10 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
           ),
           title: const Row(
             children: [
-              Icon(
-                Icons.account_circle_rounded,
-                color: primaryGold,
-              ),
+              Icon(Icons.account_circle_rounded, color: primaryGold),
               SizedBox(width: 10),
               Expanded(
-                child: Text(
+                child: AppText(
                   'Compte requis',
                   style: TextStyle(
                     color: Colors.white,
@@ -145,17 +147,14 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
               ),
             ],
           ),
-          content: const Text(
+          content: const AppText(
             'Pour demander de l’aide ou participer à Habesha Connect, vous devez avoir un compte Euro Habesha.',
-            style: TextStyle(
-              color: softText,
-              height: 1.45,
-            ),
+            style: TextStyle(color: softText, height: 1.45),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text(
+              child: const AppText(
                 'Fermer',
                 style: TextStyle(color: primaryGold),
               ),
@@ -168,15 +167,50 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
     return false;
   }
 
-  void _openFeed() {
+  void _openFeed({String? category}) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const HabeshaConnectFeedScreen(),
+        builder: (_) => HabeshaConnectFeedScreen(initialCategory: category),
       ),
     );
   }
 
   void _openCategory(_ConnectCategory category) {
+    if (category.title == 'Groupes & Associations') {
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: cardGreen,
+        builder: (sheetContext) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final kind in ['group', 'association'])
+                ListTile(
+                  leading: const Icon(
+                    Icons.groups_outlined,
+                    color: primaryGold,
+                  ),
+                  title: AppText(
+                    kind == 'group' ? 'Groupes' : 'Associations',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.push<void>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ConnectSpaceDirectory(kind: kind),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -191,9 +225,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
           ),
           decoration: const BoxDecoration(
             color: cardGreen,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
             top: false,
@@ -221,16 +253,14 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                         color: primaryGold.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(
-                        category.icon,
-                        color: primaryGold,
-                        size: 29,
-                      ),
+                      child: Icon(category.icon, color: primaryGold, size: 29),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Text(
-                        category.title,
+                      child: AppText(
+                        category.title == 'Culture & rencontres'
+                            ? 'Culture & activités'
+                            : category.title,
                         style: const TextStyle(
                           color: primaryGold,
                           fontSize: 19,
@@ -241,12 +271,9 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                   ],
                 ),
                 const SizedBox(height: 15),
-                Text(
+                AppText(
                   category.description,
-                  style: const TextStyle(
-                    color: softText,
-                    height: 1.5,
-                  ),
+                  style: const TextStyle(color: softText, height: 1.5),
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
@@ -262,10 +289,10 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                     ),
                     onPressed: () {
                       Navigator.of(sheetContext).pop();
-                      _openFeed();
+                      _openFeed(category: category.title);
                     },
                     icon: const Icon(Icons.dynamic_feed_rounded),
-                    label: const Text(
+                    label: const AppText(
                       'Voir les publications',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
@@ -284,15 +311,13 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                     ),
                     onPressed: () {
                       Navigator.of(sheetContext).pop();
-                      _openRequestForm(
-                        initialCategory: category.title,
-                      );
+                      _openRequestForm(initialCategory: category.title);
                     },
                     icon: const Icon(
                       Icons.campaign_rounded,
                       color: primaryGold,
                     ),
-                    label: const Text(
+                    label: const AppText(
                       'Demander à la communauté',
                       style: TextStyle(
                         color: primaryGold,
@@ -309,9 +334,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
     );
   }
 
-  Future<void> _openRequestForm({
-    String? initialCategory,
-  }) async {
+  Future<void> _openRequestForm({String? initialCategory}) async {
     final hasAccount = await _requireAccount();
 
     if (!hasAccount || !mounted) {
@@ -345,9 +368,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
               ),
               decoration: const BoxDecoration(
                 color: cardGreen,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: SafeArea(
                 top: false,
@@ -375,7 +396,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                           ),
                           SizedBox(width: 10),
                           Expanded(
-                            child: Text(
+                            child: AppText(
                               'Demander à la communauté',
                               style: TextStyle(
                                 color: primaryGold,
@@ -387,7 +408,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                         ],
                       ),
                       const SizedBox(height: 7),
-                      const Text(
+                      const AppText(
                         'Votre demande sera vérifiée par un administrateur avant d’être publiée.',
                         style: TextStyle(
                           color: softText,
@@ -413,7 +434,11 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                             items: _categories.map((category) {
                               return DropdownMenuItem<String>(
                                 value: category.title,
-                                child: Text(category.title),
+                                child: AppText(
+                                  category.title == 'Culture & rencontres'
+                                      ? 'Culture & activités'
+                                      : category.title,
+                                ),
                               );
                             }).toList(),
                             onChanged: sending
@@ -473,20 +498,20 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                           onPressed: sending
                               ? null
                               : () async {
-                                  final question =
-                                      questionController.text.trim();
+                                  final question = questionController.text
+                                      .trim();
 
                                   if (question.isEmpty) {
                                     if (!modalContext.mounted) return;
 
                                     ScaffoldMessenger.of(modalContext)
                                         .showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Écrivez votre demande.',
-                                        ),
-                                      ),
-                                    );
+                                          const SnackBar(
+                                            content: AppText(
+                                              'Écrivez votre demande.',
+                                            ),
+                                          ),
+                                        );
                                     return;
                                   }
 
@@ -509,25 +534,27 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
 
                                   try {
                                     await FirebaseFirestore.instance
-                                        .collection(
-                                      'habeshaConnectRequests',
-                                    )
+                                        .collection('habeshaConnectRequests')
                                         .add({
-                                      'category': selectedCategory,
-                                      'question': question,
-                                      'text': question,
-                                      'city': cityController.text.trim(),
-                                      'country': countryController.text.trim(),
-                                      'authorId': user.uid,
-                                      'authorName':
-                                          user.displayName?.trim().isNotEmpty ==
+                                          'category': selectedCategory,
+                                          'question': question,
+                                          'text': question,
+                                          'city': cityController.text.trim(),
+                                          'country': countryController.text
+                                              .trim(),
+                                          'authorId': user.uid,
+                                          'authorName':
+                                              user.displayName
+                                                      ?.trim()
+                                                      .isNotEmpty ==
                                                   true
                                               ? user.displayName!.trim()
                                               : 'Membre Euro Habesha',
-                                      'authorEmail': user.email ?? '',
-                                      'status': 'pending',
-                                      'createdAt': FieldValue.serverTimestamp(),
-                                    });
+                                          'authorEmail': user.email ?? '',
+                                          'status': 'pending',
+                                          'createdAt':
+                                              FieldValue.serverTimestamp(),
+                                        });
 
                                     if (!mounted) return;
 
@@ -539,7 +566,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
 
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text(
+                                        content: AppText(
                                           'Votre demande a été envoyée. Elle sera visible après validation.',
                                         ),
                                         backgroundColor: cardGreen,
@@ -552,10 +579,11 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                                         sending = false;
                                       });
 
-                                      ScaffoldMessenger.of(modalContext)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        modalContext,
+                                      ).showSnackBar(
                                         SnackBar(
-                                          content: Text(
+                                          content: AppText(
                                             'Impossible d’envoyer la demande : $error',
                                           ),
                                           backgroundColor: Colors.redAccent,
@@ -575,8 +603,8 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                                   ),
                                 )
                               : const Icon(Icons.send_rounded),
-                          label: Text(
-                            sending ? 'Envoi...' : 'Envoyer la demande',
+                          label: AppText(
+                            sending ? 'Envoi…' : 'Envoyer la demande',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -619,25 +647,18 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.groups_rounded,
-              color: primaryGold,
-              size: 25,
-            ),
+            Icon(Icons.groups_rounded, color: primaryGold, size: 25),
             SizedBox(width: 8),
-            Text(
+            AppText(
               'Habesha Connect',
-              style: TextStyle(
-                color: primaryGold,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Feed',
-            onPressed: _openFeed,
+            tooltip: ui(context, 'Feed'),
+            onPressed: () => _openFeed(),
             icon: const Icon(Icons.dynamic_feed_rounded),
           ),
         ],
@@ -646,9 +667,12 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
           children: [
-            _buildHero(),
+            _buildCommunityWelcome(),
+            const EhCommunityEntry(),
             const SizedBox(height: 16),
             _buildSearch(),
+            const SizedBox(height: 16),
+            _buildCommunityShortcuts(),
             const SizedBox(height: 12),
             _buildAskCommunityButton(),
             const SizedBox(height: 18),
@@ -657,8 +681,8 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
             Row(
               children: [
                 const Expanded(
-                  child: Text(
-                    'Explorer la communauté',
+                  child: AppText(
+                    'Tous les sujets',
                     style: TextStyle(
                       color: primaryGold,
                       fontSize: 19,
@@ -666,16 +690,33 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                     ),
                   ),
                 ),
-                Text(
+                AppText(
                   '${filtered.length}',
                   style: const TextStyle(color: mutedText),
                 ),
               ],
             ),
             const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => setState(() => _showAllTopics = !_showAllTopics),
+              icon: Icon(
+                _showAllTopics ? Icons.expand_less : Icons.expand_more,
+                color: primaryGold,
+              ),
+              label: Text(
+                memberText(
+                  context,
+                  _showAllTopics
+                      ? 'Réduire les sujets'
+                      : 'Afficher tous les sujets',
+                  _showAllTopics ? 'Collapse topics' : 'Show all topics',
+                ),
+                style: const TextStyle(color: primaryGold),
+              ),
+            ),
             if (filtered.isEmpty)
               _buildNoCategoryResult()
-            else
+            else if (_showAllTopics || _searchQuery.trim().isNotEmpty)
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -696,22 +737,17 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
     );
   }
 
-  Widget _buildHero() {
+  Widget _buildCommunityWelcome() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            cardGreen,
-            primaryDarkGreen,
-          ],
+          colors: [cardGreen, primaryDarkGreen],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.20),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.20)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,7 +769,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
               ),
               const SizedBox(width: 13),
               const Expanded(
-                child: Text(
+                child: AppText(
                   'Habesha Connect',
                   style: TextStyle(
                     color: primaryGold,
@@ -745,7 +781,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
             ],
           ),
           const SizedBox(height: 18),
-          const Text(
+          const AppText(
             'La communauté Habesha, partout dans le monde.',
             style: TextStyle(
               color: Colors.white,
@@ -755,15 +791,119 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          const AppText(
             'Trouvez, demandez, partagez et entraidez-vous.',
-            style: TextStyle(
-              color: softText,
-              height: 1.45,
-            ),
+            style: TextStyle(color: softText, height: 1.45),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCommunityShortcuts() {
+    final priorities = [
+      _categories[1], // By city.
+      _categories[2], // Mutual support.
+      _categories[8], // Families and parents.
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          memberText(
+            context,
+            'Vos espaces communautaires',
+            'Your community spaces',
+          ),
+          style: const TextStyle(
+            color: primaryGold,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final kind in ['group', 'association'])
+          Card(
+            color: cardGreen,
+            child: ListTile(
+              leading: Icon(
+                kind == 'group'
+                    ? Icons.groups_outlined
+                    : Icons.account_balance_outlined,
+                color: primaryGold,
+              ),
+              title: AppText(
+                kind == 'group' ? 'Groupes' : 'Associations',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right, color: primaryGold),
+              onTap: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ConnectSpaceDirectory(kind: kind),
+                ),
+              ),
+            ),
+          ),
+        TextButton.icon(
+          onPressed: () => Navigator.push<void>(
+            context,
+            MaterialPageRoute(builder: (_) => const ConnectMyRequests()),
+          ),
+          icon: const Icon(Icons.assignment_outlined, color: primaryGold),
+          label: const AppText(
+            'Mes demandes de création',
+            style: TextStyle(color: primaryGold),
+          ),
+        ),
+        LayoutBuilder(
+          builder: (context, constraints) => Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: priorities
+                .map(
+                  (category) => SizedBox(
+                    width: constraints.maxWidth < 340
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth - 10) / 2,
+                    child: Card(
+                      color: cardGreen,
+                      margin: EdgeInsets.zero,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(12),
+                        leading: Icon(category.icon, color: primaryGold),
+                        title: AppText(
+                          category.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        onTap: () => _openCategory(category),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextButton.icon(
+          onPressed: () => _openFeed(),
+          icon: const Icon(Icons.forum_outlined, color: primaryGold),
+          label: Text(
+            memberText(
+              context,
+              'Voir les discussions de la communauté',
+              'View community discussions',
+            ),
+            style: const TextStyle(color: primaryGold),
+          ),
+        ),
+      ],
     );
   }
 
@@ -773,22 +913,16 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
       onChanged: _onSearchChanged,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        hintText: 'Je cherche quelque chose...',
+        hintText: ui(context, 'Je cherche quelque chose...'),
         hintStyle: const TextStyle(color: Colors.white54),
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          color: primaryGold,
-        ),
+        prefixIcon: const Icon(Icons.search_rounded, color: primaryGold),
         suffixIcon: _searchQuery.isNotEmpty
             ? IconButton(
                 onPressed: () {
                   _searchController.clear();
                   _onSearchChanged('');
                 },
-                icon: const Icon(
-                  Icons.clear_rounded,
-                  color: Colors.white54,
-                ),
+                icon: const Icon(Icons.clear_rounded, color: Colors.white54),
               )
             : null,
         filled: true,
@@ -799,10 +933,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: primaryGold,
-            width: 1.2,
-          ),
+          borderSide: const BorderSide(color: primaryGold, width: 1.2),
         ),
       ),
     );
@@ -822,12 +953,9 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
         ),
         onPressed: () => _openRequestForm(),
         icon: const Icon(Icons.campaign_rounded),
-        label: const Text(
+        label: const AppText(
           'Demander à la communauté',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
         ),
       ),
     );
@@ -835,16 +963,14 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
 
   Widget _buildFeedCard() {
     return InkWell(
-      onTap: _openFeed,
+      onTap: () => _openFeed(),
       borderRadius: BorderRadius.circular(17),
       child: Container(
         padding: const EdgeInsets.all(17),
         decoration: BoxDecoration(
           color: cardGreen,
           borderRadius: BorderRadius.circular(17),
-          border: Border.all(
-            color: primaryGold.withValues(alpha: 0.18),
-          ),
+          border: Border.all(color: primaryGold.withValues(alpha: 0.18)),
         ),
         child: const Row(
           children: [
@@ -868,7 +994,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AppText(
                     'Feed de la communauté',
                     style: TextStyle(
                       color: Colors.white,
@@ -877,7 +1003,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                     ),
                   ),
                   SizedBox(height: 4),
-                  Text(
+                  AppText(
                     'Découvrez les demandes et publications approuvées.',
                     style: TextStyle(
                       color: mutedText,
@@ -888,11 +1014,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: primaryGold,
-              size: 17,
-            ),
+            Icon(Icons.arrow_forward_ios_rounded, color: primaryGold, size: 17),
           ],
         ),
       ),
@@ -908,9 +1030,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
         decoration: BoxDecoration(
           color: cardGreen,
           borderRadius: BorderRadius.circular(17),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.07),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,15 +1042,13 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
                 color: primaryGold.withValues(alpha: 0.11),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Icon(
-                category.icon,
-                color: primaryGold,
-                size: 24,
-              ),
+              child: Icon(category.icon, color: primaryGold, size: 24),
             ),
             const Spacer(),
-            Text(
-              category.title,
+            AppText(
+              category.title == 'Culture & rencontres'
+                  ? 'Culture & activités'
+                  : category.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -941,7 +1059,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
               ),
             ),
             const SizedBox(height: 5),
-            Text(
+            AppText(
               category.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -963,42 +1081,27 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: primaryGold.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: primaryGold.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.search_off_rounded,
-            color: primaryGold,
-            size: 35,
-          ),
+          const Icon(Icons.search_off_rounded, color: primaryGold, size: 35),
           const SizedBox(height: 10),
-          const Text(
+          const AppText(
             'Aucune catégorie trouvée.',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 5),
-          const Text(
+          const AppText(
             'Vous pouvez demander directement à la communauté.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: mutedText,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: mutedText, fontSize: 12),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => _openRequestForm(),
-            icon: const Icon(
-              Icons.campaign_rounded,
-              color: primaryGold,
-            ),
-            label: const Text(
+            icon: const Icon(Icons.campaign_rounded, color: primaryGold),
+            label: const AppText(
               'Demander à la communauté',
               style: TextStyle(color: primaryGold),
             ),
@@ -1012,7 +1115,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
   }
 
   Widget _formLabel(String text) {
-    return Text(
+    return AppText(
       text,
       style: const TextStyle(
         color: primaryGold,
@@ -1024,11 +1127,8 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        color: Colors.white38,
-        fontSize: 12,
-      ),
+      hintText: ui(context, hint),
+      hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
       filled: true,
       fillColor: primaryDarkGreen,
       border: OutlineInputBorder(
@@ -1037,9 +1137,7 @@ class _HabeshaConnectScreenState extends State<HabeshaConnectScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
-        borderSide: BorderSide(
-          color: primaryGold.withValues(alpha: 0.6),
-        ),
+        borderSide: BorderSide(color: primaryGold.withValues(alpha: 0.6)),
       ),
     );
   }

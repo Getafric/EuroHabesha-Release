@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 import 'business_screen.dart';
 import 'business_public_media.dart';
@@ -34,9 +37,9 @@ class PublicFeedSection extends StatelessWidget {
                 .where((doc) => doc.data()['status'] == 'published')
                 .toList()
               ..sort(
-                (left, right) => _priorityScore(
-                  right.data(),
-                ).compareTo(_priorityScore(left.data())),
+                (left, right) =>
+                    _priorityScore(right.data())
+                        .compareTo(_priorityScore(left.data())),
               );
         if (docs.isEmpty) {
           return const SizedBox.shrink();
@@ -47,7 +50,7 @@ class PublicFeedSection extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
+              child: AppText(
                 'Approved Community Feed',
                 style: TextStyle(
                   color: primaryGold,
@@ -134,10 +137,10 @@ class _BusinessFeedDetailState extends State<_BusinessFeedDetail> {
             appBar: AppBar(
               backgroundColor: const Color(0xFF061E12),
               foregroundColor: const Color(0xFFFFD700),
-              title: const Text('Établissement'),
+              title: const AppText('Établissement'),
             ),
             body: const Center(
-              child: Text(
+              child: AppText(
                 'Cette fiche n’est plus disponible.',
                 style: TextStyle(color: Colors.white),
               ),
@@ -260,8 +263,7 @@ class _PublicFeedCard extends StatelessWidget {
               'performerDj': 'Community',
               'amenities': const ['Community'],
               'artists': const [],
-              'image':
-                  'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
+              'image': 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80',
             },
           ),
         ),
@@ -278,8 +280,7 @@ class _PublicFeedCard extends StatelessWidget {
               'address': data['subtitle'] ?? 'Europe',
               'phone': data['phone'] ?? '',
               'email': data['submitterEmail'] ?? '',
-              'image':
-                  'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=800&q=80',
+              'image': 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=800&q=80',
               'adminName': 'Community Admin',
               'isFollowing': false,
               'followersCount': 100,
@@ -390,7 +391,7 @@ class _PublicFeedCard extends StatelessWidget {
               const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
+                  AppText(
                     'View Full Profile',
                     style: TextStyle(
                       color: primaryGold,
@@ -414,23 +415,23 @@ class _PublicFeedCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardGreen,
-        title: const Text(
+        title: const AppText(
           'Delete feed item?',
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
-        content: const Text(
+        content: const AppText(
           'This will remove the approved post from the public feed immediately.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const AppText('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
+            child: const AppText(
               'Delete',
               style: TextStyle(
                 color: Colors.white,

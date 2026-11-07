@@ -1,12 +1,20 @@
+import 'l10n/app_ui.dart';
+import 'etape10/shop_pages.dart';
+import 'etape10/job_pages.dart';
+import 'etape10/workspace_ui.dart';
 import 'professional_sales_screen.dart';
 import 'pro_vip_subscription_screen.dart';
 import 'advertisement_request_screen.dart';
+
 import 'package:flutter/material.dart';
+
 import 'professional_photo_cropper.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'business_orders_screen.dart';
 import 'business_screen.dart';
 import 'business_table_reservations_screen.dart';
@@ -95,7 +103,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: AppText(
             'Lecture de la page publique impossible '
             '(${error.code}). Réessayez ou vérifiez les autorisations.',
           ),
@@ -108,9 +116,8 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
       final message = error is StateError
           ? error.message.toString()
           : 'Impossible d’ouvrir la page publique : $error';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     } finally {
       _openingPublicPage = false;
     }
@@ -176,7 +183,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
       return const Scaffold(
         backgroundColor: primaryDarkGreen,
         body: Center(
-          child: Text(
+          child: AppText(
             'Vous devez être connecté.',
             style: TextStyle(color: Colors.white),
           ),
@@ -194,7 +201,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
         elevation: 0,
-        title: const Text(
+        title: const AppText(
           'Mon espace professionnel',
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
@@ -284,7 +291,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
+                child: AppText(
                   'Impossible de charger votre entreprise.\n${snapshot.error}',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white70),
@@ -296,7 +303,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text(
+                child: AppText(
                   'Aucun profil entreprise trouvé.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white70, fontSize: 16),
@@ -411,6 +418,42 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                 logoUrl: data['logoUrl']?.toString() ?? '',
                 coverUrl: data['coverUrl']?.toString() ?? '',
               ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    if (sourceCollection == 'businessSubmissions' ||
+                        sourceCollection == 'businesses')
+                      ehButton(
+                        'Mes produits et mon retrait',
+                        () => ehOpen<void>(
+                          context,
+                          EhShopManager(
+                            source: {
+                              'sourceCollection': sourceCollection,
+                              'sourceId': document.id,
+                            },
+                          ),
+                        ),
+                        icon: Icons.shopping_basket_outlined,
+                      ),
+                    ehButton(
+                      'Je cherche du personnel',
+                      () => ehOpen<void>(
+                        context,
+                        EhEmployerJobs(
+                          source: {
+                            'sourceCollection': sourceCollection,
+                            'sourceId': document.id,
+                            'name': businessName,
+                          },
+                        ),
+                      ),
+                      icon: Icons.person_search,
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 14),
 
               Padding(
@@ -441,7 +484,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                         if (!['approved', 'published'].contains(status)) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text(
+                              content: AppText(
                                 'Votre établissement doit être publié avant de demander une promotion.',
                               ),
                             ),
@@ -473,7 +516,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  AppText(
                                     'Promouvoir mon établissement',
                                     style: TextStyle(
                                       color: Colors.white,
@@ -482,7 +525,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                                     ),
                                   ),
                                   SizedBox(height: 4),
-                                  Text(
+                                  AppText(
                                     'Photo, offre et aperçu · demande sans paiement',
                                     style: TextStyle(
                                       color: Colors.white70,
@@ -515,7 +558,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                     if (isEmployer)
                       const Padding(
                         padding: EdgeInsets.all(12),
-                        child: Text(
+                        child: AppText(
                           'Profil employeur enregistré. Les outils de gestion des offres et candidatures seront connectés prochainement.',
                           style: TextStyle(color: Colors.white70),
                         ),
@@ -618,8 +661,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                       _DashboardButton(
                         icon: Icons.account_balance_wallet_outlined,
                         title: 'Paiements et versements',
-                        subtitle:
-                            'Choisir les moyens de paiement de cet établissement',
+                        subtitle: 'Choisir les moyens de paiement de cet établissement',
                         onTap: () {
                           Navigator.push(
                             context,
@@ -867,10 +909,17 @@ class _BusinessHeaderState extends State<_BusinessHeader> {
         return;
       }
       final originalBytes = await image.readAsBytes();
-      if (!mounted) { return; }
-      final framedBytes = await frameProfessionalPhoto(context, bytes: originalBytes,
-        use: isLogo ? ProfessionalPhotoUse.logo : ProfessionalPhotoUse.cover);
-      if (!mounted || framedBytes == null) { return; }
+      if (!mounted) {
+        return;
+      }
+      final framedBytes = await frameProfessionalPhoto(
+        context,
+        bytes: originalBytes,
+        use: isLogo ? ProfessionalPhotoUse.logo : ProfessionalPhotoUse.cover,
+      );
+      if (!mounted || framedBytes == null) {
+        return;
+      }
       setState(() {
         if (isLogo) {
           _uploadingLogo = true;
@@ -925,7 +974,9 @@ class _BusinessHeaderState extends State<_BusinessHeader> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible d’enregistrer la photo : $error')),
+        SnackBar(
+          content: AppText('Impossible d’enregistrer la photo : $error'),
+        ),
       );
     } finally {
       if (mounted) {
@@ -1018,7 +1069,7 @@ class _BusinessHeaderState extends State<_BusinessHeader> {
                                   size: 17,
                                 ),
                                 SizedBox(width: 6),
-                                Text(
+                                AppText(
                                   'Couverture',
                                   style: TextStyle(
                                     color: Colors.white,

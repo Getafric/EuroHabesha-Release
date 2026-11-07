@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'business_order_detail_screen.dart';
 import 'business_checkout_screen.dart';
 import 'professional_sales_summary.dart';
@@ -31,7 +34,7 @@ class BusinessOrdersScreen extends StatelessWidget {
           return const Scaffold(
             backgroundColor: primaryDarkGreen,
             body: Center(
-              child: Text(
+              child: AppText(
                 'Connectez-vous à votre compte professionnel.',
                 style: TextStyle(color: Colors.white70),
               ),
@@ -81,7 +84,7 @@ class BusinessOrdersScreen extends StatelessWidget {
                           BusinessOrdersScreen(businessId: businessId),
                     ),
                   ),
-                  child: const Text(
+                  child: const AppText(
                     'Commandes de tout mon compte',
                     textAlign: TextAlign.center,
                   ),
@@ -172,7 +175,7 @@ class _PendingOrders extends StatelessWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text(
+              child: AppText(
                 'Impossible de charger les commandes.\n${snapshot.error}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70),
@@ -257,7 +260,7 @@ class _PendingOrders extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Commande #$shortOrderId',
                           style: const TextStyle(
                             color: Colors.white,
@@ -335,7 +338,7 @@ class _PendingOrders extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Divider(color: Colors.white12),
                   const SizedBox(height: 8),
-                  const Text(
+                  const AppText(
                     'Détails de la commande',
                     style: TextStyle(
                       color: BusinessOrdersScreen.primaryGold,
@@ -345,7 +348,7 @@ class _PendingOrders extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   if (cartItems.isEmpty)
-                    const Text(
+                    const AppText(
                       'Aucun détail disponible.',
                       style: TextStyle(color: Colors.white60),
                     )
@@ -375,14 +378,14 @@ class _PendingOrders extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            Text(
+                            AppText(
                               '× $quantity',
                               style: const TextStyle(color: Colors.white70),
                             ),
                             const SizedBox(width: 16),
                             SizedBox(
                               width: 72,
-                              child: Text(
+                              child: AppText(
                                 '${lineTotal.toStringAsFixed(2)} €',
                                 textAlign: TextAlign.right,
                                 style: const TextStyle(
@@ -407,7 +410,7 @@ class _PendingOrders extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          const AppText(
                             'Note du client',
                             style: TextStyle(
                               color: BusinessOrdersScreen.primaryGold,
@@ -427,7 +430,7 @@ class _PendingOrders extends StatelessWidget {
                   const Divider(color: Colors.white12),
                   Row(
                     children: [
-                      const Text(
+                      const AppText(
                         'Total',
                         style: TextStyle(
                           color: Colors.white,
@@ -468,7 +471,7 @@ class _PendingOrders extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white70,
                           ),
-                          child: const Text('Refuser'),
+                          child: const AppText('Refuser'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -490,7 +493,7 @@ class _PendingOrders extends StatelessWidget {
                             foregroundColor:
                                 BusinessOrdersScreen.primaryDarkGreen,
                           ),
-                          child: const Text(
+                          child: const AppText(
                             'Accepter',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
@@ -597,7 +600,7 @@ class _ActiveOrders extends StatelessWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text(
+              child: AppText(
                 'Impossible de charger les commandes.\n${snapshot.error}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70),
@@ -693,7 +696,7 @@ class _ActiveOrders extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  AppText(
                     'Type : $orderType',
                     style: const TextStyle(color: Colors.white70),
                   ),
@@ -720,7 +723,7 @@ class _ActiveOrders extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         icon: const Icon(Icons.restaurant_menu),
-                        label: const Text(
+                        label: const AppText(
                           'Commencer la préparation',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
@@ -750,7 +753,7 @@ class _ActiveOrders extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         icon: const Icon(Icons.check_circle_outline),
-                        label: const Text(
+                        label: const AppText(
                           'Marquer comme prête',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
@@ -780,7 +783,7 @@ class _ActiveOrders extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         icon: const Icon(Icons.done_all),
-                        label: const Text(
+                        label: const AppText(
                           'Terminer la commande',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
@@ -830,7 +833,7 @@ class _CompletedOrders extends StatelessWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text(
+              child: AppText(
                 'Impossible de charger les commandes terminées.\n'
                 '${snapshot.error}',
                 textAlign: TextAlign.center,
@@ -915,7 +918,7 @@ class _CompletedOrders extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const Text(
+                        const AppText(
                           'Terminée',
                           style: TextStyle(
                             color: BusinessOrdersScreen.primaryGold,
@@ -925,13 +928,13 @@ class _CompletedOrders extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    AppText(
                       'Type : $orderType',
                       style: const TextStyle(color: Colors.white70),
                     ),
                     if (total != null) ...[
                       const SizedBox(height: 4),
-                      Text(
+                      AppText(
                         'Total client : ${savedOrderMoney(total, currency: orderText(data['currency']).isEmpty ? '€' : orderText(data['currency']).toUpperCase())}',
                         style: const TextStyle(
                           color: Colors.white,

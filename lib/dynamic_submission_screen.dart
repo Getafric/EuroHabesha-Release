@@ -1,3 +1,11 @@
+import 'l10n/app_ui.dart';
+import 'professional_verification_screen.dart';
+import 'professional_activity_text.dart';
+import 'business_countries.dart';
+import 'professional_registration.dart';
+import 'member_interface_text.dart';
+import 'professional_activity_flow.dart';
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -5,7 +13,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+
 import 'professional_photo_cropper.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 
@@ -18,11 +28,13 @@ import 'service_profession_card.dart';
 class DynamicSubmissionScreen extends StatefulWidget {
   final SubmissionType type;
   final String? editDocumentId;
+  final bool previewOnly;
 
   const DynamicSubmissionScreen({
     super.key,
     required this.type,
     this.editDocumentId,
+    this.previewOnly = false,
   });
 
   bool get isEditing =>
@@ -84,47 +96,609 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   String _selectedJobCategory = 'Cleaning';
   // EH_PHOTO_PRESENTATION_V1
   XFile? _presentationPhoto;
-  bool get _requiresPresentationPhoto => ['job','business','professional'].contains(widget.type.name);
+  bool get _requiresPresentationPhoto =>
+      ['job', 'business', 'professional'].contains(_submissionType.name);
   // EH_CADRAGE_AVIS_V1
   Future<void> _pickPresentationPhoto() async {
     try {
-      final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
-      if (file == null) { return; }
+      final file = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      if (file == null) {
+        return;
+      }
       final bytes = await file.readAsBytes();
-      if (!mounted) { return; }
-      final framed = await frameProfessionalPhoto(context, bytes: bytes,
-        use: ProfessionalPhotoUse.presentation);
-      if (!mounted || framed == null) { return; }
-      setState(() => _presentationPhoto = XFile.fromData(framed,
-        name: 'presentation.png', mimeType: 'image/png'));
+      if (!mounted) {
+        return;
+      }
+      final framed = await frameProfessionalPhoto(
+        context,
+        bytes: bytes,
+        use: ProfessionalPhotoUse.presentation,
+      );
+      if (!mounted || framed == null) {
+        return;
+      }
+      setState(
+        () => _presentationPhoto = XFile.fromData(
+          framed,
+          name: 'presentation.png',
+          mimeType: 'image/png',
+        ),
+      );
     } catch (_) {
-      if (mounted) { _showMessage('Impossible d’ouvrir cette photo. Réessayez.', isError: true); }
+      if (mounted) {
+        _showMessage(
+          'Impossible d’ouvrir cette photo. Réessayez.',
+          isError: true,
+        );
+      }
     }
   }
+
   Widget _buildPresentationPhoto({bool readOnly = false}) {
     final photo = _presentationPhoto;
-    return Container(margin: const EdgeInsets.only(bottom: 18),padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: cardGreen,borderRadius: BorderRadius.circular(16)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,children: [
-        const Text('Photo de présentation *',style: TextStyle(color: primaryGold,fontSize: 18,fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        SizedBox(height: 170,child: photo == null
-          ? const Center(child: Icon(Icons.add_photo_alternate_outlined,color: primaryGold,size: 52))
-          : FutureBuilder<Uint8List>(future: photo.readAsBytes(),builder: (context,snapshot) => snapshot.hasData
-            ? Image.memory(snapshot.data!,fit: BoxFit.contain,cacheWidth: 600,
-              errorBuilder: (_,error,stack) => const Icon(Icons.broken_image_outlined,color: Colors.white70))
-            : const Center(child: CircularProgressIndicator(color: primaryGold)))),
-        const SizedBox(height: 10),
-        const Text('Une photo publique de votre activité est obligatoire. Personne, véhicule, local, logo ou réalisation : choisissez une image adaptée. Aucun document de vérification ici.',style: TextStyle(color: Colors.white70)),
-        if (!readOnly) ...[
-          const SizedBox(height: 10),FilledButton.icon(onPressed: _isSubmitting ? null : _pickPresentationPhoto,
-            style: FilledButton.styleFrom(backgroundColor: primaryGold,foregroundColor: primaryDarkGreen),
-            icon: const Icon(Icons.add_a_photo_outlined),label: Text(photo == null ? 'Ajouter une photo' : 'Changer la photo')),
-          if (photo != null) TextButton(onPressed: _isSubmitting ? null : () => setState(() => _presentationPhoto = null),
-            child: const Text('Retirer la photo',style: TextStyle(color: Colors.white70))),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cardGreen,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            memberText(
+              context,
+              "Photo de présentation *",
+              "Presentation photo *",
+            ),
+            style: TextStyle(
+              color: primaryGold,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 170,
+            child: photo == null
+                ? const Center(
+                    child: Icon(
+                      Icons.add_photo_alternate_outlined,
+                      color: primaryGold,
+                      size: 52,
+                    ),
+                  )
+                : FutureBuilder<Uint8List>(
+                    future: photo.readAsBytes(),
+                    builder: (context, snapshot) => snapshot.hasData
+                        ? Image.memory(
+                            snapshot.data!,
+                            fit: BoxFit.contain,
+                            cacheWidth: 600,
+                            errorBuilder: (_, error, stack) => const Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.white70,
+                            ),
+                          )
+                        : const Center(
+                            child: CircularProgressIndicator(
+                              color: primaryGold,
+                            ),
+                          ),
+                  ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            memberText(
+              context,
+              "Une photo publique de votre activité est obligatoire. Aucun justificatif privé ici.",
+              "A public presentation photo is required. Do not upload private verification documents here.",
+            ),
+            style: TextStyle(color: Colors.white70),
+          ),
+          if (!readOnly) ...[
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: _isSubmitting ? null : _pickPresentationPhoto,
+              style: FilledButton.styleFrom(
+                backgroundColor: primaryGold,
+                foregroundColor: primaryDarkGreen,
+              ),
+              icon: const Icon(Icons.add_a_photo_outlined),
+              label: Text(
+                photo == null
+                    ? memberText(context, "Ajouter une photo", "Add a photo")
+                    : memberText(context, "Changer la photo", "Change photo"),
+              ),
+            ),
+            if (photo != null)
+              TextButton(
+                onPressed: _isSubmitting
+                    ? null
+                    : () => setState(() => _presentationPhoto = null),
+                child: Text(
+                  memberText(context, "Retirer la photo", "Remove photo"),
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+          ],
         ],
-      ]));
+      ),
+    );
   }
+
+  String? _workMode;
+  bool? _hasRegistration;
+  bool _registrationAcknowledged = false;
+  String _registrationKind = 'SIRET';
+  bool get _isRoutableActivity =>
+      const [
+        SubmissionType.business,
+        SubmissionType.job,
+        SubmissionType.professional,
+      ].contains(widget.type) &&
+      !widget.isEditing;
+  SubmissionType get _submissionType => !_isRoutableActivity
+      ? widget.type
+      : SubmissionType.values.byName(
+          activityRoute(
+            widget.type.name,
+            _workMode == null ? null : _workMode == 'establishment',
+          ),
+        );
+  String? get _registrationError => registrationInputError(
+    countryCode: BusinessCountries.find(_selectedCountry)?.code ?? '',
+    kind: _registrationKind,
+    value: _controller('activityRegistrationNumber').text,
+    english: memberText(context, 'fr', 'en') == 'en',
+  );
+  Widget _choiceQuestion(
+    String fr,
+    String en,
+    bool? value,
+    ValueChanged<bool> changed, {
+    String yesFr = 'Oui',
+    String yesEn = 'Yes',
+    String noFr = 'Non',
+    String noEn = 'No',
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const SizedBox(height: 16),
+      Text(
+        memberText(context, fr, en),
+        style: const TextStyle(color: primaryGold, fontWeight: FontWeight.w700),
+      ),
+      Wrap(
+        spacing: 10,
+        children: [
+          ChoiceChip(
+            label: Text(memberText(context, yesFr, yesEn)),
+            selected: value == true,
+            onSelected: _isSubmitting ? null : (_) => changed(true),
+          ),
+          ChoiceChip(
+            label: Text(memberText(context, noFr, noEn)),
+            selected: value == false,
+            onSelected: _isSubmitting ? null : (_) => changed(false),
+          ),
+        ],
+      ),
+    ],
+  );
+
+  List<Widget> _buildActivityIdentity() => [
+    _buildCountryDropdown(),
+    _choiceQuestion(
+      'Avez-vous un numéro d’enregistrement officiel ?',
+      'Do you have an official registration number?',
+      _hasRegistration,
+      (value) => setState(() {
+        _hasRegistration = value;
+        _registrationAcknowledged = false;
+      }),
+    ),
+    if (_hasRegistration == true) ...[
+      if (BusinessCountries.find(_selectedCountry)?.code == 'FR')
+        _buildDropdown(
+          label: memberText(context, 'Type de numéro', 'Number type'),
+          value: _registrationKind,
+          values: const ['SIRET', 'SIREN'],
+          onChanged: (value) => setState(() {
+            _registrationKind = value;
+            _registrationAcknowledged = false;
+          }),
+        ),
+      const SizedBox(height: 10),
+      TextFormField(
+        controller: _controller('activityRegistrationNumber'),
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: BusinessCountries.find(_selectedCountry)?.code == 'FR'
+              ? '$_registrationKind (${_registrationKind == 'SIRET' ? 14 : 9} ${memberText(context, 'chiffres', 'digits')})'
+              : memberText(
+                  context,
+                  BusinessCountries.registrationLabel(
+                    BusinessCountries.find(_selectedCountry),
+                  ),
+                  'Official registration number',
+                ),
+          labelStyle: const TextStyle(color: Colors.white70),
+          filled: true,
+          fillColor: cardGreen,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        validator: (_) => _registrationError,
+        onChanged: (_) => setState(() => _registrationAcknowledged = false),
+      ),
+      if (BusinessCountries.find(_selectedCountry)?.code == 'FR' &&
+          _registrationError == null)
+        Text(
+          memberText(
+            context,
+            registrationChecksumMatches(
+                  _controller('activityRegistrationNumber').text,
+                )
+                ? 'Format et clé de contrôle cohérents — justificatifs à vérifier.'
+                : 'Clé de contrôle inhabituelle : revérifiez le numéro. Un examen manuel reste nécessaire.',
+            registrationChecksumMatches(
+                  _controller('activityRegistrationNumber').text,
+                )
+                ? 'Format and checksum match — documents still need review.'
+                : 'Unusual checksum: double-check the number. Manual review is required.',
+          ),
+          style: const TextStyle(color: Colors.white70),
+        ),
+      CheckboxListTile(
+        value: _registrationAcknowledged,
+        activeColor: primaryGold,
+        checkColor: primaryDarkGreen,
+        title: Text(
+          memberText(
+            context,
+            'J’ai vérifié que le numéro, le nom et le pays correspondent à mes justificatifs.',
+            'I checked that the number, name and country match my supporting documents.',
+          ),
+          style: const TextStyle(color: Colors.white),
+        ),
+        onChanged: (value) =>
+            setState(() => _registrationAcknowledged = value ?? false),
+      ),
+      Text(
+        memberText(
+          context,
+          'Le contrôle de saisie ne prouve ni l’existence de l’entreprise ni votre identité. Le dossier sera vérifié séparément.',
+          'Input checks do not prove business existence or your identity. The dossier is verified separately.',
+        ),
+        style: const TextStyle(color: Colors.white70),
+      ),
+    ],
+    if (_hasRegistration == false)
+      Text(
+        memberText(
+          context,
+          'Vous pouvez présenter votre activité sans badge vérifié. Les fonctions soumises à vérification restent indisponibles.',
+          'You can present your activity without a verified badge. Features requiring verification remain unavailable.',
+        ),
+        style: const TextStyle(color: Colors.white70),
+      ),
+    if (_isRoutableActivity)
+      _choiceQuestion(
+        'Avez-vous un établissement qui accueille des clients ?',
+        'Do you have premises that welcome customers?',
+        _workMode == null ? null : _workMode == 'establishment',
+        (value) => setState(() {
+          _workMode = value ? 'establishment' : 'service';
+          _activityChosen = false;
+          _showExactAddress = false;
+          if (value) {
+            _syncBusinessHours();
+          }
+        }),
+        yesFr: 'Oui — établissement',
+        yesEn: 'Yes — premises',
+        noFr: 'Non — service',
+        noEn: 'No — service',
+      ),
+    const SizedBox(height: 12),
+    Text(
+      memberText(
+        context,
+        'Le numéro officiel et le lieu de travail sont indépendants. Un service peut être enregistré et exercé chez le client ou à distance.',
+        'Registration and work location are independent. A registered service can operate at the customer’s location or remotely.',
+      ),
+      style: const TextStyle(color: Colors.white70),
+    ),
+    const SizedBox(height: 18),
+  ];
+
+  bool _activityChosen = false;
+  bool _adminPreview = false;
+  bool get _usesActivityWizard => const [
+    SubmissionType.job,
+    SubmissionType.business,
+    SubmissionType.professional,
+    SubmissionType.employer,
+  ].contains(_submissionType);
+  bool get _usesServiceDetails =>
+      _submissionType == SubmissionType.job ||
+      _submissionType == SubmissionType.professional;
+  bool get _canAdminPreview {
+    final user = FirebaseAuth.instance.currentUser;
+    return user != null &&
+        !user.isAnonymous &&
+        user.emailVerified &&
+        (user.email ?? '').trim().toLowerCase() ==
+            AppSession.email.trim().toLowerCase() &&
+        (AppSession.isSuperAdmin || AppSession.roles.isNotEmpty);
+  }
+
+  bool get _isActivityPreview => widget.previewOnly || _adminPreview;
+  bool get _canSkipActivityValidation => _isActivityPreview && _canAdminPreview;
+  String get _activityLabel => _usesServiceDetails
+      ? _serviceCategoryLabel(_selectedJobCategory)
+      : memberText(
+          context,
+          activityBusinessCategories[_controller('businessCategory')
+                  .text]?[0] ??
+              '',
+          activityBusinessCategories[_controller('businessCategory')
+                  .text]?[1] ??
+              '',
+        );
+
+  String _serviceCategoryLabel(String category) {
+    final definition = serviceDefinition(category);
+    return switch (category) {
+      'Doctor / Health Professional' => memberText(
+        context,
+        'Médecine / Santé',
+        'Doctor / Health professional',
+      ),
+      'Lawyer / Legal Professional' => memberText(
+        context,
+        'Droit / Conseil juridique',
+        'Lawyer / Legal professional',
+      ),
+      'Consultant / Agency' => memberText(
+        context,
+        'Conseil / Agence',
+        'Consultant / Agency',
+      ),
+      _ => activityText(context, definition.label),
+    };
+  }
+
+  Map<String, String> get _activityValues => _controllers.map(
+    (key, controller) => MapEntry(key, controller.text.trim()),
+  );
+
+  void _selectActivity(String? value) {
+    if (value == null) {
+      return;
+    }
+    setState(() {
+      _activityChosen = true;
+      if (_usesServiceDetails) {
+        _selectedJobCategory = value;
+        if (_submissionType == SubmissionType.professional) {
+          _controller('professionTitle').text = _serviceCategoryLabel(value);
+        }
+      } else {
+        _controller('businessCategory').text = value;
+        if (_submissionType == SubmissionType.employer) {
+          _controller('businessSector').text = value;
+        }
+      }
+    });
+  }
+
+  Widget _buildActivityChoice() {
+    final choices = _usesServiceDetails
+        ? _jobCategories
+        : activityBusinessCategories.keys.toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ..._buildActivityIdentity(),
+        Text(
+          memberText(
+            context,
+            'Quelle est votre activité ?',
+            'What is your activity?',
+          ),
+          style: const TextStyle(
+            color: primaryGold,
+            fontSize: 23,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          memberText(
+            context,
+            'Choisissez votre métier avant de présenter votre activité. Le formulaire suivant sera adapté à ce choix.',
+            'Choose your profession first. The following form will adapt to your activity.',
+          ),
+          style: const TextStyle(color: Colors.white70),
+        ),
+        const SizedBox(height: 20),
+        DropdownButtonFormField<String>(
+          key: ValueKey(
+            'activity-${_submissionType.name}-${_activityChosen ? _activityLabel : 'unselected'}',
+          ),
+          initialValue: _activityChosen
+              ? (_usesServiceDetails
+                    ? _selectedJobCategory
+                    : _controller('businessCategory').text)
+              : null,
+          isExpanded: true,
+          dropdownColor: cardGreen,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: memberText(
+              context,
+              'Métier / Type d’activité *',
+              'Profession / Activity type *',
+            ),
+            labelStyle: const TextStyle(color: Colors.white70),
+            filled: true,
+            fillColor: cardGreen,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          items: choices
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(
+                    _usesServiceDetails
+                        ? _serviceCategoryLabel(value)
+                        : memberText(
+                            context,
+                            activityBusinessCategories[value]![0],
+                            activityBusinessCategories[value]![1],
+                          ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: _isSubmitting ? null : _selectActivity,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          memberText(
+            context,
+            'Les pièces d’identité et justificatifs de vérification restent dans le dossier privé, pas dans la fiche publique.',
+            'Identity and verification documents belong in the private dossier, not the public profile.',
+          ),
+          style: const TextStyle(color: Colors.white70),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityPreview() {
+    if (_usesServiceDetails) {
+      return _buildJobPreview();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          _activityLabel,
+          style: const TextStyle(
+            color: primaryGold,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final key in const [
+          'title',
+          'cityAddress',
+          'description',
+          'phoneNumber',
+          'address',
+          'companyName',
+          'businessSector',
+          'contactPerson',
+        ])
+          if (_controller(key).text.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Text(
+                _controller(key).text.trim(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+        if (_submissionType == SubmissionType.business)
+          for (final field in activityFieldsForBusiness(
+            _controller('businessCategory').text,
+          ))
+            if (_controller(field.key).text.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: AppText(
+                  '${memberText(context, field.fr, field.en)} : ${_controller(field.key).text.trim()}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
+        if (_requiresPresentationPhoto) _buildPresentationPhoto(readOnly: true),
+        const SizedBox(height: 12),
+        Text(
+          memberText(
+            context,
+            'Envoi pour examen administratif. La vérification et les paiements ne sont pas activés par ce formulaire.',
+            'Submission for administrative review. This form does not activate verification or payments.',
+          ),
+          style: const TextStyle(color: Colors.white70),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityDetails() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text(
+        _activityLabel,
+        style: const TextStyle(
+          color: primaryGold,
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      TextButton.icon(
+        onPressed: _isSubmitting ? null : () => _setJobStep(0),
+        icon: const Icon(Icons.edit_outlined),
+        label: Text(
+          memberText(context, 'Modifier mon activité', 'Change my activity'),
+          style: const TextStyle(color: primaryGold),
+        ),
+      ),
+      ..._buildTypeFields(),
+    ],
+  );
+
+  Widget _buildActivityPreviewSwitch() => Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: cardGreen,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: SwitchListTile(
+      value: _isActivityPreview,
+      activeThumbColor: primaryGold,
+      title: Text(
+        memberText(context, 'Aperçu administrateur', 'Administrator preview'),
+        style: const TextStyle(color: primaryGold),
+      ),
+      subtitle: Text(
+        memberText(
+          context,
+          'Parcourez les étapes sans tout remplir. Aucun dossier ne peut être envoyé dans ce mode.',
+          'Browse steps without filling every field. Submission is disabled in this mode.',
+        ),
+        style: const TextStyle(color: Colors.white70),
+      ),
+      onChanged: widget.previewOnly || _isSubmitting
+          ? null
+          : (value) {
+              FocusScope.of(context).unfocus();
+              setState(() {
+                _adminPreview = value;
+                _jobStep = 0;
+              });
+            },
+    ),
+  );
+
   int _jobStep = 0;
   final _jobScroll = ScrollController();
   final Map<String, Map<String, dynamic>> _serviceDrafts = {};
@@ -145,19 +719,75 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     if (_jobScroll.hasClients) _jobScroll.jumpTo(0);
   }
 
-  void _nextJobStep() {
-    final photoError = requiredProfessionalPhotoError(widget.type.name,hasPhoto: _presentationPhoto != null);
-    if (photoError != null) { _showMessage(photoError,isError: true); return; }
+  bool _validateActivityIdentity() {
+    final message = _hasRegistration == null
+        ? memberText(
+            context,
+            'Répondez à la question sur le numéro officiel.',
+            'Answer the registration question.',
+          )
+        : _isRoutableActivity && _workMode == null
+        ? memberText(
+            context,
+            'Choisissez votre mode d’activité.',
+            'Choose your work location mode.',
+          )
+        : _hasRegistration == true && _registrationError != null
+        ? _registrationError
+        : _hasRegistration == true && !_registrationAcknowledged
+        ? memberText(
+            context,
+            'Vérifiez la correspondance du numéro avec vos documents.',
+            'Check that the number matches your documents.',
+          )
+        : null;
+    if (message == null) {
+      return true;
+    }
+    _showMessage(message, isError: true);
+    return false;
+  }
 
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_jobStep == 1) {
-      final error = validateServiceDetails(_jobDefinition, _jobDraft);
-      if (error != null) {
-        _showMessage(error, isError: true);
+  void _nextJobStep() {
+    if (_jobStep == 0 && !_activityChosen) {
+      _showMessage(
+        memberText(
+          context,
+          'Choisissez d’abord votre activité.',
+          'Choose your activity first.',
+        ),
+        isError: true,
+      );
+      return;
+    }
+    if (!_canSkipActivityValidation) {
+      if (_jobStep == 0 && !_validateActivityIdentity()) {
         return;
       }
+      if (!(_formKey.currentState?.validate() ?? false)) {
+        return;
+      }
+      if (_jobStep == 1) {
+        final error = requiredProfessionalPhotoError(
+          _submissionType.name,
+          hasPhoto: _presentationPhoto != null,
+        );
+        if (error != null) {
+          _showMessage(error, isError: true);
+          return;
+        }
+      }
+      if (_jobStep == 2 && _usesServiceDetails) {
+        final error = validateServiceDetails(_jobDefinition, _jobDraft);
+        if (error != null) {
+          _showMessage(error, isError: true);
+          return;
+        }
+      }
     }
-    _setJobStep(_jobStep + 1);
+    if (_jobStep < 3) {
+      _setJobStep(_jobStep + 1);
+    }
   }
 
   Widget _buildJobProgress() => Padding(
@@ -166,15 +796,31 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (var i = 0; i < 3; i++)
-          Chip(
+        for (var i = 0; i < 4; i++)
+          ActionChip(
             backgroundColor: _jobStep == i ? primaryGold : cardGreen,
             labelStyle: TextStyle(
               color: _jobStep == i ? primaryDarkGreen : Colors.white,
             ),
-            label: Text(
-              '${i + 1} · ${['Présentation', 'Services', 'Aperçu'][i]}',
+            label: AppText(
+              '${i + 1} · ${[memberText(context, 'Activité', 'Activity'), memberText(context, 'Présentation', 'Presentation'), memberText(context, 'Détails métier', 'Activity details'), memberText(context, 'Récapitulatif', 'Summary')][i]}',
             ),
+            onPressed:
+                !_isSubmitting && (_canSkipActivityValidation || i <= _jobStep)
+                ? () {
+                    if (!_activityChosen && i > 0) {
+                      _showMessage(
+                        memberText(
+                          context,
+                          'Choisissez d’abord votre activité.',
+                          'Choose your activity first.',
+                        ),
+                      );
+                      return;
+                    }
+                    _setJobStep(i);
+                  }
+                : null,
           ),
       ],
     ),
@@ -191,8 +837,8 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
         ),
       ),
       const SizedBox(height: 8),
-      Text(
-        '${_controller('cityAddress').text.trim()} · $_selectedCountry',
+      AppText(
+        '${_controller('cityAddress').text.trim()} · ${activityCountryLabel(context, _selectedCountry)}',
         style: const TextStyle(color: Colors.white70),
       ),
       const SizedBox(height: 12),
@@ -212,7 +858,7 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       _buildPresentationPhoto(readOnly: true),
       _buildServicePhotos(readOnly: true),
       const SizedBox(height: 16),
-      const Text(
+      const AppText(
         'Votre fiche sera envoyée pour validation par l’admin. La vérification professionnelle reste un dossier séparé.',
         style: TextStyle(color: Colors.white70),
       ),
@@ -223,7 +869,10 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       _uploadedServicePhotos.clear();
       _uploadOwner = uid;
     }
-    final photos = <XFile>[if (_presentationPhoto != null) _presentationPhoto!,..._jobPhotos].take(10).toList();
+    final photos = <XFile>[
+      if (_presentationPhoto != null) _presentationPhoto!,
+      ..._jobPhotos,
+    ].take(10).toList();
     for (final file in photos) {
       if (await file.length() > 8 * 1024 * 1024) {
         throw Exception('Maximum 8 Mo par photo.');
@@ -358,16 +1007,20 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
     'DJ / Music Services',
     'Home Cooking',
     'Other Service',
+    'Doctor / Health Professional',
+    'Lawyer / Legal Professional',
+    'Consultant / Agency',
   ];
 
   @override
   void initState() {
     super.initState();
 
-    _controller('phoneNumber').text = '${_countryDialCodes[_selectedCountry]} ';
-    if (widget.type == SubmissionType.business) _syncBusinessHours();
+    _controller('phoneNumber').text =
+        '${_countryDialCodes[_selectedCountry] ?? ''} ';
+    if (_submissionType == SubmissionType.business) _syncBusinessHours();
 
-    if (widget.isEditing && widget.type == SubmissionType.event) {
+    if (widget.isEditing && _submissionType == SubmissionType.event) {
       _loadExistingEvent();
     }
   }
@@ -419,8 +1072,8 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
 
       final country = fields['country']?.toString().trim();
 
-      if (country != null && _countryDialCodes.containsKey(country)) {
-        _selectedCountry = country;
+      if (country != null && BusinessCountries.find(country) != null) {
+        _selectedCountry = BusinessCountries.find(country)?.name ?? country;
       }
 
       _showExactAddress = fields['showExactAddress'] == true;
@@ -573,21 +1226,37 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   }
 
   String get _title {
-    return switch (widget.type) {
-      SubmissionType.business => 'Register a Business / Restaurant',
-      SubmissionType.professional => 'Register as a Professional',
+    return switch (_submissionType) {
+      SubmissionType.business => memberText(
+        context,
+        'Créer ma fiche commerce',
+        'Create my business profile',
+      ),
+      SubmissionType.professional => memberText(
+        context,
+        'Créer ma fiche professionnelle',
+        'Create my professional profile',
+      ),
       SubmissionType.event =>
         widget.isEditing ? 'Edit Event' : 'Submit an Event',
       SubmissionType.community => 'Register a Community',
-      SubmissionType.job => 'Créer ma fiche de services',
+      SubmissionType.job => memberText(
+        context,
+        'Créer ma fiche de services',
+        'Create my service profile',
+      ),
       SubmissionType.verification => 'Request Verification',
       SubmissionType.marketplace => 'Post Marketplace Item',
-      SubmissionType.employer => 'Créer un profil Employeur',
+      SubmissionType.employer => memberText(
+        context,
+        'Créer ma fiche employeur',
+        'Create my employer profile',
+      ),
     };
   }
 
   String get _collectionName {
-    return switch (widget.type) {
+    return switch (_submissionType) {
       SubmissionType.business => 'businessSubmissions',
       SubmissionType.professional => 'jobSubmissions',
       SubmissionType.event => 'eventSubmissions',
@@ -602,7 +1271,9 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   Future<Map<String, dynamic>?> _geocodeSubmissionLocation() async {
     try {
       final cityAddress = _controllers['cityAddress']?.text.trim() ?? '';
-      final address = _controllers['address']?.text.trim() ?? '';
+      final address = _usesServiceDetails
+          ? ''
+          : _controllers['address']?.text.trim() ?? '';
       final country = _selectedCountry.trim();
 
       final parts = <String>[
@@ -640,6 +1311,40 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isActivityPreview) {
+      _showMessage(
+        memberText(
+          context,
+          'Aperçu uniquement : aucun dossier envoyé.',
+          'Preview only: no application was submitted.',
+        ),
+      );
+      return;
+    }
+    if (_usesActivityWizard) {
+      if (!_validateActivityIdentity()) {
+        _setJobStep(0);
+        return;
+      }
+      final missing = activityMissingStep(
+        type: _submissionType.name,
+        categoryChosen: _activityChosen,
+        hasPhoto: _presentationPhoto != null,
+        fields: _activityValues,
+      );
+      if (missing != null) {
+        _setJobStep(missing);
+        _showMessage(
+          memberText(
+            context,
+            'Complétez cette étape avant l’envoi.',
+            'Complete this step before submitting.',
+          ),
+          isError: true,
+        );
+        return;
+      }
+    }
     if (_isSubmitting) return;
     final user = FirebaseAuth.instance.currentUser;
 
@@ -662,20 +1367,20 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       return;
     }
 
-    if (widget.type == SubmissionType.marketplace &&
+    if (_submissionType == SubmissionType.marketplace &&
         _marketplacePhotos.isEmpty) {
       _showMessage('Please add at least one photo.', isError: true);
       return;
     }
 
-    if (widget.type == SubmissionType.job) {
+    if (_usesServiceDetails) {
       if ([
         'title',
         'phoneNumber',
         'cityAddress',
         'description',
       ].any((k) => _controller(k).text.trim().isEmpty)) {
-        _setJobStep(0);
+        _setJobStep(1);
         _showMessage(
           'Complétez la présentation de votre activité.',
           isError: true,
@@ -684,18 +1389,23 @@ class _DynamicSubmissionScreenState extends State<DynamicSubmissionScreen> {
       }
       final error = validateServiceDetails(_jobDefinition, _jobDraft);
       if (error != null) {
-        _setJobStep(1);
+        _setJobStep(2);
         _showMessage(error, isError: true);
         return;
       }
     }
-        final requiredPhotoError = requiredProfessionalPhotoError(widget.type.name,hasPhoto: _presentationPhoto != null);
+    final requiredPhotoError = requiredProfessionalPhotoError(
+      _submissionType.name,
+      hasPhoto: _presentationPhoto != null,
+    );
     if (requiredPhotoError != null) {
-      if (widget.type == SubmissionType.job) { _setJobStep(0); }
-      _showMessage(requiredPhotoError,isError: true);
+      if (_usesServiceDetails) {
+        _setJobStep(1);
+      }
+      _showMessage(requiredPhotoError, isError: true);
       return;
     }
-setState(() => _isSubmitting = true);
+    setState(() => _isSubmitting = true);
 
     try {
       final geoLocation = await _geocodeSubmissionLocation();
@@ -705,13 +1415,13 @@ setState(() => _isSubmitting = true);
           : <String>[];
       List<String> marketplacePhotoUrls = [];
 
-      if (widget.type == SubmissionType.marketplace) {
+      if (_submissionType == SubmissionType.marketplace) {
         marketplacePhotoUrls = await _uploadMarketplacePhotos(user.uid);
       }
 
       List<String> eventPhotoUrls = [..._existingEventPhotoUrls];
 
-      if (widget.type == SubmissionType.event && _eventPhotos.isNotEmpty) {
+      if (_submissionType == SubmissionType.event && _eventPhotos.isNotEmpty) {
         final newPhotoUrls = await _uploadEventPhotos(user.uid);
 
         eventPhotoUrls.addAll(newPhotoUrls);
@@ -719,13 +1429,13 @@ setState(() => _isSubmitting = true);
 
       List<Map<String, dynamic>> eventArtists = [];
 
-      if (widget.type == SubmissionType.event) {
+      if (_submissionType == SubmissionType.event) {
         eventArtists = await _uploadEventArtists(user.uid);
       }
 
       final eventTicketTypes = <Map<String, dynamic>>[];
 
-      if (widget.type == SubmissionType.event) {
+      if (_submissionType == SubmissionType.event) {
         for (var index = 0; index < _eventTicketTypes.length; index++) {
           final ticket = _eventTicketTypes[index];
 
@@ -783,7 +1493,7 @@ setState(() => _isSubmitting = true);
       }
 
       final data = <String, dynamic>{
-        'type': widget.type.name,
+        'type': _submissionType.name,
         'status': 'pendingApproval',
         'isVerified': false,
         'submittedBy': user.uid,
@@ -792,10 +1502,65 @@ setState(() => _isSubmitting = true);
         'submitterEmail': user.email,
         'createdAt': FieldValue.serverTimestamp(),
         'fields': {
-          ..._controllers.map(
-            (key, controller) => MapEntry(key, controller.text.trim()),
+          ...Map.fromEntries(
+            _controllers.entries
+                .where(
+                  (entry) =>
+                      (!_usesServiceDetails ||
+                          (!const [
+                                'address',
+                                'postalCode',
+                                'businessCategory',
+                                'openingHours',
+                                'weekdayHours',
+                                'saturdayHours',
+                                'sundayHours',
+                              ].contains(entry.key) &&
+                              !entry.key.startsWith('businessHours_') &&
+                              !activityBusinessSpecificKeys.contains(
+                                entry.key,
+                              ))) &&
+                      (_submissionType != SubmissionType.business ||
+                          !activityBusinessSpecificKeys.contains(entry.key) ||
+                          activityFieldsForBusiness(
+                            _controller('businessCategory').text,
+                          ).any((field) => field.key == entry.key)),
+                )
+                .map(
+                  (entry) => MapEntry(
+                    entry.key,
+                    entry.key == 'activityRegistrationNumber' &&
+                            _hasRegistration != true
+                        ? ''
+                        : entry.value.text.trim(),
+                  ),
+                ),
           ),
           'country': _selectedCountry,
+          if (_usesActivityWizard) ...{
+            'hasOfficialRegistration': _hasRegistration == true,
+            'registrationDeclaredNumber': _hasRegistration == true
+                ? _controller('activityRegistrationNumber').text.trim()
+                : '',
+            'registrationDeclaredKind': _hasRegistration != true
+                ? ''
+                : BusinessCountries.find(_selectedCountry)?.code == 'FR'
+                ? _registrationKind
+                : 'official',
+            'registrationInputCheck': _hasRegistration != true
+                ? 'notProvided'
+                : BusinessCountries.find(_selectedCountry)?.code == 'FR' &&
+                      registrationChecksumMatches(
+                        _controller('activityRegistrationNumber').text,
+                      )
+                ? 'formatChecked'
+                : 'manualReviewRequired',
+            'activityWorkMode':
+                _workMode ??
+                (_submissionType == SubmissionType.business
+                    ? 'establishment'
+                    : 'service'),
+          },
           'showExactAddress': _showExactAddress,
           if (geoLocation != null) ...{
             'latitude': geoLocation['latitude'],
@@ -803,7 +1568,7 @@ setState(() => _isSubmitting = true);
             'geoPoint': geoLocation['geoPoint'],
             'geocodedAddress': geoLocation['geocodedAddress'],
           },
-          if (widget.type == SubmissionType.job) ...{
+          if (_usesServiceDetails) ...{
             'jobCategory': _selectedJobCategory,
             'serviceDetails': cleanServiceDetails(_jobDefinition, _jobDraft),
             'cityOnlyLocation': _controller('cityAddress').text.trim(),
@@ -825,21 +1590,21 @@ setState(() => _isSubmitting = true);
       if (_requiresPresentationPhoto) {
         data['media'] = {'photoUrls': servicePhotos};
         data['gallery'] = servicePhotos;
-        final photoFields = data['fields'] as Map<String,dynamic>;
+        final photoFields = data['fields'] as Map<String, dynamic>;
         photoFields['logoUrl'] = servicePhotos.first;
         photoFields['coverUrl'] = servicePhotos.first;
         data['logoUrl'] = servicePhotos.first;
         data['coverUrl'] = servicePhotos.first;
       }
-      if (widget.type == SubmissionType.marketplace) {
+      if (_submissionType == SubmissionType.marketplace) {
         data['media'] = {'photoUrls': marketplacePhotoUrls};
       }
 
-      if (widget.type == SubmissionType.event) {
+      if (_submissionType == SubmissionType.event) {
         data['media'] = {'photoUrls': eventPhotoUrls};
       }
 
-      if (widget.type == SubmissionType.business) {
+      if (_submissionType == SubmissionType.business) {
         data['contactModel'] = {
           'inAppMessagingEnabled': false,
           'primaryAction': 'callForReservation',
@@ -848,7 +1613,7 @@ setState(() => _isSubmitting = true);
         };
       }
 
-      if (widget.type == SubmissionType.job) {
+      if (_submissionType == SubmissionType.job) {
         data['contactModel'] = {
           'inAppMessagingEnabled': true,
           'whatsappEnabled': _whatsappEnabled,
@@ -882,7 +1647,7 @@ setState(() => _isSubmitting = true);
       data['nonRefundable'] = _nonRefundable;
       data['nonTransferable'] = _nonTransferable;
 
-      if (widget.type == SubmissionType.event) {
+      if (_submissionType == SubmissionType.event) {
         data['eventDetails'] = {
           'age18Only': _age18Only,
           'kidsAllowed': _kidsAllowed,
@@ -925,7 +1690,7 @@ setState(() => _isSubmitting = true);
         data['image'] = eventPhotoUrls.isNotEmpty ? eventPhotoUrls.first : null;
       }
 
-      if (widget.type == SubmissionType.marketplace) {
+      if (_submissionType == SubmissionType.marketplace) {
         data['marketplaceDetails'] = {
           'listingType': _marketplaceType,
           'condition': _marketplaceCondition,
@@ -938,11 +1703,11 @@ setState(() => _isSubmitting = true);
         };
       }
 
-      if (widget.type == SubmissionType.job &&
+      if (_submissionType == SubmissionType.job &&
           FirebaseAuth.instance.currentUser?.uid != user.uid) {
         throw Exception('Le compte connecté a changé. Reconnectez-vous.');
       }
-      if (widget.isEditing && widget.type == SubmissionType.event) {
+      if (widget.isEditing && _submissionType == SubmissionType.event) {
         final documentId = widget.editDocumentId!;
 
         final submissionRef = FirebaseFirestore.instance
@@ -1031,7 +1796,28 @@ setState(() => _isSubmitting = true);
           }, SetOptions(merge: true));
         }
       } else {
-        await FirebaseFirestore.instance.collection(_collectionName).add(data);
+        final created = await FirebaseFirestore.instance
+            .collection(_collectionName)
+            .add(data);
+        if (mounted &&
+            _hasRegistration == true &&
+            const [
+              'businessSubmissions',
+              'jobSubmissions',
+            ].contains(_collectionName)) {
+          Navigator.pushReplacement<void, void>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProfessionalVerificationScreen(
+                businessId: created.id,
+                sourceCollection: _collectionName,
+                currentStatus: 'draft',
+                isVerified: false,
+              ),
+            ),
+          );
+          return;
+        }
       }
 
       if (!mounted) {
@@ -1046,7 +1832,11 @@ setState(() => _isSubmitting = true);
           content: Text(
             widget.isEditing
                 ? 'Event updated successfully.'
-                : 'Your submission has been sent for admin approval.',
+                : memberText(
+                    context,
+                    'Votre demande a été envoyée pour examen administratif.',
+                    'Your submission has been sent for admin approval.',
+                  ),
           ),
         ),
       );
@@ -1183,7 +1973,7 @@ setState(() => _isSubmitting = true);
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardGreen,
-        title: const Text(
+        title: const AppText(
           'Account Required',
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
@@ -1191,7 +1981,7 @@ setState(() => _isSubmitting = true);
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const AppText('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryGold),
@@ -1199,7 +1989,7 @@ setState(() => _isSubmitting = true);
               Navigator.pop(context);
               Navigator.pushNamed(context, '/login');
             },
-            child: const Text(
+            child: const AppText(
               'Sign In / Register',
               style: TextStyle(
                 color: primaryDarkGreen,
@@ -1217,7 +2007,7 @@ setState(() => _isSubmitting = true);
       SnackBar(
         backgroundColor: isError ? Colors.redAccent : primaryGold,
         content: Text(
-          message,
+          activityText(context, message),
           style: TextStyle(
             color: isError ? Colors.white : primaryDarkGreen,
             fontWeight: FontWeight.w600,
@@ -1252,7 +2042,7 @@ setState(() => _isSubmitting = true);
       body: Form(
         key: _formKey,
         child: ListView(
-          controller: widget.type == SubmissionType.job ? _jobScroll : null,
+          controller: _usesActivityWizard ? _jobScroll : null,
           padding: EdgeInsets.fromLTRB(
             16,
             16,
@@ -1260,20 +2050,24 @@ setState(() => _isSubmitting = true);
             MediaQuery.of(context).padding.bottom + 32,
           ),
           children: [
-            if (widget.type == SubmissionType.marketplace)
+            if (_submissionType == SubmissionType.marketplace)
               _buildMarketplaceHeader(),
-            if (widget.type == SubmissionType.job) ...[
+            if (_usesActivityWizard) ...[
+              if (_canAdminPreview) _buildActivityPreviewSwitch(),
               _buildJobProgress(),
-              if (_jobStep == 0) _buildPresentationPhoto(),
-              if (_jobStep == 0) _buildCommonFields(),
-              if (_jobStep == 1) ..._buildTypeFields(),
-              if (_jobStep == 2) _buildJobPreview(),
+              if (_jobStep == 0) _buildActivityChoice(),
+              if (_jobStep == 1) ...[
+                if (_requiresPresentationPhoto) _buildPresentationPhoto(),
+                _buildCommonFields(),
+              ],
+              if (_jobStep == 2) _buildActivityDetails(),
+              if (_jobStep == 3) _buildActivityPreview(),
               if (_jobStep > 0 && !_isSubmitting)
                 TextButton.icon(
                   onPressed: () => _setJobStep(_jobStep - 1),
                   style: TextButton.styleFrom(foregroundColor: primaryGold),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Retour'),
+                  label: Text(memberText(context, 'Retour', 'Back')),
                 ),
             ] else ...[
               if (_requiresPresentationPhoto) _buildPresentationPhoto(),
@@ -1290,19 +2084,31 @@ setState(() => _isSubmitting = true);
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: _isSubmitting
+              onPressed: _isSubmitting || (_isActivityPreview && _jobStep == 3)
                   ? null
-                  : widget.type == SubmissionType.job && _jobStep < 2
+                  : _usesActivityWizard && _jobStep < 3
                   ? _nextJobStep
-                  : widget.type == SubmissionType.event
+                  : _submissionType == SubmissionType.event
                   ? _openEventPreview
                   : _submit,
               child: Text(
                 _isSubmitting
                     ? (widget.isEditing ? 'Saving...' : 'Submitting...')
-                    : widget.type == SubmissionType.job
-                    ? (_jobStep < 2 ? 'Continuer' : 'Envoyer pour validation')
-                    : widget.type == SubmissionType.event
+                    : _usesActivityWizard
+                    ? (_jobStep < 3
+                          ? memberText(context, 'Continuer', 'Continue')
+                          : _isActivityPreview
+                          ? memberText(
+                              context,
+                              'Aperçu uniquement — envoi désactivé',
+                              'Preview only — submission disabled',
+                            )
+                          : memberText(
+                              context,
+                              'Envoyer pour validation',
+                              'Submit for review',
+                            ))
+                    : _submissionType == SubmissionType.event
                     ? (widget.isEditing ? 'Preview Changes' : 'Preview Event')
                     : 'Submit for Admin Approval',
                 style: const TextStyle(
@@ -1336,7 +2142,7 @@ setState(() => _isSubmitting = true);
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AppText(
                   'Marketplace',
                   style: TextStyle(
                     color: Colors.white,
@@ -1345,7 +2151,7 @@ setState(() => _isSubmitting = true);
                   ),
                 ),
                 SizedBox(height: 5),
-                Text(
+                AppText(
                   'Create a clear and professional listing. '
                   'Your photos and information will be reviewed by an admin before publication.',
                   style: TextStyle(
@@ -1407,7 +2213,7 @@ setState(() => _isSubmitting = true);
                         icon: const Icon(Icons.close, color: Colors.white),
                       ),
                       const Expanded(
-                        child: Text(
+                        child: AppText(
                           'Event Preview',
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -1602,14 +2408,14 @@ setState(() => _isSubmitting = true);
                         ),
                       const SizedBox(height: 20),
                       if (_nonRefundable)
-                        const Text(
+                        const AppText(
                           '• Tickets are non-refundable.',
                           style: TextStyle(color: Colors.white70),
                         ),
                       if (_nonTransferable)
                         const Padding(
                           padding: EdgeInsets.only(top: 5),
-                          child: Text(
+                          child: AppText(
                             '• Tickets are non-transferable.',
                             style: TextStyle(color: Colors.white70),
                           ),
@@ -1633,7 +2439,7 @@ setState(() => _isSubmitting = true);
                             side: const BorderSide(color: Colors.white38),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text('Back to Edit'),
+                          child: const AppText('Back to Edit'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1692,7 +2498,7 @@ setState(() => _isSubmitting = true);
           Icon(icon, color: primaryGold, size: 20),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: AppText(
               '$label: $value',
               style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
@@ -1725,12 +2531,16 @@ setState(() => _isSubmitting = true);
   }
 
   Widget _buildCommonFields() {
-    if (widget.type == SubmissionType.job) {
+    if (_usesServiceDetails) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Présentez votre activité',
+          Text(
+            memberText(
+              context,
+              "Présentez votre activité",
+              "Present your activity",
+            ),
             style: TextStyle(
               color: primaryGold,
               fontSize: 22,
@@ -1738,26 +2548,44 @@ setState(() => _isSubmitting = true);
             ),
           ),
           const SizedBox(height: 12),
-          _buildField('title', 'Nom professionnel *'),
+          _buildField(
+            'title',
+            memberText(context, "Nom professionnel *", "Professional name *"),
+          ),
           const SizedBox(height: 12),
-          _buildCountryDropdown(),
+          if (!_usesActivityWizard) _buildCountryDropdown(),
           const SizedBox(height: 12),
           _buildField(
             'phoneNumber',
-            'Téléphone de contact *',
+            memberText(context, "Téléphone de contact *", "Contact phone *"),
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 12),
-          _buildField('cityAddress', 'Ville affichée publiquement *'),
+          _buildField(
+            'cityAddress',
+            memberText(
+              context,
+              "Ville affichée publiquement *",
+              "Public city *",
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text(
-            'Indiquez uniquement la ville. Aucun local ni adresse de domicile n’est obligatoire.',
+          Text(
+            memberText(
+              context,
+              "Indiquez uniquement la ville. Aucun local ni adresse de domicile n’est obligatoire.",
+              "Enter only the city. Premises and a home address are not required.",
+            ),
             style: TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 12),
           _buildField(
             'description',
-            'Présentation de votre activité *',
+            memberText(
+              context,
+              "Présentation de votre activité *",
+              "Present your activity *",
+            ),
             maxLines: 4,
           ),
         ],
@@ -1765,25 +2593,40 @@ setState(() => _isSubmitting = true);
     }
     return Column(
       children: [
-        _buildField('title', 'Title / Name *'),
+        _buildField(
+          'title',
+          memberText(context, 'Nom de l’activité *', 'Activity name *'),
+        ),
         const SizedBox(height: 12),
-        _buildCountryDropdown(),
+        if (!_usesActivityWizard) _buildCountryDropdown(),
         const SizedBox(height: 12),
         _buildField(
           'phoneNumber',
-          'Phone Number *',
+          memberText(
+            context,
+            memberText(context, "Téléphone de contact *", "Contact phone *"),
+            'Contact phone *',
+          ),
           keyboardType: TextInputType.phone,
         ),
         const SizedBox(height: 12),
-        _buildField('cityAddress', 'City & Address *'),
+        _buildField('cityAddress', memberText(context, 'Ville *', 'City *')),
         const SizedBox(height: 12),
-        _buildField('description', 'Description *', maxLines: 5),
+        _buildField(
+          'description',
+          memberText(
+            context,
+            'Présentation de l’activité *',
+            'Activity presentation *',
+          ),
+          maxLines: 5,
+        ),
       ],
     );
   }
 
   List<Widget> _buildTypeFields() {
-    return switch (widget.type) {
+    return switch (_submissionType) {
       SubmissionType.employer => [
         _buildField('companyName', 'Nom de l’entreprise / organisation *'),
         const SizedBox(height: 12),
@@ -1802,7 +2645,7 @@ setState(() => _isSubmitting = true);
         ),
       ],
       SubmissionType.event => [
-        const Text(
+        const AppText(
           'Event Details',
           style: TextStyle(
             color: primaryGold,
@@ -1811,7 +2654,7 @@ setState(() => _isSubmitting = true);
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        const AppText(
           'Tell people everything they need to know about your event.',
           style: TextStyle(color: Colors.white70, fontSize: 13),
         ),
@@ -1827,7 +2670,7 @@ setState(() => _isSubmitting = true);
         const SizedBox(height: 12),
         _buildEventTimeField(key: 'endTime', label: 'End time *'),
         const SizedBox(height: 20),
-        const Text(
+        const AppText(
           'Organizer Information',
           style: TextStyle(
             color: primaryGold,
@@ -1842,7 +2685,7 @@ setState(() => _isSubmitting = true);
         const SizedBox(height: 12),
         _buildField('organizerEmail', 'Organizer email'),
         const SizedBox(height: 20),
-        const Text(
+        const AppText(
           'Artists & Performers',
           style: TextStyle(
             color: primaryGold,
@@ -1853,7 +2696,7 @@ setState(() => _isSubmitting = true);
         const SizedBox(height: 12),
         _buildEventArtistsBuilder(),
         const SizedBox(height: 24),
-        const Text(
+        const AppText(
           'Tickets & Prices',
           style: TextStyle(
             color: primaryGold,
@@ -1862,14 +2705,14 @@ setState(() => _isSubmitting = true);
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        const AppText(
           'Add your ticket types, prices and available places.',
           style: TextStyle(color: Colors.white60, fontSize: 12),
         ),
         const SizedBox(height: 12),
         _buildEventTicketTypes(),
         const SizedBox(height: 24),
-        const Text(
+        const AppText(
           'Event Photos',
           style: TextStyle(
             color: primaryGold,
@@ -1878,14 +2721,14 @@ setState(() => _isSubmitting = true);
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        const AppText(
           'Add up to 5 photos. The first photo will be used as the event cover.',
           style: TextStyle(color: Colors.white60, fontSize: 12),
         ),
         const SizedBox(height: 12),
         _buildEventPhotoPicker(),
         const SizedBox(height: 22),
-        const Text(
+        const AppText(
           'Event Options & Policies',
           style: TextStyle(
             color: primaryGold,
@@ -1983,8 +2826,6 @@ setState(() => _isSubmitting = true);
         _buildField('address', 'Full address'),
       ],
       SubmissionType.job => [
-        _buildJobCategoryDropdown(),
-        const SizedBox(height: 18),
         ..._buildJobSpecificFields(),
         const SizedBox(height: 18),
         _buildField('serviceArea', 'Zone de déplacement (villes et environs)'),
@@ -2005,95 +2846,70 @@ setState(() => _isSubmitting = true);
       ],
 
       SubmissionType.professional => [
+        ..._buildJobSpecificFields(),
+        const SizedBox(height: 12),
         _buildField(
-          'professionTitle',
-          'Professional Title (Doctor, Lawyer, Translator, Caterer, etc.) *',
+          'serviceArea',
+          memberText(context, 'Zone de déplacement', 'Service area'),
         ),
         const SizedBox(height: 12),
         _buildField(
-          'registrationNumber',
-          'SIRET / Professional License / Registration ID',
+          'availability',
+          memberText(context, 'Disponibilités', 'Availability'),
         ),
         const SizedBox(height: 12),
-        _buildField(
-          'servicesOffered',
-          'Services Offered (list services, one per line) *',
-          maxLines: 3,
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'pricingDetails',
-          'Pricing & Rates (e.g. €25/hour, from €30/doc, menu prices) *',
-          maxLines: 3,
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'qualifications',
-          'Qualifications, Diplomas & Experience',
-          maxLines: 3,
-        ),
-        const SizedBox(height: 12),
-        _buildField(
-          'websiteUrl',
-          'Website, LinkedIn or Portfolio URL (optional)',
-        ),
-        const SizedBox(height: 12),
-        _buildSwitch(
-          'Allow WhatsApp contact using this phone number',
-          _whatsappEnabled,
-          (value) => setState(() => _whatsappEnabled = value),
-        ),
-        _buildSwitch(
-          'Show exact address publicly',
-          _showExactAddress,
-          (value) => setState(() => _showExactAddress = value),
-        ),
       ],
       SubmissionType.business => [
-        _buildBusinessCategoryDropdown(),
+        ..._buildBusinessActivityFields(),
         const SizedBox(height: 12),
         _buildBusinessHoursPicker(),
         const SizedBox(height: 16),
         _businessSectionHeading(
           Icons.place_outlined,
-          'Business address',
-          'Enter the address customers can use for directions.',
+          memberText(context, 'Adresse de l’établissement', 'Business address'),
+          memberText(
+            context,
+            'Adresse utilisée par les clients pour venir.',
+            'Address customers can use for directions.',
+          ),
         ),
         const SizedBox(height: 10),
-        _buildField('address', 'Street address and number *'),
+        _buildField(
+          'address',
+          memberText(
+            context,
+            'Adresse et numéro *',
+            'Street address and number *',
+          ),
+        ),
         const SizedBox(height: 10),
         _buildField(
           'postalCode',
-          'Postal / ZIP code',
+          memberText(context, 'Code postal', 'Postal / ZIP code'),
           keyboardType: TextInputType.streetAddress,
         ),
         const SizedBox(height: 10),
         _buildField(
           'websiteUrl',
-          'Website (optional)',
+          memberText(
+            context,
+            'Site internet (facultatif)',
+            'Website (optional)',
+          ),
           keyboardType: TextInputType.url,
         ),
-        const SizedBox(height: 16),
-        _businessSectionHeading(
-          Icons.verified_outlined,
-          'Registration',
-          'Business registration is checked separately during verification.',
-        ),
-        const SizedBox(height: 10),
-        _buildBusinessRegistrationField(),
         const SizedBox(height: 8),
-        const Text(
-          'The address can be used for map directions after admin approval. '
-          'Professional identity and supporting documents are handled '
-          'separately in professional verification.',
-          style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Business profiles use Call for Reservation only. '
-          'In-app messaging is disabled. Reserve Plus and Live Zone '
-          'fields are reserved for future release.',
-          style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+        Text(
+          memberText(
+            context,
+            'Après examen de votre demande, retrouvez les outils disponibles dans votre espace professionnel.',
+            'After your application is reviewed, find the available tools in your professional space.',
+          ),
+          style: const TextStyle(
+            color: Colors.white60,
+            fontSize: 12,
+            height: 1.4,
+          ),
         ),
       ],
       SubmissionType.verification => [
@@ -2150,7 +2966,7 @@ setState(() => _isSubmitting = true);
               const Icon(Icons.photo_library_outlined, color: primaryGold),
               const SizedBox(width: 8),
               const Expanded(
-                child: Text(
+                child: AppText(
                   'Photos *',
                   style: TextStyle(
                     color: primaryGold,
@@ -2159,7 +2975,7 @@ setState(() => _isSubmitting = true);
                   ),
                 ),
               ),
-              Text(
+              AppText(
                 '${_marketplacePhotos.length}/6',
                 style: const TextStyle(
                   color: Colors.white70,
@@ -2169,7 +2985,7 @@ setState(() => _isSubmitting = true);
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
+          const AppText(
             'Add clear photos of your product. '
             'The first photo will be used as the main image.',
             style: TextStyle(color: Colors.white60, fontSize: 12),
@@ -2208,7 +3024,7 @@ setState(() => _isSubmitting = true);
                             color: primaryGold,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
+                          child: const AppText(
                             'MAIN',
                             style: TextStyle(
                               color: primaryDarkGreen,
@@ -2459,9 +3275,8 @@ setState(() => _isSubmitting = true);
         .take(5)
         .map((day) => '$day: ${_controller('businessHours_$day').text}')
         .join(' | ');
-    _controller('saturdayHours').text = _controller(
-      'businessHours_Saturday',
-    ).text;
+    _controller('saturdayHours').text = _controller('businessHours_Saturday')
+        .text;
     _controller('sundayHours').text = _controller('businessHours_Sunday').text;
   }
 
@@ -2502,8 +3317,12 @@ setState(() => _isSubmitting = true);
         children: [
           _businessSectionHeading(
             Icons.schedule,
-            'Opening hours',
-            'Enable a day and tap a time to edit.',
+            memberText(context, "Horaires d’ouverture", "Opening hours"),
+            memberText(
+              context,
+              "Activez un jour puis appuyez sur une heure pour la modifier.",
+              "Enable a day and tap a time to edit.",
+            ),
           ),
           const SizedBox(height: 8),
           ..._businessDays.map((day) {
@@ -2515,7 +3334,19 @@ setState(() => _isSubmitting = true);
                   SizedBox(
                     width: 82,
                     child: Text(
-                      day,
+                      memberText(
+                        context,
+                        const {
+                          'Monday': 'Lundi',
+                          'Tuesday': 'Mardi',
+                          'Wednesday': 'Mercredi',
+                          'Thursday': 'Jeudi',
+                          'Friday': 'Vendredi',
+                          'Saturday': 'Samedi',
+                          'Sunday': 'Dimanche',
+                        }[day]!,
+                        day,
+                      ),
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
@@ -2548,7 +3379,7 @@ setState(() => _isSubmitting = true);
                               timeChip(day, true),
                               const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
+                                child: AppText(
                                   '–',
                                   style: TextStyle(color: Colors.white70),
                                 ),
@@ -2556,10 +3387,10 @@ setState(() => _isSubmitting = true);
                               timeChip(day, false),
                             ],
                           )
-                        : const Align(
+                        : Align(
                             alignment: Alignment.centerRight,
                             child: Text(
-                              'Closed',
+                              memberText(context, "Fermé", "Closed"),
                               style: TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12,
@@ -2576,70 +3407,28 @@ setState(() => _isSubmitting = true);
     );
   }
 
-  Widget _buildBusinessRegistrationField() {
-    final isFrance = _selectedCountry == 'France';
-    return TextFormField(
-      controller: _controller('businessRegistrationNumber'),
-      keyboardType: isFrance ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(color: Colors.white),
-      maxLength: isFrance ? 14 : null,
-      validator: (value) {
-        final number = (value ?? '').trim();
-        if (number.isEmpty) return null;
-        if (isFrance && !RegExp(r'^\d{14}$').hasMatch(number)) {
-          return 'Enter a 14-digit SIRET number';
-        }
-        return null;
-      },
-      decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.badge_outlined, color: primaryGold),
-        labelText: isFrance
-            ? 'SIRET (14 digits, if applicable)'
-            : 'Business registration number (if applicable)',
-        helperText: isFrance
-            ? 'Numbers only · Verified separately'
-            : 'Use your country’s official registration identifier',
-        helperStyle: const TextStyle(color: Colors.white60),
-        labelStyle: const TextStyle(color: Colors.white70),
-        filled: true,
-        fillColor: cardGreen,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
+  List<Widget> _buildBusinessActivityFields() => [
+    for (final field in activityFieldsForBusiness(
+      _controller('businessCategory').text,
+    )) ...[
+      _buildField(
+        field.key,
+        '${memberText(context, field.fr, field.en)}${field.requiredField ? ' *' : ''}',
+        maxLines: field.lines,
+        keyboardType: field.numeric ? TextInputType.number : TextInputType.text,
       ),
-    );
-  }
+      const SizedBox(height: 12),
+    ],
+  ];
 
-  Widget _buildBusinessCategoryDropdown() {
-    const categories = <String>[
-      'Restaurant / Café',
-      'Grocery / Food Shop',
-      'Retail / Clothing Shop',
-      'Hair Salon / Barber',
-      'Beauty / Nails',
-      'Catering / Bakery',
-      'Hotel / Guesthouse',
-      'Event Venue',
-      'Travel / Transport',
-      'Photography / Media Studio',
-      'Professional Office / Agency',
-      'Other Establishment',
-    ];
-    final current = _controller('businessCategory').text.trim();
-    final selected = categories.contains(current) ? current : categories.first;
-    // Keep the selected category in the existing Firestore `fields` map.
-    if (current.isEmpty) {
-      _controller('businessCategory').text = selected;
+  String _countryDialCode(String country) {
+    for (final entry in _countryDialCodes.entries) {
+      if (BusinessCountries.find(entry.key)?.code ==
+          BusinessCountries.find(country)?.code) {
+        return entry.value;
+      }
     }
-    return _buildDropdown(
-      label: 'Business category *',
-      value: selected,
-      values: categories,
-      onChanged: (value) => setState(() {
-        _controller('businessCategory').text = value;
-      }),
-    );
+    return '';
   }
 
   Widget _buildCountryDropdown() {
@@ -2649,7 +3438,7 @@ setState(() => _isSubmitting = true);
       dropdownColor: cardGreen,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        labelText: 'Country *',
+        labelText: memberText(context, 'Pays *', 'Country *'),
         labelStyle: const TextStyle(color: Colors.white54),
         filled: true,
         fillColor: cardGreen,
@@ -2658,14 +3447,24 @@ setState(() => _isSubmitting = true);
           borderSide: BorderSide.none,
         ),
       ),
-      selectedItemBuilder: (context) => _countryDialCodes.keys
-          .map((country) => Text(country, overflow: TextOverflow.ellipsis))
+      selectedItemBuilder: (context) => BusinessCountries.all
+          .map((country) => country.name)
+          .map(
+            (country) => Text(
+              activityCountryLabel(context, country),
+              overflow: TextOverflow.ellipsis,
+            ),
+          )
           .toList(),
-      items: _countryDialCodes.keys
+      items: BusinessCountries.all
+          .map((country) => country.name)
           .map(
             (country) => DropdownMenuItem<String>(
               value: country,
-              child: Text(country, overflow: TextOverflow.ellipsis),
+              child: Text(
+                activityCountryLabel(context, country),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           )
           .toList(),
@@ -2676,59 +3475,8 @@ setState(() => _isSubmitting = true);
 
         setState(() {
           _selectedCountry = country;
-          _controller('phoneNumber').text = '${_countryDialCodes[country]} ';
-        });
-      },
-    );
-  }
-
-  Widget _buildJobCategoryDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedJobCategory,
-      isExpanded: true,
-      dropdownColor: cardGreen,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: 'Métier / Service *',
-        labelStyle: const TextStyle(color: Colors.white54),
-        filled: true,
-        fillColor: cardGreen,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      selectedItemBuilder: (context) => _jobCategories
-          .map(
-            (category) => Text(
-              serviceDefinition(category).label,
-              overflow: TextOverflow.ellipsis,
-            ),
-          )
-          .toList(),
-      items: _jobCategories
-          .map(
-            (category) => DropdownMenuItem<String>(
-              value: category,
-              child: Text(
-                serviceDefinition(category).label,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: (category) {
-        if (category == null) {
-          return;
-        }
-
-        setState(() {
-          _selectedJobCategory = category;
-
-          if (_selectedJobCategory == 'Catering / Food Seller (Injera & Wot)' &&
-              _menuItems.isEmpty) {
-            _menuItems.add(_MenuItemInput());
-          }
+          _registrationAcknowledged = false;
+          _controller('phoneNumber').text = '${_countryDialCode(country)} ';
         });
       },
     );
@@ -2748,8 +3496,8 @@ setState(() => _isSubmitting = true);
       ExpansionTile(
         iconColor: primaryGold,
         collapsedIconColor: primaryGold,
-        title: const Text(
-          'Menu et produits (facultatif)',
+        title: Text(
+          activityText(context, "Menu et produits (facultatif)"),
           style: TextStyle(color: primaryGold),
         ),
         children: [_buildMenuBuilder()],
@@ -2757,11 +3505,14 @@ setState(() => _isSubmitting = true);
     ],
     if (_selectedJobCategory == 'Fashion/Clothes Designer') ...[
       const SizedBox(height: 12),
-      _buildField('designerSpecialty', 'Spécialités de couture'),
+      _buildField(
+        'designerSpecialty',
+        activityText(context, "Spécialités de couture"),
+      ),
       const SizedBox(height: 12),
       _buildField(
         'orderMeasurements',
-        'Informations utiles pour une commande',
+        activityText(context, "Informations utiles pour une commande"),
         maxLines: 3,
       ),
     ],
@@ -2827,7 +3578,7 @@ setState(() => _isSubmitting = true);
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: AppText(
                         'Ticket ${index + 1}',
                         style: const TextStyle(
                           color: primaryGold,
@@ -2839,7 +3590,7 @@ setState(() => _isSubmitting = true);
                     if (_eventTicketTypes[index].sold > 0)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: Text(
+                        child: AppText(
                           '${_eventTicketTypes[index].sold} sold',
                           style: const TextStyle(
                             color: Colors.white60,
@@ -2882,7 +3633,7 @@ setState(() => _isSubmitting = true);
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Required';
+                      return memberText(context, 'Champ requis', 'Required');
                     }
                     return null;
                   },
@@ -2968,7 +3719,7 @@ setState(() => _isSubmitting = true);
                 ),
                 if (_eventTicketTypes[index].sold > 0) ...[
                   const SizedBox(height: 10),
-                  Text(
+                  AppText(
                     '${_eventTicketTypes[index].sold} ticket(s) already sold. '
                     'Capacity cannot be lower than this number.',
                     style: const TextStyle(color: Colors.white60, fontSize: 11),
@@ -2979,7 +3730,7 @@ setState(() => _isSubmitting = true);
                   contentPadding: EdgeInsets.zero,
                   value: _eventTicketTypes[index].active,
                   activeThumbColor: primaryGold,
-                  title: const Text(
+                  title: const AppText(
                     'Ticket available for sale',
                     style: TextStyle(color: Colors.white),
                   ),
@@ -3015,7 +3766,7 @@ setState(() => _isSubmitting = true);
               });
             },
             icon: const Icon(Icons.add_circle_outline, color: primaryGold),
-            label: const Text(
+            label: const AppText(
               'Add ticket type',
               style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
             ),
@@ -3049,7 +3800,7 @@ setState(() => _isSubmitting = true);
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: AppText(
                         'Artist / DJ ${index + 1}',
                         style: const TextStyle(
                           color: primaryGold,
@@ -3180,7 +3931,7 @@ setState(() => _isSubmitting = true);
                         });
                       },
                       icon: const Icon(Icons.add_a_photo_outlined),
-                      label: const Text('Add artist photo'),
+                      label: const AppText('Add artist photo'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryGold,
                         side: const BorderSide(color: primaryGold),
@@ -3199,7 +3950,7 @@ setState(() => _isSubmitting = true);
               });
             },
             icon: const Icon(Icons.person_add_alt_1),
-            label: const Text('Add another artist'),
+            label: const AppText('Add another artist'),
             style: OutlinedButton.styleFrom(
               foregroundColor: primaryGold,
               side: const BorderSide(color: primaryGold),
@@ -3222,7 +3973,7 @@ setState(() => _isSubmitting = true);
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText(
             'Event photos ($totalPhotos/5)',
             style: const TextStyle(
               color: primaryGold,
@@ -3275,7 +4026,7 @@ setState(() => _isSubmitting = true);
                               color: primaryGold,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
+                            child: const AppText(
                               'COVER',
                               style: TextStyle(
                                 color: primaryDarkGreen,
@@ -3334,7 +4085,7 @@ setState(() => _isSubmitting = true);
                               color: primaryGold,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
+                            child: const AppText(
                               'COVER',
                               style: TextStyle(
                                 color: primaryDarkGreen,
@@ -3419,7 +4170,7 @@ setState(() => _isSubmitting = true);
               ),
             ),
           if (totalPhotos >= 5)
-            const Text(
+            const AppText(
               'Maximum 5 photos reached.',
               style: TextStyle(color: Colors.white54, fontSize: 12),
             ),
@@ -3433,8 +4184,8 @@ setState(() => _isSubmitting = true);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Galerie supplémentaire (${files.length}/9)',
+        AppText(
+          '${memberText(context, 'Galerie supplémentaire', 'Additional gallery')} (${files.length}/9)',
           style: const TextStyle(
             color: primaryGold,
             fontSize: 18,
@@ -3442,8 +4193,11 @@ setState(() => _isSubmitting = true);
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Photos publiques de vos réalisations uniquement. Aucun document de vérification. JPEG, PNG ou WebP, 8 Mo maximum par photo.',
+        Text(
+          activityText(
+            context,
+            "Photos publiques de vos réalisations uniquement. Aucun document de vérification. JPEG, PNG ou WebP, 8 Mo maximum par photo.",
+          ),
           style: TextStyle(color: Colors.white70),
         ),
         const SizedBox(height: 10),
@@ -3482,7 +4236,7 @@ setState(() => _isSubmitting = true);
                       Align(
                         alignment: Alignment.topRight,
                         child: IconButton.filled(
-                          tooltip: 'Retirer cette photo',
+                          tooltip: activityText(context, "Retirer cette photo"),
                           onPressed: () => setState(() => files.remove(file)),
                           icon: const Icon(Icons.close),
                           style: IconButton.styleFrom(
@@ -3500,7 +4254,7 @@ setState(() => _isSubmitting = true);
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(foregroundColor: primaryGold),
             icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: const Text('Ajouter mes photos'),
+            label: Text(activityText(context, "Ajouter mes photos")),
             onPressed: () async {
               try {
                 final picked = await _picker.pickMultiImage(imageQuality: 90);
@@ -3518,11 +4272,22 @@ setState(() => _isSubmitting = true);
                     continue;
                   }
                   final originalBytes = await file.readAsBytes();
-                  if (!mounted) { return; }
-                  final framed = await frameProfessionalPhoto(context,
-                    bytes: originalBytes, use: ProfessionalPhotoUse.gallery);
+                  if (!mounted) {
+                    return;
+                  }
+                  final framed = await frameProfessionalPhoto(
+                    context,
+                    bytes: originalBytes,
+                    use: ProfessionalPhotoUse.gallery,
+                  );
                   if (framed != null) {
-                    valid.add(XFile.fromData(framed, name: 'galerie.png', mimeType: 'image/png'));
+                    valid.add(
+                      XFile.fromData(
+                        framed,
+                        name: 'galerie.png',
+                        mimeType: 'image/png',
+                      ),
+                    );
                   }
                 }
                 if (!mounted) return;
@@ -3554,7 +4319,7 @@ setState(() => _isSubmitting = true);
           Row(
             children: [
               const Expanded(
-                child: Text(
+                child: AppText(
                   'Dynamic Menu Builder',
                   style: TextStyle(
                     color: primaryGold,
@@ -3867,7 +4632,7 @@ setState(() => _isSubmitting = true);
       validator: label.endsWith('*')
           ? (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Required';
+                return memberText(context, 'Champ requis', 'Required');
               }
               return null;
             }

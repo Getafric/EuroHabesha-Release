@@ -1,7 +1,10 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'business_public_media.dart';
 
 const _dark = Color(0xFF061E12);
@@ -408,7 +411,7 @@ class BusinessProfileHours extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              const AppText(
                 'Horaires détaillés',
                 style: TextStyle(
                   color: _gold,
@@ -426,7 +429,7 @@ class BusinessProfileHours extends StatelessWidget {
                   foregroundColor: _dark,
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Fermer'),
+                child: const AppText('Fermer'),
               ),
             ],
           ),
@@ -472,7 +475,7 @@ class BusinessProfileHours extends StatelessWidget {
                   ),
                   child: const Row(
                     children: [
-                      Expanded(child: Text('Voir les horaires détaillés')),
+                      Expanded(child: AppText('Voir les horaires détaillés')),
                       Icon(Icons.chevron_right),
                     ],
                   ),
@@ -518,7 +521,7 @@ class BusinessProfileGallery extends StatelessWidget {
             child: TextButton(
               onPressed: () => _open(context, 0),
               style: TextButton.styleFrom(foregroundColor: _gold),
-              child: Text('Tout voir (${photos.length})'),
+              child: AppText('Tout voir (${photos.length})'),
             ),
           ),
           SizedBox(
@@ -580,7 +583,7 @@ class _BusinessPhotoViewerState extends State<_BusinessPhotoViewer> {
     appBar: AppBar(
       backgroundColor: _dark,
       foregroundColor: _gold,
-      title: Text('Photo ${_index + 1} / ${widget.photos.length}'),
+      title: AppText('Photo ${_index + 1} / ${widget.photos.length}'),
     ),
     body: SafeArea(
       child: PageView.builder(
@@ -594,7 +597,7 @@ class _BusinessPhotoViewerState extends State<_BusinessPhotoViewer> {
             child: Image.network(
               widget.photos[i],
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Text(
+              errorBuilder: (_, __, ___) => const AppText(
                 'Photo indisponible',
                 style: TextStyle(color: Colors.white),
               ),

@@ -1,9 +1,13 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'professional_sales_summary.dart';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -646,7 +650,7 @@ class OrderReceiptScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
-        title: const Text(
+        title: const AppText(
           'Reçu de commande',
           style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
@@ -658,7 +662,7 @@ class OrderReceiptScreen extends StatelessWidget {
           final user = auth.data;
           if (user == null || user.isAnonymous) {
             return const Center(
-              child: Text(
+              child: AppText(
                 'Connectez-vous pour lire ce reçu.',
                 style: TextStyle(color: Colors.white70),
               ),
@@ -690,7 +694,7 @@ class OrderReceiptScreen extends StatelessWidget {
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(
+            child: AppText(
               'Impossible de charger le reçu.\n'
               '${snapshot.error}',
               textAlign: TextAlign.center,
@@ -704,7 +708,7 @@ class OrderReceiptScreen extends StatelessWidget {
           !snapshot.data!.exists ||
           snapshot.data!.data() == null) {
         return const Center(
-          child: Text(
+          child: AppText(
             'Commande introuvable.',
             style: TextStyle(color: Colors.white70),
           ),
@@ -715,7 +719,7 @@ class OrderReceiptScreen extends StatelessWidget {
       final seller = orderText(data['sellerId']) == uid;
       if (!_canView(data, uid) || (professionalCopy && !seller)) {
         return const Center(
-          child: Text(
+          child: AppText(
             'Accès au reçu non autorisé.',
             style: TextStyle(color: Colors.white70),
           ),

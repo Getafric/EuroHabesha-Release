@@ -1,4 +1,7 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
+
 import 'business_countries.dart';
 
 class BusinessCountryPicker extends StatefulWidget {
@@ -45,7 +48,7 @@ class _BusinessCountryPickerState extends State<BusinessCountryPicker> {
                       const Icon(Icons.public, color: _gold),
                       const SizedBox(width: 12),
                       const Expanded(
-                        child: Text(
+                        child: AppText(
                           'Pays de l’établissement',
                           style: TextStyle(
                             color: _gold,
@@ -105,7 +108,7 @@ class _BusinessCountryPickerState extends State<BusinessCountryPicker> {
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(
+                    child: AppText(
                       '${countries.length} pays et territoires',
                       style: const TextStyle(
                         color: Colors.white70,
@@ -119,7 +122,7 @@ class _BusinessCountryPickerState extends State<BusinessCountryPicker> {
                       ? const Center(
                           child: Padding(
                             padding: EdgeInsets.all(24),
-                            child: Text(
+                            child: AppText(
                               'Aucun résultat. Essayez le nom du pays ou son code.',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.white70),

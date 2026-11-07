@@ -1,8 +1,12 @@
+import 'l10n/app_ui.dart';
+import 'member_interface_text.dart';
 // Euro Habesha: photos et publicites v1
 import 'public_profile_photo.dart';
 import 'service_profession.dart';
 import 'service_profession_card.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'table_reservation_option.dart';
 import 'professional_capabilities.dart';
 
@@ -12,11 +16,188 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'cash_on_delivery_order_screen.dart';
 
-import 'dynamic_submission_screen.dart';
-
 import 'status_badge_widget.dart';
 
 import 'chat_screen.dart';
+
+Map<String, dynamic> normalizeJobForDetail(
+  DocumentSnapshot<Map<String, dynamic>> doc,
+) {
+  final raw = doc.data() ?? {};
+
+  final fields = Map<String, dynamic>.from(raw['fields'] ?? {});
+
+  final name = fields['title']?.toString().isNotEmpty == true
+      ? fields['title'].toString()
+      : raw['name']?.toString() ?? raw['title']?.toString() ?? 'Job / Service';
+
+  final title = fields['jobCategory']?.toString().isNotEmpty == true
+      ? fields['jobCategory'].toString()
+      : raw['title']?.toString() ?? 'Service';
+
+  final location = fields['cityAddress']?.toString().isNotEmpty == true
+      ? fields['cityAddress'].toString()
+      : raw['location']?.toString() ??
+            fields['country']?.toString() ??
+            'Europe';
+
+  final phone = fields['phoneNumber']?.toString().isNotEmpty == true
+      ? fields['phoneNumber'].toString()
+      : raw['phone']?.toString() ?? '';
+
+  final email = fields['emailAddress']?.toString().isNotEmpty == true
+      ? fields['emailAddress'].toString()
+      : raw['email']?.toString() ?? raw['submitterEmail']?.toString() ?? '';
+
+  final website = fields['websiteUrl']?.toString().isNotEmpty == true
+      ? fields['websiteUrl'].toString()
+      : raw['website']?.toString() ?? '';
+
+  final whatsapp = phone.isNotEmpty
+      ? 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}'
+      : '';
+
+  final description = fields['description']?.toString().isNotEmpty == true
+      ? fields['description'].toString()
+      : raw['description']?.toString() ??
+            fields['requirements']?.toString() ??
+            '';
+
+  final logoUrl =
+      (fields['logoUrl'] ??
+              fields['imageUrl'] ??
+              fields['photoUrl'] ??
+              fields['businessLogoUrl'] ??
+              raw['logoUrl'] ??
+              raw['imageUrl'] ??
+              raw['photoUrl'] ??
+              raw['businessLogoUrl'] ??
+              raw['profileImageUrl'] ??
+              '')
+          .toString()
+          .trim();
+
+  final coverUrl =
+      (fields['coverUrl'] ??
+              fields['coverImageUrl'] ??
+              raw['coverUrl'] ??
+              raw['coverImageUrl'] ??
+              '')
+          .toString()
+          .trim();
+
+  final category = serviceText(fields['jobCategory']).isNotEmpty
+      ? serviceText(fields['jobCategory'])
+      : serviceText(raw['jobCategory']).isNotEmpty
+      ? serviceText(raw['jobCategory'])
+      : serviceText(raw['category']);
+  final definition = serviceDefinition(category);
+  final serviceType = definition.id == 'general'
+      ? raw['serviceType']?.toString() ?? 'service'
+      : definition.id;
+
+  final double deposit =
+      (raw['orderingModel'] is Map &&
+          raw['orderingModel']['depositPercentage'] != null)
+      ? ((raw['orderingModel']['depositPercentage'] as num).toDouble())
+      : (raw['depositPercentage'] as num?)?.toDouble() ?? 0;
+
+  final isVerified =
+      raw['isVerified'] == true || raw['verificationStatus'] == 'approved';
+
+  final subscriptionTier = raw['subscriptionTier']?.toString();
+
+  return {
+    'id': doc.id,
+    'sourceCollection': raw['sourceCollection'] ?? 'jobSubmissions',
+    'bookingSourceCollection': raw['bookingSourceCollection'],
+    'bookingBusinessId': raw['bookingBusinessId'],
+    'appointmentsEnabled': raw['appointmentsEnabled'],
+    'ordersEnabled': raw['ordersEnabled'],
+    'contactEnabled': raw['contactEnabled'],
+    'chatEnabled': raw['chatEnabled'],
+    'contactModel': raw['contactModel'],
+    'roomLayoutSourceCollection':
+        (raw['roomLayoutSourceCollection'] ??
+                raw['sourceCollection'] ??
+                'jobSubmissions')
+            .toString(),
+    'roomLayoutBusinessId':
+        (raw['roomLayoutBusinessId'] ??
+                raw['sourceBusinessId'] ??
+                raw['sourceId'] ??
+                raw['sourceSubmissionId'] ??
+                doc.id)
+            .toString(),
+    'sourceId': raw['sourceId']?.toString() ?? '',
+    'sourceSubmissionId': raw['sourceSubmissionId']?.toString() ?? '',
+    'sourceBusinessId': raw['sourceBusinessId']?.toString() ?? '',
+
+    'submittedBy': raw['submittedBy']?.toString() ?? '',
+
+    'ownerId': raw['ownerId']?.toString() ?? '',
+
+    'creatorId': raw['creatorId']?.toString() ?? '',
+
+    'name': name,
+
+    'title': definition.id == 'general' ? title : definition.label,
+
+    'location': location,
+
+    'logoUrl': logoUrl,
+
+    'coverUrl': coverUrl,
+
+    'rating': raw['rating']?.toString() ?? '',
+
+    'isVerified': isVerified,
+
+    'subscriptionTier': subscriptionTier,
+
+    'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
+
+    'email': email,
+
+    'website': website,
+
+    'whatsapp': whatsapp,
+
+    'description': description,
+
+    'icon': serviceType == 'catering'
+        ? Icons.restaurant_menu
+        : serviceType == 'designer'
+        ? Icons.checkroom
+        : serviceType == 'translator'
+        ? Icons.translate
+        : Icons.work,
+
+    'serviceType': serviceType,
+    'jobCategory': category,
+    'serviceDetails': publicServiceDetails(raw),
+    'serviceArea': serviceText(fields['serviceArea'] ?? raw['serviceArea']),
+    'availability': serviceText(fields['availability'] ?? raw['availability']),
+    'ratePerHour': serviceText(fields['ratePerHour'] ?? raw['ratePerHour']),
+    'ratePerDocument': serviceText(
+      fields['ratePerDocument'] ?? raw['ratePerDocument'],
+    ),
+    'languagesOffered': serviceText(
+      fields['languagesOffered'] ?? raw['languagesOffered'],
+    ),
+    'translatorServiceType': serviceText(
+      fields['translatorServiceType'] ?? raw['translatorServiceType'],
+    ),
+
+    'depositPercentage': deposit,
+
+    'menuItems': raw['menuItems'] is List ? raw['menuItems'] : [],
+
+    'gallery': serviceGallery(raw),
+
+    'reviews': raw['reviews'] is List ? raw['reviews'] : [],
+  };
+}
 
 class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
@@ -54,8 +235,7 @@ class _JobsScreenState extends State<JobsScreen> {
 
       'whatsapp': 'https://wa.me/33600000000',
 
-      'description':
-          'Professional wedding, commercial, and event photography and videography services using Canon EOS 90D and DJI RS 3 Pro equipment across Europe. Capturing your best moments with high-end cinematic quality.',
+      'description': 'Professional wedding, commercial, and event photography and videography services using Canon EOS 90D and DJI RS 3 Pro equipment across Europe. Capturing your best moments with high-end cinematic quality.',
 
       'icon': Icons.camera_alt,
 
@@ -77,8 +257,7 @@ class _JobsScreenState extends State<JobsScreen> {
         {
           'user': 'Dawit M.',
 
-          'comment':
-              'Amazing photography work in Lyon! Very professional equipment and great quality.',
+          'comment': 'Amazing photography work in Lyon! Very professional equipment and great quality.',
 
           'rating': '5.0',
         },
@@ -86,8 +265,7 @@ class _JobsScreenState extends State<JobsScreen> {
         {
           'user': 'Hermela T.',
 
-          'comment':
-              'Getafric Production covered our wedding event. Highly recommended across France!',
+          'comment': 'Getafric Production covered our wedding event. Highly recommended across France!',
 
           'rating': '4.8',
         },
@@ -113,8 +291,7 @@ class _JobsScreenState extends State<JobsScreen> {
 
       'whatsapp': 'https://wa.me/3220000000',
 
-      'description':
-          'Certified translation for phone calls, appointments, legal letters, and documents. Rates available per hour or per paper.',
+      'description': 'Certified translation for phone calls, appointments, legal letters, and documents. Rates available per hour or per paper.',
 
       'icon': Icons.translate,
 
@@ -156,8 +333,7 @@ class _JobsScreenState extends State<JobsScreen> {
 
       'whatsapp': 'https://wa.me/4915123456789',
 
-      'description':
-          'Custom Habesha Kemis, modern cultural dresses, wedding outfits, and made-to-measure clothing. Orders are paid on delivery or arrival.',
+      'description': 'Custom Habesha Kemis, modern cultural dresses, wedding outfits, and made-to-measure clothing. Orders are paid on delivery or arrival.',
 
       'icon': Icons.checkroom,
 
@@ -199,8 +375,7 @@ class _JobsScreenState extends State<JobsScreen> {
 
       'whatsapp': 'https://wa.me/33622334455',
 
-      'description':
-          'Fresh injera, doro wot, tibs, vegan platters, and event catering. Orders are cash on delivery or pay on arrival only.',
+      'description': 'Fresh injera, doro wot, tibs, vegan platters, and event catering. Orders are cash on delivery or pay on arrival only.',
 
       'icon': Icons.restaurant_menu,
 
@@ -236,186 +411,7 @@ class _JobsScreenState extends State<JobsScreen> {
 
   Map<String, dynamic> _normalizeDoc(
     DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final raw = doc.data() ?? {};
-
-    final fields = Map<String, dynamic>.from(raw['fields'] ?? {});
-
-    final name = fields['title']?.toString().isNotEmpty == true
-        ? fields['title'].toString()
-        : raw['name']?.toString() ??
-              raw['title']?.toString() ??
-              'Job / Service';
-
-    final title = fields['jobCategory']?.toString().isNotEmpty == true
-        ? fields['jobCategory'].toString()
-        : raw['title']?.toString() ?? 'Service';
-
-    final location = fields['cityAddress']?.toString().isNotEmpty == true
-        ? fields['cityAddress'].toString()
-        : raw['location']?.toString() ??
-              fields['country']?.toString() ??
-              'Europe';
-
-    final phone = fields['phoneNumber']?.toString().isNotEmpty == true
-        ? fields['phoneNumber'].toString()
-        : raw['phone']?.toString() ?? '';
-
-    final email = fields['emailAddress']?.toString().isNotEmpty == true
-        ? fields['emailAddress'].toString()
-        : raw['email']?.toString() ?? raw['submitterEmail']?.toString() ?? '';
-
-    final website = fields['websiteUrl']?.toString().isNotEmpty == true
-        ? fields['websiteUrl'].toString()
-        : raw['website']?.toString() ?? '';
-
-    final whatsapp = phone.isNotEmpty
-        ? 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}'
-        : '';
-
-    final description = fields['description']?.toString().isNotEmpty == true
-        ? fields['description'].toString()
-        : raw['description']?.toString() ??
-              fields['requirements']?.toString() ??
-              '';
-
-    final logoUrl =
-        (fields['logoUrl'] ??
-                fields['imageUrl'] ??
-                fields['photoUrl'] ??
-                fields['businessLogoUrl'] ??
-                raw['logoUrl'] ??
-                raw['imageUrl'] ??
-                raw['photoUrl'] ??
-                raw['businessLogoUrl'] ??
-                raw['profileImageUrl'] ??
-                '')
-            .toString()
-            .trim();
-
-    final coverUrl =
-        (fields['coverUrl'] ??
-                fields['coverImageUrl'] ??
-                raw['coverUrl'] ??
-                raw['coverImageUrl'] ??
-                '')
-            .toString()
-            .trim();
-
-    final category = serviceText(fields['jobCategory']).isNotEmpty
-        ? serviceText(fields['jobCategory'])
-        : serviceText(raw['jobCategory']).isNotEmpty
-        ? serviceText(raw['jobCategory'])
-        : serviceText(raw['category']);
-    final definition = serviceDefinition(category);
-    final serviceType = definition.id == 'general'
-        ? raw['serviceType']?.toString() ?? 'service'
-        : definition.id;
-
-    final double deposit =
-        (raw['orderingModel'] is Map &&
-            raw['orderingModel']['depositPercentage'] != null)
-        ? ((raw['orderingModel']['depositPercentage'] as num).toDouble())
-        : (raw['depositPercentage'] as num?)?.toDouble() ?? 0;
-
-    final isVerified =
-        raw['isVerified'] == true || raw['verificationStatus'] == 'approved';
-
-    final subscriptionTier = raw['subscriptionTier']?.toString();
-
-    return {
-      'id': doc.id,
-      'sourceCollection': raw['sourceCollection'] ?? 'jobSubmissions',
-      'bookingSourceCollection': raw['bookingSourceCollection'],
-      'bookingBusinessId': raw['bookingBusinessId'],
-      'appointmentsEnabled': raw['appointmentsEnabled'],
-      'ordersEnabled': raw['ordersEnabled'],
-      'contactEnabled': raw['contactEnabled'],
-      'chatEnabled': raw['chatEnabled'],
-      'contactModel': raw['contactModel'],
-      'roomLayoutSourceCollection':
-          (raw['roomLayoutSourceCollection'] ??
-                  raw['sourceCollection'] ??
-                  'jobSubmissions')
-              .toString(),
-      'roomLayoutBusinessId':
-          (raw['roomLayoutBusinessId'] ??
-                  raw['sourceBusinessId'] ??
-                  raw['sourceId'] ??
-                  raw['sourceSubmissionId'] ??
-                  doc.id)
-              .toString(),
-      'sourceId': raw['sourceId']?.toString() ?? '',
-      'sourceSubmissionId': raw['sourceSubmissionId']?.toString() ?? '',
-      'sourceBusinessId': raw['sourceBusinessId']?.toString() ?? '',
-
-      'submittedBy': raw['submittedBy']?.toString() ?? '',
-
-      'ownerId': raw['ownerId']?.toString() ?? '',
-
-      'creatorId': raw['creatorId']?.toString() ?? '',
-
-      'name': name,
-
-      'title': definition.id == 'general' ? title : definition.label,
-
-      'location': location,
-
-      'logoUrl': logoUrl,
-
-      'coverUrl': coverUrl,
-
-      'rating': raw['rating']?.toString() ?? '',
-
-      'isVerified': isVerified,
-
-      'subscriptionTier': subscriptionTier,
-
-      'phone': phone.startsWith('tel:') ? phone : 'tel:$phone',
-
-      'email': email,
-
-      'website': website,
-
-      'whatsapp': whatsapp,
-
-      'description': description,
-
-      'icon': serviceType == 'catering'
-          ? Icons.restaurant_menu
-          : serviceType == 'designer'
-          ? Icons.checkroom
-          : serviceType == 'translator'
-          ? Icons.translate
-          : Icons.work,
-
-      'serviceType': serviceType,
-      'jobCategory': category,
-      'serviceDetails': publicServiceDetails(raw),
-      'serviceArea': serviceText(fields['serviceArea'] ?? raw['serviceArea']),
-      'availability': serviceText(
-        fields['availability'] ?? raw['availability'],
-      ),
-      'ratePerHour': serviceText(fields['ratePerHour'] ?? raw['ratePerHour']),
-      'ratePerDocument': serviceText(
-        fields['ratePerDocument'] ?? raw['ratePerDocument'],
-      ),
-      'languagesOffered': serviceText(
-        fields['languagesOffered'] ?? raw['languagesOffered'],
-      ),
-      'translatorServiceType': serviceText(
-        fields['translatorServiceType'] ?? raw['translatorServiceType'],
-      ),
-
-      'depositPercentage': deposit,
-
-      'menuItems': raw['menuItems'] is List ? raw['menuItems'] : [],
-
-      'gallery': serviceGallery(raw),
-
-      'reviews': raw['reviews'] is List ? raw['reviews'] : [],
-    };
-  }
+  ) => normalizeJobForDetail(doc);
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +446,7 @@ class _JobsScreenState extends State<JobsScreen> {
 
           appBar: AppBar(
             title: Text(
-              'Jobs & Services',
+              memberText(context, 'Emplois et services', 'Jobs & Services'),
 
               style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
             ),
@@ -463,7 +459,11 @@ class _JobsScreenState extends State<JobsScreen> {
               IconButton(
                 icon: const Icon(Icons.search),
 
-                tooltip: 'Search services',
+                tooltip: memberText(
+                  context,
+                  'Rechercher un service',
+                  'Search services',
+                ),
 
                 onPressed: () async {
                   final selected = await showSearch<Map<String, dynamic>?>(
@@ -479,24 +479,6 @@ class _JobsScreenState extends State<JobsScreen> {
 
                     MaterialPageRoute(
                       builder: (_) => JobDetailScreen(jobData: selected),
-                    ),
-                  );
-                },
-              ),
-
-              IconButton(
-                icon: Icon(Icons.add_circle_outline, color: primaryGold),
-
-                tooltip: 'Post a Job or Service',
-
-                onPressed: () {
-                  Navigator.push(
-                    context,
-
-                    MaterialPageRoute(
-                      builder: (_) => const DynamicSubmissionScreen(
-                        type: SubmissionType.job,
-                      ),
                     ),
                   );
                 },
@@ -599,7 +581,7 @@ class _JobsScreenState extends State<JobsScreen> {
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4),
 
-                    child: Text(
+                    child: AppText(
                       '${job['title']}\n📍 ${job['location']} • ⭐ ${job['rating']}',
 
                       style: const TextStyle(
@@ -675,7 +657,7 @@ class _ServiceSearchDelegate extends SearchDelegate<Map<String, dynamic>?> {
     }).toList();
 
     if (matches.isEmpty) {
-      return const Center(child: Text('No caterers or services found.'));
+      return const Center(child: AppText('No caterers or services found.'));
     }
 
     return ListView.builder(
@@ -727,7 +709,7 @@ class _ServiceSearchDelegate extends SearchDelegate<Map<String, dynamic>?> {
 
           title: Text(service['name'].toString()),
 
-          subtitle: Text('${service['title']} • ${service['location']}'),
+          subtitle: AppText('${service['title']} • ${service['location']}'),
 
           onTap: () => close(context, service),
         );
@@ -825,7 +807,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cette information n’est pas disponible.'),
+          content: AppText('Cette information n’est pas disponible.'),
         ),
       );
 
@@ -1044,9 +1026,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             'Tarif par document : ${_text(jobData['ratePerDocument'])}',
                           if (_text(jobData['languagesOffered']).isNotEmpty)
                             'Langues : ${_text(jobData['languagesOffered'])}',
-                          if (_text(
-                            jobData['translatorServiceType'],
-                          ).isNotEmpty)
+                          if (_text(jobData['translatorServiceType'])
+                              .isNotEmpty)
                             'Mode : ${_text(jobData['translatorServiceType'])}',
                         ],
                         cardGreen,
@@ -1223,7 +1204,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 children: [
                   Icon(Icons.star_outline, color: primaryGold, size: 16),
                   SizedBox(width: 5),
-                  Text(
+                  AppText(
                     'Avis clients',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
@@ -1317,7 +1298,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-          const Text(
+          const AppText(
             'À propos',
 
             style: TextStyle(
@@ -1375,7 +1356,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           'Galerie (${images.length})',
           style: const TextStyle(
             color: primaryGold,
@@ -1384,7 +1365,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        const AppText(
           'Touchez une photo pour l’agrandir.',
           style: TextStyle(color: Colors.white70),
         ),
@@ -1417,7 +1398,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
 
       children: [
-        const Text(
+        const AppText(
           'Avis clients',
 
           style: TextStyle(
@@ -1432,7 +1413,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         const SizedBox(height: 10),
 
         if (reviewsList.isEmpty)
-          const Text(
+          const AppText(
             'Aucun avis pour le moment.',
 
             style: TextStyle(color: Colors.white54, fontSize: 12),
@@ -1535,7 +1516,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
               icon: const Icon(Icons.phone_in_talk, size: 20),
 
-              label: const Text(
+              label: const AppText(
                 'WhatsApp',
 
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -1566,7 +1547,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
               icon: const Icon(Icons.chat_bubble_outline, size: 20),
 
-              label: const Text(
+              label: const AppText(
                 'Chat',
 
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -1585,9 +1566,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   otherUserId: ownerId,
 
                   otherUserName: name,
-                  professionalSourceCollection: professionalSource(
-                    jobData,
-                  )?.collection,
+                  publicContactCollection: 'jobs',
+                  publicContactId: jobData['id']?.toString(),
+                  professionalSourceCollection: professionalSource(jobData)
+                      ?.collection,
                   professionalBusinessId: professionalSource(jobData)?.id,
                 );
               },
@@ -1646,7 +1628,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               if (!latest.exists || latest.data()?['ordersEnabled'] == false) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text(
+                    content: AppText(
                       'Les commandes sont désactivées pour cet établissement.',
                     ),
                   ),
@@ -1657,7 +1639,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text(
+                    content: AppText(
                       'Vérification impossible. Vérifiez la connexion puis réessayez.',
                     ),
                   ),
@@ -1705,7 +1687,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Veuillez choisir au moins un article.'),
+                  content: AppText('Veuillez choisir au moins un article.'),
                 ),
               );
 
@@ -1830,7 +1812,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-          Text(
+          AppText(
             'Tarifs',
 
             style: TextStyle(color: goldColor, fontWeight: FontWeight.bold),
@@ -1889,9 +1871,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           item['category'],
     );
     if (explicit.isNotEmpty) return explicit;
-    final kind = _text(
-      item['productType'] ?? item['itemType'] ?? item['type'],
-    ).toLowerCase();
+    final kind = _text(item['productType'] ?? item['itemType'] ?? item['type'])
+        .toLowerCase();
     if (kind.contains('drink') || kind.contains('boisson')) return 'Boissons';
     if (kind.contains('service')) return 'Services';
     return 'Autres';
@@ -1925,7 +1906,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
 
       children: [
-        const Text(
+        const AppText(
           'Produits et services',
 
           style: TextStyle(
@@ -1951,7 +1932,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               borderRadius: BorderRadius.circular(14),
             ),
 
-            child: const Text(
+            child: const AppText(
               'Aucun produit disponible pour le moment.',
 
               style: TextStyle(color: Colors.white54),
@@ -2028,7 +2009,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
         if (!allowOrdering && items.isNotEmpty) ...[
           const SizedBox(height: 8),
-          const Text(
+          const AppText(
             'Pour ces articles, contactez le professionnel. '
             'La commande et le paiement en ligne seront disponibles ultérieurement.',
             style: TextStyle(color: Colors.white70, fontSize: 12),
@@ -2055,7 +2036,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 const SizedBox(width: 8),
 
                 Expanded(
-                  child: Text(
+                  child: AppText(
                     '$totalItems article${totalItems > 1 ? 's' : ''}',
 
                     style: const TextStyle(
@@ -2066,7 +2047,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 ),
 
-                Text(
+                AppText(
                   '€${totalPrice.toStringAsFixed(2)}',
 
                   style: TextStyle(
@@ -2193,7 +2174,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
                   Row(
                     children: [
-                      Text(
+                      AppText(
                         '€${price.toStringAsFixed(2)}',
 
                         style: TextStyle(
@@ -2208,7 +2189,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       const Spacer(),
 
                       if (!available)
-                        const Text(
+                        const AppText(
                           'Indisponible',
 
                           style: TextStyle(
@@ -2251,7 +2232,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           disabledColor: Colors.white24,
                         ),
 
-                        Text(
+                        AppText(
                           '$quantity',
 
                           style: const TextStyle(
@@ -2409,7 +2390,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                     ),
                   ),
 
-                  const Text(
+                  const AppText(
                     'Online',
 
                     style: TextStyle(color: Colors.greenAccent, fontSize: 12),

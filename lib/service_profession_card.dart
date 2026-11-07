@@ -1,4 +1,7 @@
+import 'professional_activity_text.dart';
+
 import 'package:flutter/material.dart';
+
 import 'service_profession.dart';
 
 class ServiceProfessionCard extends StatelessWidget {
@@ -12,7 +15,12 @@ class ServiceProfessionCard extends StatelessWidget {
     final f = serviceMap(data['fields']), extras = serviceMap(v['extras']);
     String field(String key) => serviceText(f[key] ?? data[key]);
     final rows = <MapEntry<String, String>>[
-      MapEntry('Tarif indicatif', servicePrice(v)),
+      MapEntry(
+        'Tarif indicatif',
+        serviceText(v['unit']) == 'Sur devis'
+            ? activityText(context, 'Sur devis')
+            : '${serviceText(v['rate'])} ${serviceText(v['currency'])} · ${activityText(context, serviceText(v['unit']))}',
+      ),
       if (field('serviceArea').isNotEmpty)
         MapEntry('Zone de déplacement', field('serviceArea')),
       if (field('availability').isNotEmpty)
@@ -32,7 +40,7 @@ class ServiceProfessionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            p.label,
+            activityText(context, p.label),
             style: const TextStyle(
               color: Color(0xFFFFD700),
               fontSize: 20,
@@ -50,28 +58,31 @@ class ServiceProfessionCard extends StatelessWidget {
                     ]
                     .map(
                       (s) => Chip(
-                        label: Text(s),
+                        label: Text(activityText(context, s)),
                         backgroundColor: const Color(0xFF061E12),
                         labelStyle: const TextStyle(color: Colors.white),
                       ),
                     )
                     .toList(),
           ),
-          for (final row in rows.take(3)) _row(row),
+          for (final row in rows.take(3)) _row(context, row),
           if (rows.length > 3)
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
-              title: const Text(
-                'Détails des prestations',
+              title: Text(
+                activityText(context, "Détails des prestations"),
                 style: TextStyle(color: Color(0xFFFFD700)),
               ),
               iconColor: const Color(0xFFFFD700),
               collapsedIconColor: const Color(0xFFFFD700),
-              children: rows.skip(3).map(_row).toList(),
+              children: rows.skip(3).map((row) => _row(context, row)).toList(),
             ),
           const SizedBox(height: 8),
-          const Text(
-            'Le professionnel confirme le tarif et sa disponibilité avant accord.',
+          Text(
+            activityText(
+              context,
+              "Le professionnel confirme le tarif et sa disponibilité avant accord.",
+            ),
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
@@ -79,13 +90,13 @@ class ServiceProfessionCard extends StatelessWidget {
     );
   }
 
-  Widget _row(MapEntry<String, String> r) => Padding(
+  Widget _row(BuildContext context, MapEntry<String, String> r) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 5),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          r.key,
+          activityText(context, r.key),
           style: const TextStyle(
             color: Color(0xFFFFD700),
             fontWeight: FontWeight.w600,

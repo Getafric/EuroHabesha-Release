@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'professional_profile_sync_service.dart';
 
 class BusinessHoursScreen extends StatefulWidget {
@@ -51,23 +54,14 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
       final key = day['key']!;
 
       _openDays[key] = false;
-      _openingTimes[key] = const TimeOfDay(
-        hour: 9,
-        minute: 0,
-      );
-      _closingTimes[key] = const TimeOfDay(
-        hour: 18,
-        minute: 0,
-      );
+      _openingTimes[key] = const TimeOfDay(hour: 9, minute: 0);
+      _closingTimes[key] = const TimeOfDay(hour: 18, minute: 0);
     }
 
     _loadHours();
   }
 
-  TimeOfDay _parseTime(
-    dynamic value,
-    TimeOfDay fallback,
-  ) {
+  TimeOfDay _parseTime(dynamic value, TimeOfDay fallback) {
     final text = value?.toString() ?? '';
     final parts = text.split(':');
 
@@ -87,10 +81,7 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
       return fallback;
     }
 
-    return TimeOfDay(
-      hour: hour,
-      minute: minute,
-    );
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
   String _timeToString(TimeOfDay time) {
@@ -117,18 +108,12 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
 
             _openingTimes[key] = _parseTime(
               rawDay['open'],
-              const TimeOfDay(
-                hour: 9,
-                minute: 0,
-              ),
+              const TimeOfDay(hour: 9, minute: 0),
             );
 
             _closingTimes[key] = _parseTime(
               rawDay['close'],
-              const TimeOfDay(
-                hour: 18,
-                minute: 0,
-              ),
+              const TimeOfDay(hour: 18, minute: 0),
             );
           }
         }
@@ -147,11 +132,7 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible de charger les horaires : $e',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible de charger les horaires : $e')),
       );
     }
   }
@@ -160,8 +141,9 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
     required String dayKey,
     required bool opening,
   }) async {
-    final initialTime =
-        opening ? _openingTimes[dayKey]! : _closingTimes[dayKey]!;
+    final initialTime = opening
+        ? _openingTimes[dayKey]!
+        : _closingTimes[dayKey]!;
 
     final selected = await showTimePicker(
       context: context,
@@ -194,12 +176,8 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
 
         hours[key] = {
           'isOpen': _openDays[key] ?? false,
-          'open': _timeToString(
-            _openingTimes[key]!,
-          ),
-          'close': _timeToString(
-            _closingTimes[key]!,
-          ),
+          'open': _timeToString(_openingTimes[key]!),
+          'close': _timeToString(_closingTimes[key]!),
         };
       }
 
@@ -215,13 +193,9 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Horaires enregistrés.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: AppText('Horaires enregistrés.')));
 
       Navigator.pop(context, true);
     } catch (e) {
@@ -229,9 +203,7 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Impossible d’enregistrer les horaires : $e',
-          ),
+          content: AppText('Impossible d’enregistrer les horaires : $e'),
         ),
       );
     } finally {
@@ -252,25 +224,17 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF00382F),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: primaryGold.withValues(alpha: 0.25),
-          ),
+          border: Border.all(color: primaryGold.withValues(alpha: 0.25)),
         ),
         child: Column(
           children: [
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 11,
-              ),
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
             ),
             const SizedBox(height: 4),
             Text(
@@ -294,29 +258,17 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
-        title: const Text(
+        title: const AppText(
           'Horaires',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(color: primaryGold))
           : ListView(
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                100,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: [
-                const Text(
+                const AppText(
                   'Horaires d’ouverture',
                   style: TextStyle(
                     color: Colors.white,
@@ -325,13 +277,10 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                const AppText(
                   'Choisissez les jours d’ouverture '
                   'et les horaires de votre activité.',
-                  style: TextStyle(
-                    color: Colors.white60,
-                    height: 1.4,
-                  ),
+                  style: TextStyle(color: Colors.white60, height: 1.4),
                 ),
                 const SizedBox(height: 20),
                 ..._days.map((day) {
@@ -340,18 +289,14 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                   final isOpen = _openDays[key] ?? false;
 
                   return Container(
-                    margin: const EdgeInsets.only(
-                      bottom: 12,
-                    ),
+                    margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: cardGreen,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isOpen
-                            ? primaryGold.withValues(
-                                alpha: 0.35,
-                              )
+                            ? primaryGold.withValues(alpha: 0.35)
                             : Colors.white10,
                       ),
                     ),
@@ -397,10 +342,7 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                                   label: 'Ouverture',
                                   time: _openingTimes[key]!,
                                   onTap: () {
-                                    _selectTime(
-                                      dayKey: key,
-                                      opening: true,
-                                    );
+                                    _selectTime(dayKey: key, opening: true);
                                   },
                                 ),
                               ),
@@ -410,10 +352,7 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                                   label: 'Fermeture',
                                   time: _closingTimes[key]!,
                                   onTap: () {
-                                    _selectTime(
-                                      dayKey: key,
-                                      opening: false,
-                                    );
+                                    _selectTime(dayKey: key, opening: false);
                                   },
                                 ),
                               ),
@@ -432,9 +371,7 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGold,
                       foregroundColor: primaryDarkGreen,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -448,16 +385,12 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                               color: primaryDarkGreen,
                             ),
                           )
-                        : const Icon(
-                            Icons.save_outlined,
-                          ),
+                        : const Icon(Icons.save_outlined),
                     label: Text(
                       _saving
                           ? 'Enregistrement...'
                           : 'Enregistrer les horaires',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

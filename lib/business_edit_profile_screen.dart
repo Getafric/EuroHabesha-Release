@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'professional_profile_sync_service.dart';
 import 'table_reservation_option.dart';
 import 'professional_capabilities.dart';
@@ -99,21 +102,29 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
       }
 
       if (supportsTableReservations(widget.sourceCollection)) {
-        final layout = await _documentReference.collection('roomLayouts')
-            .doc('main').get();
+        final layout = await _documentReference
+            .collection('roomLayouts')
+            .doc('main')
+            .get();
         if (!mounted) return;
         final rooms = layout.data()?['rooms'];
-        _tablesEnabled = layout.data()?['reservationsEnabled'] != false &&
-            initialTableReservationOption(data,
-          category: _categoryController.text,
-          hasLayout: rooms is List && rooms.isNotEmpty);
+        _tablesEnabled =
+            layout.data()?['reservationsEnabled'] != false &&
+            initialTableReservationOption(
+              data,
+              category: _categoryController.text,
+              hasLayout: rooms is List && rooms.isNotEmpty,
+            );
       }
       final category = _categoryController.text.toLowerCase();
-      final legacyOrders = widget.sourceCollection == 'businessSubmissions' ||
+      final legacyOrders =
+          widget.sourceCollection == 'businessSubmissions' ||
           ['cater', 'traiteur', 'design'].any(category.contains);
-      final capabilities = ProfessionalCapabilities.fromData(data,
-          legacyOrders: legacyOrders,
-          legacyChat: widget.sourceCollection == 'jobSubmissions');
+      final capabilities = ProfessionalCapabilities.fromData(
+        data,
+        legacyOrders: legacyOrders,
+        legacyChat: widget.sourceCollection == 'jobSubmissions',
+      );
       _appointmentsEnabled = capabilities.appointments;
       _ordersEnabled = capabilities.orders;
       _contactEnabled = capabilities.contact;
@@ -132,22 +143,25 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible de charger le profil : $e',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible de charger le profil : $e')),
       );
     }
   }
 
-  Widget _functionSwitch(String title, String subtitle, bool value,
-      void Function(bool) update) => SwitchListTile.adaptive(
+  Widget _functionSwitch(
+    String title,
+    String subtitle,
+    bool value,
+    void Function(bool) update,
+  ) => SwitchListTile.adaptive(
     contentPadding: EdgeInsets.zero,
-    title: Text(title, style: const TextStyle(color: Colors.white,
-        fontWeight: FontWeight.bold)),
+    title: Text(
+      title,
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    ),
     subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70)),
-    value: value, activeThumbColor: primaryGold,
+    value: value,
+    activeThumbColor: primaryGold,
     onChanged: _saving ? null : (v) => setState(() => update(v)),
   );
 
@@ -185,12 +199,16 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
         updates['chatEnabled'] = _chatEnabled;
       }
       await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final layoutRef = _documentReference.collection('roomLayouts').doc('main');
+        final layoutRef = _documentReference
+            .collection('roomLayouts')
+            .doc('main');
         final supported = supportsTableReservations(widget.sourceCollection);
         final layout = supported ? await transaction.get(layoutRef) : null;
         transaction.update(_documentReference, updates);
         if (layout != null && layout.exists) {
-          transaction.update(layoutRef, {'reservationsEnabled': _tablesEnabled});
+          transaction.update(layoutRef, {
+            'reservationsEnabled': _tablesEnabled,
+          });
         }
       });
       await ProfessionalProfileSyncService.syncPublishedProfile(
@@ -202,9 +220,7 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Informations professionnelles enregistrées.',
-          ),
+          content: AppText('Informations professionnelles enregistrées.'),
         ),
       );
 
@@ -214,9 +230,7 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Impossible d’enregistrer les modifications : $e',
-          ),
+          content: AppText('Impossible d’enregistrer les modifications : $e'),
         ),
       );
     } finally {
@@ -228,44 +242,28 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
     }
   }
 
-  InputDecoration _decoration(
-    String label,
-    IconData icon,
-  ) {
+  InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(
-        color: Colors.white60,
-      ),
-      prefixIcon: Icon(
-        icon,
-        color: primaryGold,
-      ),
+      labelStyle: const TextStyle(color: Colors.white60),
+      prefixIcon: Icon(icon, color: primaryGold),
       filled: true,
       fillColor: cardGreen,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: primaryGold.withValues(alpha: 0.25),
-        ),
+        borderSide: BorderSide(color: primaryGold.withValues(alpha: 0.25)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: primaryGold,
-        ),
+        borderSide: const BorderSide(color: primaryGold),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-        ),
+        borderSide: const BorderSide(color: Colors.redAccent),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-        ),
+        borderSide: const BorderSide(color: Colors.redAccent),
       ),
     );
   }
@@ -281,13 +279,8 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
-      decoration: _decoration(
-        label,
-        icon,
-      ),
+      style: const TextStyle(color: Colors.white),
+      decoration: _decoration(label, icon),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return 'Ce champ est obligatoire.';
@@ -307,13 +300,8 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(
-        color: Colors.white,
-      ),
-      decoration: _decoration(
-        label,
-        icon,
-      ),
+      style: const TextStyle(color: Colors.white),
+      decoration: _decoration(label, icon),
     );
   }
 
@@ -324,29 +312,17 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
-        title: const Text(
+        title: const AppText(
           'Modifier mes informations',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(color: primaryGold))
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  16,
-                  16,
-                  40,
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -360,13 +336,10 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
                     child: const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: primaryGold,
-                        ),
+                        Icon(Icons.info_outline, color: primaryGold),
                         SizedBox(width: 12),
                         Expanded(
-                          child: Text(
+                          child: AppText(
                             'Ces informations seront utilisées '
                             'sur votre page professionnelle publique.',
                             style: TextStyle(
@@ -406,13 +379,8 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
                   const SizedBox(height: 14),
                   TextFormField(
                     initialValue: _country,
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
-                    decoration: _decoration(
-                      'Pays',
-                      Icons.public,
-                    ),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _decoration('Pays', Icons.public),
                     onChanged: (value) {
                       _country = value;
                     },
@@ -435,56 +403,92 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
                   if (supportsTableReservations(widget.sourceCollection))
                     Container(
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: cardGreen,
+                      decoration: BoxDecoration(
+                        color: cardGreen,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: primaryGold.withValues(alpha: .35))),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                        border: Border.all(
+                          color: primaryGold.withValues(alpha: .35),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Fonctions de mon établissement',
-                            style: TextStyle(color: primaryGold, fontSize: 18,
-                              fontWeight: FontWeight.bold)),
+                          const AppText(
+                            'Fonctions de mon établissement',
+                            style: TextStyle(
+                              color: primaryGold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           SwitchListTile.adaptive(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Réservation de tables',
-                              style: TextStyle(color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                            subtitle: const Text('Recevoir des clients sur place',
-                              style: TextStyle(color: Colors.white70)),
+                            title: const AppText(
+                              'Réservation de tables',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: const AppText(
+                              'Recevoir des clients sur place',
+                              style: TextStyle(color: Colors.white70),
+                            ),
                             value: _tablesEnabled,
                             activeThumbColor: primaryGold,
-                            onChanged: _saving ? null :
-                              (value) => setState(() => _tablesEnabled = value),
+                            onChanged: _saving
+                                ? null
+                                : (value) =>
+                                      setState(() => _tablesEnabled = value),
                           ),
-                          _functionSwitch('Prise de rendez-vous',
+                          _functionSwitch(
+                            'Prise de rendez-vous',
                             'Configurer vos prestations et horaires dans Gérer les rendez-vous.',
-                            _appointmentsEnabled, (v) => _appointmentsEnabled = v),
-                          _functionSwitch('Commandes',
+                            _appointmentsEnabled,
+                            (v) => _appointmentsEnabled = v,
+                          ),
+                          _functionSwitch(
+                            'Commandes',
                             'Proposer la commande de vos produits, repas ou prestations.',
-                            _ordersEnabled, (v) => _ordersEnabled = v),
-                          _functionSwitch('Coordonnées de contact',
+                            _ordersEnabled,
+                            (v) => _ordersEnabled = v,
+                          ),
+                          _functionSwitch(
+                            'Coordonnées de contact',
                             'Afficher les boutons téléphone, e-mail, site et WhatsApp disponibles.',
-                            _contactEnabled, (v) => _contactEnabled = v),
-                          _functionSwitch('Discussion dans l’application',
+                            _contactEnabled,
+                            (v) => _contactEnabled = v,
+                          ),
+                          _functionSwitch(
+                            'Discussion dans l’application',
                             'Permettre aux clients de vous écrire avec le bouton Discuter.',
-                            _chatEnabled, (v) => _chatEnabled = v),
-                          const Text('Chaque option concerne uniquement cette fiche. '
+                            _chatEnabled,
+                            (v) => _chatEnabled = v,
+                          ),
+                          const AppText(
+                            'Chaque option concerne uniquement cette fiche. '
                             'Les tables nécessitent un plan configuré ; les rendez-vous '
                             'nécessitent au moins une prestation active.',
-                            style: TextStyle(color: Colors.white70, height: 1.4)),
-                        ]),
+                            style: TextStyle(
+                              color: Colors.white70,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   const SizedBox(height: 26),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _saving || !_profileLoaded ? null : _saveProfile,
+                      onPressed: _saving || !_profileLoaded
+                          ? null
+                          : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryGold,
                         foregroundColor: primaryDarkGreen,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -503,9 +507,7 @@ class _BusinessEditProfileScreenState extends State<BusinessEditProfileScreen> {
                         _saving
                             ? 'Enregistrement...'
                             : 'Enregistrer les modifications',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

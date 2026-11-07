@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +24,7 @@ class EventAttendeesScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: darkGreen,
         foregroundColor: Colors.white,
-        title: const Text('Participants'),
+        title: const AppText('Participants'),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
@@ -32,7 +34,7 @@ class EventAttendeesScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(
-              child: Text(
+              child: AppText(
                 'Impossible de charger les participants.',
                 style: TextStyle(color: Colors.white),
               ),
@@ -40,26 +42,25 @@ class EventAttendeesScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: gold),
-            );
+            return const Center(child: CircularProgressIndicator(color: gold));
           }
 
-          final tickets = snapshot.data!.docs
-              .where(
-                (doc) => doc.data()['paymentStatus'] == 'purchased',
-              )
-              .toList()
-            ..sort((a, b) {
-              final aDate = a.data()['createdAt'] as Timestamp?;
-              final bDate = b.data()['createdAt'] as Timestamp?;
+          final tickets =
+              snapshot.data!.docs
+                  .where((doc) => doc.data()['paymentStatus'] == 'purchased')
+                  .toList()
+                ..sort((a, b) {
+                  final aDate = a.data()['createdAt'] as Timestamp?;
+                  final bDate = b.data()['createdAt'] as Timestamp?;
 
-              return (bDate?.millisecondsSinceEpoch ?? 0)
-                  .compareTo(aDate?.millisecondsSinceEpoch ?? 0);
-            });
+                  return (bDate?.millisecondsSinceEpoch ?? 0).compareTo(
+                    aDate?.millisecondsSinceEpoch ?? 0,
+                  );
+                });
 
-          final checkedInCount =
-              tickets.where((doc) => doc.data()['checkedIn'] == true).length;
+          final checkedInCount = tickets
+              .where((doc) => doc.data()['checkedIn'] == true)
+              .length;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -95,7 +96,7 @@ class EventAttendeesScreen extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 50),
                   child: Center(
-                    child: Text(
+                    child: AppText(
                       'Aucun participant pour le moment.',
                       style: TextStyle(color: Colors.white70),
                     ),
@@ -113,10 +114,7 @@ class EventAttendeesScreen extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-  });
+  const _SummaryCard({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -140,10 +138,7 @@ class _SummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white70),
-          ),
+          Text(label, style: const TextStyle(color: Colors.white70)),
         ],
       ),
     );
@@ -163,8 +158,8 @@ class _AttendeeCard extends StatelessWidget {
     final purchaseDate = createdAt == null
         ? ''
         : '${createdAt.toDate().day.toString().padLeft(2, '0')}/'
-            '${createdAt.toDate().month.toString().padLeft(2, '0')}/'
-            '${createdAt.toDate().year}';
+              '${createdAt.toDate().month.toString().padLeft(2, '0')}/'
+              '${createdAt.toDate().year}';
 
     final price = (data['unitPrice'] as num?)?.toDouble() ?? 0;
 
@@ -204,31 +199,23 @@ class _AttendeeCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 5),
-                Text(
+                AppText(
                   '${data['ticketTypeName'] ?? 'Ticket'} • '
                   '${price <= 0 ? 'Gratuit' : '${price.toStringAsFixed(2)} €'}',
-                  style: const TextStyle(
-                    color: EventAttendeesScreen.gold,
-                  ),
+                  style: const TextStyle(color: EventAttendeesScreen.gold),
                 ),
                 if (purchaseDate.isNotEmpty) ...[
                   const SizedBox(height: 5),
-                  Text(
+                  AppText(
                     'Acheté le $purchaseDate',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ],
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 9,
-              vertical: 5,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: checkedIn
                   ? Colors.green.withValues(alpha: 0.18)

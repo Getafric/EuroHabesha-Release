@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
@@ -33,10 +35,7 @@ class ReviewPromptService {
 
       // Count a prompt as soon as it is displayed, even when dismissed.
       await prefs.setInt(_countKey, count + 1);
-      await prefs.setInt(
-        _lastShownKey,
-        DateTime.now().millisecondsSinceEpoch,
-      );
+      await prefs.setInt(_lastShownKey, DateTime.now().millisecondsSinceEpoch);
       if (!context.mounted) return;
 
       final result = await showDialog<_ReviewChoice>(
@@ -101,16 +100,17 @@ class _ReviewDialogState extends State<_ReviewDialog> {
             width: 80,
             height: 80,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.star_rounded, color: gold, size: 70,
-            ),
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.star_rounded, color: gold, size: 70),
           ),
           const SizedBox(height: 14),
-          Text(
+          AppText(
             'review.title'.tr(),
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: gold, fontWeight: FontWeight.bold, fontSize: 23,
+              color: gold,
+              fontWeight: FontWeight.bold,
+              fontSize: 23,
             ),
           ),
         ],
@@ -118,7 +118,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          AppText(
             'review.message'.tr(),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white70, fontSize: 15),
@@ -137,7 +137,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
               ),
               onPressed: () => Navigator.of(context).pop(_ReviewChoice.rate),
               icon: const Icon(Icons.star_rounded),
-              label: Text(
+              label: AppText(
                 'review.rate_us'.tr(),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -145,10 +145,10 @@ class _ReviewDialogState extends State<_ReviewDialog> {
           ),
           const SizedBox(height: 4),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(
-              _neverShowAgain ? _ReviewChoice.never : _ReviewChoice.later,
-            ),
-            child: Text(
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(_neverShowAgain ? _ReviewChoice.never : _ReviewChoice.later),
+            child: AppText(
               'review.later'.tr(),
               style: const TextStyle(color: Colors.white70),
             ),
@@ -159,12 +159,13 @@ class _ReviewDialogState extends State<_ReviewDialog> {
             activeColor: gold,
             checkColor: darkGreen,
             controlAffinity: ListTileControlAffinity.leading,
-            title: const Text(
+            title: const AppText(
               'Ne plus afficher ce message',
               style: TextStyle(color: Colors.white, fontSize: 13),
             ),
             value: _neverShowAgain,
-            onChanged: (value) => setState(() => _neverShowAgain = value ?? false),
+            onChanged: (value) =>
+                setState(() => _neverShowAgain = value ?? false),
           ),
         ],
       ),

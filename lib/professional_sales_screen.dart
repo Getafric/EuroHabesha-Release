@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'business_orders_screen.dart';
 import 'professional_payments_screen.dart';
 import 'professional_sales_summary.dart';
@@ -158,7 +161,7 @@ class _ProfessionalSalesScreenState extends State<ProfessionalSalesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     ),
     icon: const Icon(Icons.receipt_long_outlined),
-    label: const Text(
+    label: const AppText(
       'Commandes de tout mon compte',
       textAlign: TextAlign.center,
     ),
@@ -378,7 +381,7 @@ class _ProfessionalSalesScreenState extends State<ProfessionalSalesScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
           icon: const Icon(Icons.account_balance_wallet_outlined),
-          label: const Text(
+          label: const AppText(
             'Paiements et versements',
             textAlign: TextAlign.center,
             style: TextStyle(fontWeight: FontWeight.w700),
@@ -423,7 +426,7 @@ class _ProfessionalSalesScreenState extends State<ProfessionalSalesScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              const AppText(
                 'Période du résumé',
                 style: TextStyle(color: Colors.white54, fontSize: 11),
               ),
@@ -580,7 +583,7 @@ class _ProfessionalSalesScreenState extends State<ProfessionalSalesScreen> {
     appBar: AppBar(
       backgroundColor: _dark,
       foregroundColor: _gold,
-      title: const Text('Mes ventes'),
+      title: const AppText('Mes ventes'),
       actions: [
         IconButton(
           tooltip: 'Actualiser la période',

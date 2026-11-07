@@ -25,13 +25,18 @@ class NearbySyncService {
     required String sourceId,
   }) {
     if (!supportedCollections.contains(sourceCollection)) {
-      throw ArgumentError.value(sourceCollection, 'sourceCollection',
-          'Collection non autorisée pour Nearby');
+      throw ArgumentError.value(
+        sourceCollection,
+        'sourceCollection',
+        'Collection non autorisée pour Nearby',
+      );
     }
     if (sourceId.trim().isEmpty || sourceId.contains('/')) {
       throw ArgumentError.value(sourceId, 'sourceId', 'ID invalide');
     }
-    return firestore.collection(collectionName).doc('${sourceCollection}_$sourceId');
+    return firestore
+        .collection(collectionName)
+        .doc('${sourceCollection}_$sourceId');
   }
 
   /// Appeler uniquement avec les données FINALES du document PUBLIC approuvé.
@@ -47,7 +52,8 @@ class NearbySyncService {
       sourceId: sourceId,
     );
     final status = _string([publicData['status']]).toLowerCase();
-    final hidden = publicData['isDeleted'] == true ||
+    final hidden =
+        publicData['isDeleted'] == true ||
         publicData['deleted'] == true ||
         publicData['archived'] == true ||
         publicData['isDemo'] == true ||
@@ -60,39 +66,63 @@ class NearbySyncService {
     final fields = _map(publicData['fields']);
     final category = _category(sourceCollection, publicData, fields);
     final title = _string([
-      fields['title'], fields['businessName'], fields['name'],
-      publicData['title'], publicData['businessName'], publicData['name'],
-      publicData['text'], publicData['question'],
+      fields['title'],
+      fields['businessName'],
+      fields['name'],
+      publicData['title'],
+      publicData['businessName'],
+      publicData['name'],
+      publicData['text'],
+      publicData['question'],
     ]);
     final description = _string([
-      fields['description'], publicData['description'],
-      publicData['text'], publicData['content'], publicData['question'],
+      fields['description'],
+      publicData['description'],
+      publicData['text'],
+      publicData['content'],
+      publicData['question'],
     ]);
     final city = _string([
-      fields['city'], fields['ville'], publicData['city'],
+      fields['city'],
+      fields['ville'],
+      publicData['city'],
       publicData['ville'],
     ]);
     final country = _string([
-      fields['country'], publicData['country'], publicData['pays'],
+      fields['country'],
+      publicData['country'],
+      publicData['pays'],
     ]);
     final location = _string([
-      fields['cityAddress'], publicData['cityAddress'],
-      fields['location'], publicData['location'], city,
+      fields['cityAddress'],
+      publicData['cityAddress'],
+      fields['location'],
+      publicData['location'],
+      city,
     ]);
     final subcategory = _string([
-      fields['connectCategory'], publicData['connectCategory'],
-      fields['communityCategory'], publicData['communityCategory'],
-      fields['businessCategory'], publicData['businessCategory'],
-      fields['itemCategory'], publicData['itemCategory'],
-      fields['category'], publicData['category'],
+      fields['connectCategory'],
+      publicData['connectCategory'],
+      fields['communityCategory'],
+      publicData['communityCategory'],
+      fields['businessCategory'],
+      publicData['businessCategory'],
+      fields['itemCategory'],
+      publicData['itemCategory'],
+      fields['category'],
+      publicData['category'],
     ]);
     final media = _map(publicData['media']);
     final eventMedia = _map(publicData['eventMedia']);
     final marketMedia = _map(publicData['marketplaceDetails']);
     final imageUrl = _string([
-      publicData['imageUrl'], publicData['image'], publicData['logoUrl'],
-      fields['imageUrl'], fields['logoUrl'],
-      eventMedia['coverUrl'], marketMedia['mainPhotoUrl'],
+      publicData['imageUrl'],
+      publicData['image'],
+      publicData['logoUrl'],
+      fields['imageUrl'],
+      fields['logoUrl'],
+      eventMedia['coverUrl'],
+      marketMedia['mainPhotoUrl'],
       _firstListString(media['photoUrls']),
       _firstListString(eventMedia['photoUrls']),
       _firstListString(marketMedia['photoUrls']),
@@ -103,8 +133,13 @@ class NearbySyncService {
     final publicGeo = _map(publicData['publicLocation']);
     final lat = _number(publicGeo['latitude'] ?? publicGeo['lat']);
     final lng = _number(publicGeo['longitude'] ?? publicGeo['lng']);
-    final hasGeo = lat != null && lng != null &&
-        lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+    final hasGeo =
+        lat != null &&
+        lng != null &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180;
 
     final item = <String, dynamic>{
       'sourceCollection': sourceCollection,
@@ -128,7 +163,10 @@ class NearbySyncService {
       item['longitude'] = lng;
       item['geoPoint'] = GeoPoint(lat, lng);
     }
-    batch.set(ref, item); // remplacement : évite les anciennes coordonnées obsolètes
+    batch.set(
+      ref,
+      item,
+    ); // remplacement : évite les anciennes coordonnées obsolètes
   }
 
   void stageRemove(
@@ -136,30 +174,42 @@ class NearbySyncService {
     required String sourceCollection,
     required String sourceId,
   }) {
-    batch.delete(referenceFor(
-      sourceCollection: sourceCollection,
-      sourceId: sourceId,
-    ));
+    batch.delete(
+      referenceFor(sourceCollection: sourceCollection, sourceId: sourceId),
+    );
   }
 
-  static String _category(String collection, Map<String, dynamic> data,
-      Map<String, dynamic> fields) {
+  static String _category(
+    String collection,
+    Map<String, dynamic> data,
+    Map<String, dynamic> fields,
+  ) {
     switch (collection) {
-      case 'businesses': return 'business';
-      case 'events': return 'event';
-      case 'marketplace': return 'marketplace';
-      case 'posts': return 'connect';
+      case 'businesses':
+        return 'business';
+      case 'events':
+        return 'event';
+      case 'marketplace':
+        return 'marketplace';
+      case 'posts':
+        return 'connect';
       case 'jobs':
-        final type = _string([data['type'], fields['type'],
-          data['listingType'], fields['listingType']]).toLowerCase();
+        final type = _string([
+          data['type'],
+          fields['type'],
+          data['listingType'],
+          fields['listingType'],
+        ]).toLowerCase();
         return {'professional', 'pro', 'service'}.contains(type)
-            ? 'professional' : 'job';
-      default: throw ArgumentError('Collection inconnue');
+            ? 'professional'
+            : 'job';
+      default:
+        throw ArgumentError('Collection inconnue');
     }
   }
 
-  static Map<String, dynamic> _map(dynamic value) => value is Map
-      ? Map<String, dynamic>.from(value) : <String, dynamic>{};
+  static Map<String, dynamic> _map(dynamic value) =>
+      value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
 
   static String _string(List<dynamic> values) {
     for (final value in values) {

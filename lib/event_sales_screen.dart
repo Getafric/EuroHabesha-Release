@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'event_financial_summary.dart';
 
 class EventSalesScreen extends StatelessWidget {
@@ -47,7 +50,7 @@ class EventSalesScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: darkGreen,
         foregroundColor: Colors.white,
-        title: const Text(
+        title: const AppText(
           'Ventes et participants',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
@@ -103,7 +106,7 @@ class EventSalesScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              const AppText(
                 'Ventes enregistrées et entrées. Les anciens billets peuvent ne pas préciser le mode TEST ou réel.',
                 style: TextStyle(color: Colors.white70),
               ),
@@ -148,7 +151,7 @@ class EventSalesScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text(
+              const AppText(
                 'Participants',
                 style: TextStyle(
                   color: gold,
@@ -229,7 +232,7 @@ class EventSalesScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Text(
+                        AppText(
                           'Achat : ${_formatDate(ticket['createdAt'])}',
                           style: const TextStyle(
                             color: Colors.white60,
@@ -237,7 +240,7 @@ class EventSalesScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        AppText(
                           'Billet : ${ticketDocument.id}',
                           style: const TextStyle(
                             color: Colors.white60,

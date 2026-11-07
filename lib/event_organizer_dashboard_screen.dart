@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +31,7 @@ class EventOrganizerDashboardScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: const AppText(
           'Mon espace Événement',
           style: TextStyle(
             color: gold,
@@ -40,7 +42,7 @@ class EventOrganizerDashboardScreen extends StatelessWidget {
       ),
       body: user == null
           ? const Center(
-              child: Text(
+              child: AppText(
                 'Vous devez être connecté.',
                 style: TextStyle(color: Colors.white),
               ),
@@ -55,7 +57,7 @@ class EventOrganizerDashboardScreen extends StatelessWidget {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
-                      child: Text(
+                      child: AppText(
                         'Impossible de charger vos événements.\n'
                         '${snapshot.error}',
                         textAlign: TextAlign.center,
@@ -88,13 +90,10 @@ class EventOrganizerDashboardScreen extends StatelessWidget {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text(
+                      child: AppText(
                         'Aucun événement trouvé.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
                       ),
                     ),
                   );
@@ -103,7 +102,7 @@ class EventOrganizerDashboardScreen extends StatelessWidget {
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
                   children: [
-                    const Text(
+                    const AppText(
                       'Mes événements',
                       style: TextStyle(
                         color: Colors.white,
@@ -112,12 +111,9 @@ class EventOrganizerDashboardScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    const Text(
+                    const AppText(
                       'Gérez vos événements, ventes, billets et entrées.',
-                      style: TextStyle(
-                        color: Colors.white60,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.white60, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
                     ...docs.map(
@@ -135,10 +131,7 @@ class EventOrganizerDashboardScreen extends StatelessWidget {
 }
 
 class _EventCard extends StatelessWidget {
-  const _EventCard({
-    required this.eventId,
-    required this.submissionData,
-  });
+  const _EventCard({required this.eventId, required this.submissionData});
 
   final String eventId;
   final Map<String, dynamic> submissionData;
@@ -189,9 +182,7 @@ class _EventCard extends StatelessWidget {
 
   String get location => _text(fields['cityAddress'], 'Lieu non renseigné');
 
-  String get performer => _text(
-        fields['performerDj'] ?? fields['performer'],
-      );
+  String get performer => _text(fields['performerDj'] ?? fields['performer']);
 
   String get startTime => _text(fields['startTime']);
 
@@ -263,13 +254,7 @@ class _EventCard extends StatelessWidget {
       return null;
     }
 
-    var end = DateTime(
-      year,
-      month,
-      day,
-      endHour,
-      endMinute,
-    );
+    var end = DateTime(year, month, day, endHour, endMinute);
 
     final startParts = startText.split(':');
 
@@ -278,13 +263,7 @@ class _EventCard extends StatelessWidget {
       final startMinute = int.tryParse(startParts[1]);
 
       if (startHour != null && startMinute != null) {
-        final start = DateTime(
-          year,
-          month,
-          day,
-          startHour,
-          startMinute,
-        );
+        final start = DateTime(year, month, day, startHour, startMinute);
 
         if (!end.isAfter(start)) {
           end = end.add(const Duration(days: 1));
@@ -369,9 +348,7 @@ class _EventCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.20),
@@ -418,10 +395,7 @@ class _EventCard extends StatelessWidget {
                     ].join(' • '),
                   ),
                 const SizedBox(height: 7),
-                _InfoLine(
-                  icon: Icons.location_on_outlined,
-                  text: location,
-                ),
+                _InfoLine(icon: Icons.location_on_outlined, text: location),
                 const SizedBox(height: 22),
                 _buildActions(context),
                 const SizedBox(height: 20),
@@ -458,10 +432,7 @@ class _EventCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  darkGreen.withValues(alpha: 0.85),
-                ],
+                colors: [Colors.transparent, darkGreen.withValues(alpha: 0.85)],
               ),
             ),
           ),
@@ -469,16 +440,11 @@ class _EventCard extends StatelessWidget {
             top: 14,
             right: 14,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 7,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: darkGreen.withValues(alpha: 0.88),
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: statusColor.withValues(alpha: 0.7),
-                ),
+                border: Border.all(color: statusColor.withValues(alpha: 0.7)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -513,11 +479,7 @@ class _EventCard extends StatelessWidget {
     return Container(
       color: darkGreen,
       child: const Center(
-        child: Icon(
-          Icons.event_available_outlined,
-          color: gold,
-          size: 58,
-        ),
+        child: Icon(Icons.event_available_outlined, color: gold, size: 58),
       ),
     );
   }
@@ -580,10 +542,8 @@ class _EventCard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => EventSalesScreen(
-                      eventId: eventId,
-                      eventTitle: title,
-                    ),
+                    builder: (_) =>
+                        EventSalesScreen(eventId: eventId, eventTitle: title),
                   ),
                 );
               },
@@ -619,9 +579,7 @@ class _EventCard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => AdminScannerScreen(
-                      eventId: eventId,
-                    ),
+                    builder: (_) => AdminScannerScreen(eventId: eventId),
                   ),
                 );
               },
@@ -672,8 +630,15 @@ class _EventCard extends StatelessWidget {
               onTap: () {
                 if (!isPublished) return;
                 // Build the poster from the published event, never from a draft.
-                Navigator.push(context, MaterialPageRoute<void>(
-                  builder: (_) => PublicEventRouteScreen(eventId: eventId, showPoster: true)));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => PublicEventRouteScreen(
+                      eventId: eventId,
+                      showPoster: true,
+                    ),
+                  ),
+                );
               },
             ),
             _ActionTile(
@@ -704,7 +669,7 @@ class _EventCard extends StatelessWidget {
       if (!snapshot.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: AppText(
               'La page publique de cet événement '
               'n’est pas encore disponible.',
             ),
@@ -718,23 +683,15 @@ class _EventCard extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => EventDetailScreen(
-            eventData: {
-              ...data,
-              'id': snapshot.id,
-            },
-          ),
+          builder: (_) =>
+              EventDetailScreen(eventData: {...data, 'id': snapshot.id}),
         ),
       );
     } catch (error) {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible d’ouvrir l’événement : $error',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible d’ouvrir l’événement : $error')),
       );
     }
   }
@@ -779,16 +736,11 @@ class _EventLiveStats extends StatelessWidget {
         );
 
         return Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 15,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 15),
           decoration: BoxDecoration(
             color: const Color(0xFF061E12).withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.07),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
           ),
           child: Row(
             children: [
@@ -821,11 +773,7 @@ class _EventLiveStats extends StatelessWidget {
   }
 
   Widget _divider() {
-    return Container(
-      width: 1,
-      height: 36,
-      color: Colors.white12,
-    );
+    return Container(width: 1, height: 36, color: Colors.white12);
   }
 }
 
@@ -872,10 +820,7 @@ class _StatValue extends StatelessWidget {
 }
 
 class _InfoLine extends StatelessWidget {
-  const _InfoLine({
-    required this.icon,
-    required this.text,
-  });
+  const _InfoLine({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -884,19 +829,12 @@ class _InfoLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: const Color(0xFFFFD700),
-          size: 18,
-        ),
+        Icon(icon, color: const Color(0xFFFFD700), size: 18),
         const SizedBox(width: 9),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
         ),
       ],
@@ -923,11 +861,13 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background =
-        highlighted ? const Color(0xFFFFD700) : const Color(0xFF061E12);
+    final background = highlighted
+        ? const Color(0xFFFFD700)
+        : const Color(0xFF061E12);
 
-    final foreground =
-        highlighted ? const Color(0xFF061E12) : const Color(0xFFFFD700);
+    final foreground = highlighted
+        ? const Color(0xFF061E12)
+        : const Color(0xFFFFD700);
 
     return SizedBox(
       width: width,
@@ -941,10 +881,7 @@ class _ActionTile extends StatelessWidget {
             onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(17),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 11,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 11),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(17),
                 border: Border.all(
@@ -956,11 +893,7 @@ class _ActionTile extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    icon,
-                    color: foreground,
-                    size: highlighted ? 27 : 24,
-                  ),
+                  Icon(icon, color: foreground, size: highlighted ? 27 : 24),
                   const SizedBox(height: 7),
                   Text(
                     label,
@@ -968,8 +901,9 @@ class _ActionTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color:
-                          highlighted ? const Color(0xFF061E12) : Colors.white,
+                      color: highlighted
+                          ? const Color(0xFF061E12)
+                          : Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),

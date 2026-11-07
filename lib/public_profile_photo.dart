@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
 
 /// Displays the saved image in full. Opening/zooming never edits its bytes.
@@ -88,7 +90,7 @@ class _FullProfilePhotoState extends State<_FullProfilePhoto> {
     appBar: AppBar(
       backgroundColor: const Color(0xFF061E12),
       foregroundColor: const Color(0xFFFFD700),
-      title: Text('Photo ${_index + 1} / ${widget.photos.length}'),
+      title: AppText('Photo ${_index + 1} / ${widget.photos.length}'),
     ),
     body: SafeArea(
       child: PageView.builder(
@@ -103,7 +105,7 @@ class _FullProfilePhotoState extends State<_FullProfilePhoto> {
               widget.photos[index],
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => const Center(
-                child: Text(
+                child: AppText(
                   'Photo indisponible',
                   style: TextStyle(color: Colors.white),
                 ),

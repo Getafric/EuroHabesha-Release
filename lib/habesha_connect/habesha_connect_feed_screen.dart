@@ -1,13 +1,20 @@
+import '../l10n/app_ui.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class HabeshaConnectFeedScreen extends StatefulWidget {
-  const HabeshaConnectFeedScreen({super.key, this.initialPostId});
+  const HabeshaConnectFeedScreen({
+    super.key,
+    this.initialPostId,
+    this.initialCategory,
+  });
 
   /// Affiche directement une publication depuis À proximité.
   final String? initialPostId;
+  final String? initialCategory;
 
   @override
   State<HabeshaConnectFeedScreen> createState() =>
@@ -74,9 +81,7 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
         }
       }
     } catch (e) {
-      debugPrint(
-        'Erreur chargement localisation utilisateur: $e',
-      );
+      debugPrint('Erreur chargement localisation utilisateur: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -109,8 +114,17 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _sortPosts(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> posts,
   ) {
-    final result =
-        List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(posts);
+    final result = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(
+      posts,
+    );
+
+    final category = widget.initialCategory?.trim();
+    if (category != null && category.isNotEmpty) {
+      result.retainWhere(
+        (document) =>
+            _normalize(_categoryName(document.data())) == _normalize(category),
+      );
+    }
 
     if (_selectedTab == 0) {
       result.sort((a, b) {
@@ -130,49 +144,32 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
           return bScore.compareTo(aScore);
         }
 
-        return _dateValue(
-          bData['createdAt'],
-        ).compareTo(
-          _dateValue(aData['createdAt']),
-        );
+        return _dateValue(bData['createdAt'])
+            .compareTo(_dateValue(aData['createdAt']));
       });
     } else if (_selectedTab == 2) {
       result.retainWhere(_isNearbyPost);
 
       result.sort((a, b) {
-        return _dateValue(
-          b.data()['createdAt'],
-        ).compareTo(
-          _dateValue(a.data()['createdAt']),
-        );
+        return _dateValue(b.data()['createdAt'])
+            .compareTo(_dateValue(a.data()['createdAt']));
       });
     } else {
       result.sort((a, b) {
-        return _dateValue(
-          b.data()['createdAt'],
-        ).compareTo(
-          _dateValue(a.data()['createdAt']),
-        );
+        return _dateValue(b.data()['createdAt'])
+            .compareTo(_dateValue(a.data()['createdAt']));
       });
     }
 
     return result;
   }
 
-  bool _isNearbyPost(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
-  ) {
+  bool _isNearbyPost(QueryDocumentSnapshot<Map<String, dynamic>> document) {
     final data = document.data();
 
-    final postCity = _firstString([
-      data['city'],
-      data['ville'],
-    ]);
+    final postCity = _firstString([data['city'], data['ville']]);
 
-    final postCountry = _firstString([
-      data['country'],
-      data['pays'],
-    ]);
+    final postCountry = _firstString([data['country'], data['pays']]);
 
     if (_userCity != null && postCity != null) {
       if (_normalize(_userCity!) == _normalize(postCity)) {
@@ -275,15 +272,9 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
   }
 
   String? _locationText(Map<String, dynamic> data) {
-    final city = _firstString([
-      data['city'],
-      data['ville'],
-    ]);
+    final city = _firstString([data['city'], data['ville']]);
 
-    final country = _firstString([
-      data['country'],
-      data['pays'],
-    ]);
+    final country = _firstString([data['country'], data['pays']]);
 
     if (city != null && country != null) {
       return '$city, $country';
@@ -312,25 +303,19 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: cardGreen,
-          title: const Text(
+          title: const AppText(
             'Compte requis',
-            style: TextStyle(
-              color: primaryGold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
           ),
-          content: const Text(
+          content: const AppText(
             'Vous devez être connecté avec un compte pour aimer '
             'une publication ou écrire un commentaire.',
-            style: TextStyle(
-              color: softText,
-              height: 1.45,
-            ),
+            style: TextStyle(color: softText, height: 1.45),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text(
+              child: const AppText(
                 'Fermer',
                 style: TextStyle(color: primaryGold),
               ),
@@ -349,26 +334,26 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
         backgroundColor: primaryDarkGreen,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(
-              Icons.groups_rounded,
-              color: primaryGold,
-              size: 26,
-            ),
-            SizedBox(width: 10),
-            Text(
-              'Habesha Connect',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            const Icon(Icons.groups_rounded, color: primaryGold, size: 26),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                widget.initialCategory == 'Culture & rencontres'
+                    ? 'Culture & activités'
+                    : widget.initialCategory ?? 'Habesha Connect',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Actualiser',
+            tooltip: ui(context, 'Actualiser'),
             onPressed: _refreshFeed,
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -378,82 +363,86 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
         children: [
           _buildTabs(),
           Expanded(
-             child: widget.initialPostId != null && widget.initialPostId!.isNotEmpty
-                 ? StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                     stream: _postsCollection.doc(widget.initialPostId).snapshots(),
-                     builder: (context, snapshot) {
-                       if (snapshot.hasError) return _buildErrorState(snapshot.error);
-                       if (!snapshot.hasData) {
-                         return const Center(child: CircularProgressIndicator(color: primaryGold));
-                       }
-                       final document = snapshot.data!;
-                       if (!document.exists || document.data()?['status'] != 'published') {
-                         return const Center(child: Text('Publication indisponible.',
-                           style: TextStyle(color: Colors.white70)));
-                       }
-                       return ListView(
-                         padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
-                         children: [
-                           _FeedPostCard(
-                             document: document,
-                             formatDate: _formatDate,
-                             categoryName: _categoryName,
-                             locationText: _locationText,
-                             requireAccount: _requireAccount,
-                           ),
-                         ],
-                       );
-                     },
-                   )
-                 : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-               stream: _postsStream(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return _buildErrorState(snapshot.error);
-                }
+            child:
+                widget.initialPostId != null && widget.initialPostId!.isNotEmpty
+                ? StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    stream: _postsCollection
+                        .doc(widget.initialPostId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError)
+                        return _buildErrorState(snapshot.error);
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: primaryGold),
+                        );
+                      }
+                      final document = snapshot.data!;
+                      if (!document.exists ||
+                          document.data()?['status'] != 'published') {
+                        return const Center(
+                          child: AppText(
+                            'Publication indisponible.',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        );
+                      }
+                      return ListView(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
+                        children: [
+                          _FeedPostCard(
+                            document: document,
+                            formatDate: _formatDate,
+                            categoryName: _categoryName,
+                            locationText: _locationText,
+                            requireAccount: _requireAccount,
+                          ),
+                        ],
+                      );
+                    },
+                  )
+                : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: _postsStream(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return _buildErrorState(snapshot.error);
+                      }
 
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: primaryGold,
-                    ),
-                  );
-                }
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: primaryGold),
+                        );
+                      }
 
-                final documents = snapshot.data?.docs ?? [];
-                final posts = _sortPosts(documents);
+                      final documents = snapshot.data?.docs ?? [];
+                      final posts = _sortPosts(documents);
 
-                if (posts.isEmpty) {
-                  return _buildEmptyState();
-                }
+                      if (posts.isEmpty) {
+                        return _buildEmptyState();
+                      }
 
-                return RefreshIndicator(
-                  color: primaryDarkGreen,
-                  backgroundColor: primaryGold,
-                  onRefresh: _refreshFeed,
-                  child: ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(
-                      14,
-                      14,
-                      14,
-                      30,
-                    ),
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) {
-                      return _FeedPostCard(
-                        key: ValueKey(posts[index].id),
-                        document: posts[index],
-                        formatDate: _formatDate,
-                        categoryName: _categoryName,
-                        locationText: _locationText,
-                        requireAccount: _requireAccount,
+                      return RefreshIndicator(
+                        color: primaryDarkGreen,
+                        backgroundColor: primaryGold,
+                        onRefresh: _refreshFeed,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) {
+                            return _FeedPostCard(
+                              key: ValueKey(posts[index].id),
+                              document: posts[index],
+                              formatDate: _formatDate,
+                              categoryName: _categoryName,
+                              locationText: _locationText,
+                              requireAccount: _requireAccount,
+                            );
+                          },
+                        ),
                       );
                     },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -472,11 +461,7 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
             label: 'Populaire',
           ),
           const SizedBox(width: 8),
-          _buildTab(
-            index: 1,
-            icon: Icons.access_time_rounded,
-            label: 'Récent',
-          ),
+          _buildTab(index: 1, icon: Icons.access_time_rounded, label: 'Récent'),
           const SizedBox(width: 8),
           _buildTab(
             index: 2,
@@ -505,16 +490,14 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            vertical: 11,
-            horizontal: 7,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 7),
           decoration: BoxDecoration(
             color: selected ? primaryGold : cardGreen.withValues(alpha: 0.82),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color:
-                  selected ? primaryGold : Colors.white.withValues(alpha: 0.06),
+              color: selected
+                  ? primaryGold
+                  : Colors.white.withValues(alpha: 0.06),
             ),
           ),
           child: Row(
@@ -556,23 +539,27 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
         icon = Icons.location_searching_rounded;
       } else if (_userCity == null && _userCountry == null) {
         title = 'Localisation non renseignée';
-        message = 'Ajoutez votre ville ou votre pays à votre profil '
+        message =
+            'Ajoutez votre ville ou votre pays à votre profil '
             'pour voir les publications près de vous.';
         icon = Icons.location_off_rounded;
       } else {
         title = 'Rien près de vous';
-        message = 'Aucune publication Habesha Connect ne correspond '
+        message =
+            'Aucune publication Habesha Connect ne correspond '
             'actuellement à votre ville ou votre pays.';
         icon = Icons.location_on_rounded;
       }
     } else if (_selectedTab == 0) {
       title = 'Pas encore de publications populaires';
-      message = 'Les publications qui reçoivent le plus de likes '
+      message =
+          'Les publications qui reçoivent le plus de likes '
           'et de commentaires apparaîtront ici.';
       icon = Icons.local_fire_department_rounded;
     } else {
       title = 'Aucune publication';
-      message = 'Les nouvelles publications Habesha Connect '
+      message =
+          'Les nouvelles publications Habesha Connect '
           'apparaîtront ici après validation par l’administration.';
       icon = Icons.dynamic_feed_rounded;
     }
@@ -589,15 +576,9 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
               decoration: BoxDecoration(
                 color: cardGreen,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: primaryGold.withValues(alpha: 0.16),
-                ),
+                border: Border.all(color: primaryGold.withValues(alpha: 0.16)),
               ),
-              child: Icon(
-                icon,
-                size: 38,
-                color: primaryGold,
-              ),
+              child: Icon(icon, size: 38, color: primaryGold),
             ),
             const SizedBox(height: 18),
             Text(
@@ -613,10 +594,7 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: mutedText,
-                height: 1.4,
-              ),
+              style: const TextStyle(color: mutedText, height: 1.4),
             ),
           ],
         ),
@@ -637,7 +615,7 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
               color: Colors.redAccent,
             ),
             const SizedBox(height: 14),
-            const Text(
+            const AppText(
               'Impossible de charger le fil',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -647,13 +625,10 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            AppText(
               '$error',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: mutedText,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: mutedText, fontSize: 12),
             ),
             const SizedBox(height: 18),
             ElevatedButton.icon(
@@ -663,7 +638,7 @@ class _HabeshaConnectFeedScreenState extends State<HabeshaConnectFeedScreen> {
               ),
               onPressed: _refreshFeed,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réessayer'),
+              label: const AppText('Réessayer'),
             ),
           ],
         ),
@@ -730,9 +705,7 @@ class _FeedPostCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.07),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.22),
@@ -800,11 +773,9 @@ class _FeedPostCard extends StatelessWidget {
                           if (location != null) ...[
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 5),
-                              child: Text(
+                              child: AppText(
                                 '•',
-                                style: TextStyle(
-                                  color: mutedText,
-                                ),
+                                style: TextStyle(color: mutedText),
                               ),
                             ),
                             Flexible(
@@ -826,16 +797,10 @@ class _FeedPostCard extends StatelessWidget {
                 ),
                 if (date.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(
-                      left: 6,
-                      top: 2,
-                    ),
+                    padding: const EdgeInsets.only(left: 6, top: 2),
                     child: Text(
                       date,
-                      style: const TextStyle(
-                        color: mutedText,
-                        fontSize: 10.5,
-                      ),
+                      style: const TextStyle(color: mutedText, fontSize: 10.5),
                     ),
                   ),
               ],
@@ -935,15 +900,11 @@ class _PostActions extends StatelessWidget {
   }
 
   Stream<int> _likeCountStream() {
-    return _likesRef.snapshots().map(
-          (snapshot) => snapshot.size,
-        );
+    return _likesRef.snapshots().map((snapshot) => snapshot.size);
   }
 
   Stream<int> _commentCountStream() {
-    return _commentsRef.snapshots().map(
-          (snapshot) => snapshot.size,
-        );
+    return _commentsRef.snapshots().map((snapshot) => snapshot.size);
   }
 
   Future<void> _toggleLike(BuildContext context) async {
@@ -964,9 +925,7 @@ class _PostActions extends StatelessWidget {
         await likeRef.delete();
 
         try {
-          await postDocument.update({
-            'likeCount': FieldValue.increment(-1),
-          });
+          await postDocument.update({'likeCount': FieldValue.increment(-1)});
         } catch (e) {
           debugPrint('Erreur compteur like: $e');
         }
@@ -977,9 +936,7 @@ class _PostActions extends StatelessWidget {
         });
 
         try {
-          await postDocument.update({
-            'likeCount': FieldValue.increment(1),
-          });
+          await postDocument.update({'likeCount': FieldValue.increment(1)});
         } catch (e) {
           debugPrint('Erreur compteur like: $e');
         }
@@ -998,9 +955,7 @@ class _PostActions extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.redAccent,
-          content: Text(
-            'Impossible de modifier le like : $e',
-          ),
+          content: AppText('Impossible de modifier le like : $e'),
         ),
       );
     }
@@ -1069,9 +1024,7 @@ class _PostActions extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: const BoxDecoration(
         color: primaryDarkGreen,
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
       ),
       child: Row(
         children: [
@@ -1101,7 +1054,7 @@ class _PostActions extends StatelessWidget {
                       StreamBuilder<int>(
                         stream: _likeCountStream(),
                         builder: (context, countSnapshot) {
-                          return Text(
+                          return AppText(
                             '${countSnapshot.data ?? _initialLikeCount()}',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -1122,10 +1075,7 @@ class _PostActions extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: () => _showComments(context),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 7,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
               child: Row(
                 children: [
                   const Icon(
@@ -1137,7 +1087,7 @@ class _PostActions extends StatelessWidget {
                   StreamBuilder<int>(
                     stream: _commentCountStream(),
                     builder: (context, snapshot) {
-                      return Text(
+                      return AppText(
                         '${snapshot.data ?? _initialCommentCount()}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
@@ -1154,14 +1104,9 @@ class _PostActions extends StatelessWidget {
           const Spacer(),
           TextButton.icon(
             onPressed: () => _showComments(context),
-            icon: const Icon(
-              Icons.reply_rounded,
-              size: 18,
-            ),
-            label: const Text('Répondre'),
-            style: TextButton.styleFrom(
-              foregroundColor: primaryGold,
-            ),
+            icon: const Icon(Icons.reply_rounded, size: 18),
+            label: const AppText('Répondre'),
+            style: TextButton.styleFrom(foregroundColor: primaryGold),
           ),
         ],
       ),
@@ -1204,10 +1149,7 @@ class _CommentsSheet extends StatefulWidget {
   final CollectionReference<Map<String, dynamic>> commentsRef;
   final DocumentReference<Map<String, dynamic>> postRef;
 
-  const _CommentsSheet({
-    required this.commentsRef,
-    required this.postRef,
-  });
+  const _CommentsSheet({required this.commentsRef, required this.postRef});
 
   @override
   State<_CommentsSheet> createState() => _CommentsSheetState();
@@ -1283,10 +1225,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         '${date.year}';
   }
 
-  void _startReply({
-    required String commentId,
-    required String authorName,
-  }) {
+  void _startReply({required String commentId, required String authorName}) {
     setState(() {
       _replyingToCommentId = commentId;
       _replyingToAuthorName = authorName;
@@ -1329,7 +1268,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
       final userData = userDoc.data();
 
-      final authorName = _firstString([
+      final authorName =
+          _firstString([
             userData?['displayName'],
             userData?['name'],
             user.displayName,
@@ -1349,9 +1289,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await widget.postRef.update({
-        'commentCount': FieldValue.increment(1),
-      });
+      await widget.postRef.update({'commentCount': FieldValue.increment(1)});
 
       await _createCommentNotifications(
         actorId: user.uid,
@@ -1373,9 +1311,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.redAccent,
-            content: Text(
-              'Impossible d’ajouter le commentaire : $e',
-            ),
+            content: AppText('Impossible d’ajouter le commentaire : $e'),
           ),
         );
       }
@@ -1412,8 +1348,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       }
 
       if (parentCommentId != null && parentCommentId.isNotEmpty) {
-        final parentSnapshot =
-            await widget.commentsRef.doc(parentCommentId).get();
+        final parentSnapshot = await widget.commentsRef
+            .doc(parentCommentId)
+            .get();
 
         if (parentSnapshot.exists) {
           final parentData = parentSnapshot.data();
@@ -1449,8 +1386,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       final batch = FirebaseFirestore.instance.batch();
 
       for (final recipientId in recipients) {
-        final notificationRef =
-            FirebaseFirestore.instance.collection('notifications').doc();
+        final notificationRef = FirebaseFirestore.instance
+            .collection('notifications')
+            .doc();
 
         final type = parentCommentId == null ? 'comment' : 'commentReply';
 
@@ -1474,30 +1412,22 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
       await batch.commit();
     } catch (e) {
-      debugPrint(
-        'Notifications commentaires non créées: $e',
-      );
+      debugPrint('Notifications commentaires non créées: $e');
     }
   }
 
   Widget _buildCommentItem(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
     Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-        repliesByParent,
+    repliesByParent,
   ) {
     final data = document.data();
 
-    final authorName = _firstString([
-          data['authorName'],
-          data['displayName'],
-        ]) ??
+    final authorName =
+        _firstString([data['authorName'], data['displayName']]) ??
         'Membre Habesha';
 
-    final text = _firstString([
-          data['text'],
-          data['content'],
-        ]) ??
-        '';
+    final text = _firstString([data['text'], data['content']]) ?? '';
 
     final initial = authorName.isNotEmpty ? authorName[0].toUpperCase() : 'H';
 
@@ -1574,11 +1504,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                             authorName: authorName,
                           );
                         },
-                        icon: const Icon(
-                          Icons.reply_rounded,
-                          size: 15,
-                        ),
-                        label: const Text('Répondre'),
+                        icon: const Icon(Icons.reply_rounded, size: 15),
+                        label: const AppText('Répondre'),
                         style: TextButton.styleFrom(
                           foregroundColor: primaryGold,
                           padding: EdgeInsets.zero,
@@ -1595,18 +1522,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         ),
         if (replies.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(
-              left: 38,
-              bottom: 8,
-            ),
+            padding: const EdgeInsets.only(left: 38, bottom: 8),
             child: Column(
               children: replies
                   .map(
-                    (reply) => _buildReplyItem(
-                      reply,
-                      repliesByParent,
-                      depth: 0,
-                    ),
+                    (reply) =>
+                        _buildReplyItem(reply, repliesByParent, depth: 0),
                   )
                   .toList(),
             ),
@@ -1618,22 +1539,16 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   Widget _buildReplyItem(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
     Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-        repliesByParent, {
+    repliesByParent, {
     required int depth,
   }) {
     final data = document.data();
 
-    final authorName = _firstString([
-          data['authorName'],
-          data['displayName'],
-        ]) ??
+    final authorName =
+        _firstString([data['authorName'], data['displayName']]) ??
         'Membre Habesha';
 
-    final text = _firstString([
-          data['text'],
-          data['content'],
-        ]) ??
-        '';
+    final text = _firstString([data['text'], data['content']]) ?? '';
 
     final initial = authorName.isNotEmpty ? authorName[0].toUpperCase() : 'H';
 
@@ -1717,11 +1632,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                             authorName: authorName,
                           );
                         },
-                        icon: const Icon(
-                          Icons.reply_rounded,
-                          size: 14,
-                        ),
-                        label: const Text('Répondre'),
+                        icon: const Icon(Icons.reply_rounded, size: 14),
+                        label: const AppText('Répondre'),
                         style: TextButton.styleFrom(
                           foregroundColor: primaryGold,
                           padding: EdgeInsets.zero,
@@ -1767,9 +1679,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         height: MediaQuery.of(context).size.height * 0.84,
         decoration: const BoxDecoration(
           color: primaryDarkGreen,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           top: false,
@@ -1785,7 +1695,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              const AppText(
                 'Commentaires',
                 style: TextStyle(
                   fontSize: 18,
@@ -1795,12 +1705,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               ),
               if (_replyingToCommentId != null)
                 Container(
-                  margin: const EdgeInsets.fromLTRB(
-                    12,
-                    8,
-                    12,
-                    0,
-                  ),
+                  margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
@@ -1818,14 +1723,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                       ),
                       const SizedBox(width: 7),
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Réponse à ${_replyingToAuthorName ?? 'Membre Habesha'}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: softText,
-                            fontSize: 12,
-                          ),
+                          style: const TextStyle(color: softText, fontSize: 12),
                         ),
                       ),
                       IconButton(
@@ -1841,30 +1743,22 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                   ),
                 ),
               const SizedBox(height: 8),
-              const Divider(
-                height: 1,
-                color: Colors.white12,
-              ),
+              const Divider(height: 1, color: Colors.white12),
               Expanded(
                 child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: widget.commentsRef
-                      .orderBy(
-                        'createdAt',
-                        descending: false,
-                      )
+                      .orderBy('createdAt', descending: false)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Center(
                         child: Padding(
                           padding: const EdgeInsets.all(20),
-                          child: Text(
+                          child: AppText(
                             'Impossible de charger les commentaires.\n'
                             '${snapshot.error}',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: mutedText,
-                            ),
+                            style: const TextStyle(color: mutedText),
                           ),
                         ),
                       );
@@ -1872,9 +1766,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
-                        child: CircularProgressIndicator(
-                          color: primaryGold,
-                        ),
+                        child: CircularProgressIndicator(color: primaryGold),
                       );
                     }
 
@@ -1893,7 +1785,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                 color: mutedText,
                               ),
                               SizedBox(height: 12),
-                              Text(
+                              AppText(
                                 'Aucun commentaire pour le moment.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -1902,11 +1794,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                 ),
                               ),
                               SizedBox(height: 5),
-                              Text(
+                              AppText(
                                 'Soyez le premier à répondre.',
-                                style: TextStyle(
-                                  color: mutedText,
-                                ),
+                                style: TextStyle(color: mutedText),
                               ),
                             ],
                           ),
@@ -1914,8 +1804,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                       );
                     }
 
-                    final repliesByParent = <String,
-                        List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
+                    final repliesByParent =
+                        <
+                          String,
+                          List<QueryDocumentSnapshot<Map<String, dynamic>>>
+                        >{};
 
                     final rootComments =
                         <QueryDocumentSnapshot<Map<String, dynamic>>>[];
@@ -1929,21 +1822,13 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                         rootComments.add(comment);
                       } else {
                         repliesByParent
-                            .putIfAbsent(
-                              parentId,
-                              () => [],
-                            )
+                            .putIfAbsent(parentId, () => [])
                             .add(comment);
                       }
                     }
 
                     return ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                        14,
-                        14,
-                        14,
-                        18,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
                       itemCount: rootComments.length,
                       itemBuilder: (context, index) {
                         return _buildCommentItem(
@@ -1956,19 +1841,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.fromLTRB(
-                  12,
-                  8,
-                  12,
-                  8,
-                ),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 decoration: const BoxDecoration(
                   color: primaryDarkGreen,
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.white12,
-                    ),
-                  ),
+                  border: Border(top: BorderSide(color: Colors.white12)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -1981,16 +1857,15 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                         maxLines: 4,
                         textInputAction: TextInputAction.newline,
                         keyboardType: TextInputType.multiline,
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: _replyingToCommentId != null
-                              ? 'Écrire une réponse...'
-                              : 'Écrire un commentaire...',
-                          hintStyle: const TextStyle(
-                            color: mutedText,
+                          hintText: ui(
+                            context,
+                            _replyingToCommentId != null
+                                ? 'Écrire une réponse...'
+                                : 'Écrire un commentaire...',
                           ),
+                          hintStyle: const TextStyle(color: mutedText),
                           filled: true,
                           fillColor: cardGreen,
                           border: OutlineInputBorder(
@@ -1999,9 +1874,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(18),
-                            borderSide: const BorderSide(
-                              color: primaryGold,
-                            ),
+                            borderSide: const BorderSide(color: primaryGold),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 15,

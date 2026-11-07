@@ -1,5 +1,8 @@
+import 'l10n/app_ui.dart';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'admin_professional_review_data.dart';
 import 'public_profile_photo.dart';
 import 'service_profession_card.dart';
@@ -73,7 +76,7 @@ class AdminProfessionalSubmissionTile extends StatelessWidget {
             if (model.photos.isEmpty)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
-                child: Text(
+                child: AppText(
                   'Photo de présentation manquante',
                   style: TextStyle(color: Colors.orangeAccent),
                 ),
@@ -85,7 +88,7 @@ class AdminProfessionalSubmissionTile extends StatelessWidget {
                 foregroundColor: const Color(0xFFFFD700),
               ),
               icon: const Icon(Icons.folder_open_outlined),
-              label: const Text('Examiner le dossier'),
+              label: const AppText('Examiner le dossier'),
             ),
           ],
         ),
@@ -153,14 +156,17 @@ class _AdminProfessionalReviewSheetState
           approved ? 'Approuver la publication ?' : 'Refuser la publication ?',
           style: const TextStyle(color: gold),
         ),
-        content: const Text(
+        content: const AppText(
           'Cette décision concerne la publication de la fiche. La vérification professionnelle et les paiements sont traités séparément.',
           style: TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white)),
+            child: const AppText(
+              'Annuler',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -168,7 +174,7 @@ class _AdminProfessionalReviewSheetState
               backgroundColor: gold,
               foregroundColor: dark,
             ),
-            child: const Text('Confirmer'),
+            child: const AppText('Confirmer'),
           ),
         ],
       ),
@@ -263,7 +269,7 @@ class _AdminProfessionalReviewSheetState
       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
     ),
     const SizedBox(height: 8),
-    const Text(
+    const AppText(
       'Statut de la fiche d’origine. Les pièces privées sont examinées dans la modération professionnelle.',
       style: TextStyle(color: Colors.white70),
     ),
@@ -273,10 +279,10 @@ class _AdminProfessionalReviewSheetState
         onPressed: _busy ? null : widget.onOpenVerification,
         style: OutlinedButton.styleFrom(foregroundColor: gold),
         icon: const Icon(Icons.fact_check_outlined),
-        label: const Text('Ouvrir la modération professionnelle'),
+        label: const AppText('Ouvrir la modération professionnelle'),
       )
     else
-      const Text(
+      const AppText(
         'L’examen des pièces privées est réservé au Super Admin.',
         style: TextStyle(color: Colors.white70),
       ),
@@ -312,7 +318,7 @@ class _AdminProfessionalReviewSheetState
           ],
         ),
         const SizedBox(height: 6),
-        const Text(
+        const AppText(
           'Informations déclarées par le professionnel, à contrôler avant décision.',
           style: TextStyle(color: Colors.white70, fontSize: 12),
         ),
@@ -325,13 +331,13 @@ class _AdminProfessionalReviewSheetState
     children: [
       if (m.photos.isEmpty)
         card('Photo manquante', [
-          const Text(
+          const AppText(
             'Aucune photo publique n’a été fournie. Le professionnel doit ajouter une photo de présentation avant l’approbation.',
             style: TextStyle(color: Colors.white),
           ),
         ])
       else ...[
-        const Text(
+        const AppText(
           'Photo de présentation',
           style: TextStyle(
             color: gold,
@@ -353,7 +359,7 @@ class _AdminProfessionalReviewSheetState
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
-          child: Text(
+          child: AppText(
             'Touchez une image pour l’agrandir.',
             style: TextStyle(color: Colors.white70),
           ),
@@ -379,7 +385,7 @@ class _AdminProfessionalReviewSheetState
         ),
       ],
       const SizedBox(height: 14),
-      const Text(
+      const AppText(
         'Galerie publique de présentation. Les pièces de vérification privées ne sont pas affichées ici.',
         style: TextStyle(color: Colors.white70),
       ),
@@ -416,7 +422,7 @@ class _AdminProfessionalReviewSheetState
           ],
         ),
         const SizedBox(height: 8),
-        const Text(
+        const AppText(
           'La carte aide au contrôle. Elle ne prouve pas l’existence de l’activité. Un prestataire mobile peut déclarer uniquement sa zone.',
           style: TextStyle(color: Colors.white70),
         ),
@@ -432,7 +438,7 @@ class _AdminProfessionalReviewSheetState
       ]),
       verification(),
       ExpansionTile(
-        title: const Text(
+        title: const AppText(
           'Référence du dossier',
           style: TextStyle(color: Colors.white70),
         ),
@@ -453,7 +459,7 @@ class _AdminProfessionalReviewSheetState
             onPressed: _busy ? null : remove,
             style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent),
             icon: const Icon(Icons.delete_forever_outlined),
-            label: const Text('Supprimer définitivement'),
+            label: const AppText('Supprimer définitivement'),
           ),
         ),
     ],
@@ -562,7 +568,7 @@ class _AdminProfessionalReviewSheetState
                     if (m.pending && m.photos.isEmpty)
                       const Padding(
                         padding: EdgeInsets.only(bottom: 8),
-                        child: Text(
+                        child: AppText(
                           'Photo requise avant approbation.',
                           style: TextStyle(color: Colors.orangeAccent),
                         ),
@@ -582,7 +588,7 @@ class _AdminProfessionalReviewSheetState
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Text('Approuver la publication'),
+                        child: AppText('Approuver la publication'),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -595,7 +601,7 @@ class _AdminProfessionalReviewSheetState
                       ),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Text('Refuser'),
+                        child: AppText('Refuser'),
                       ),
                     ),
                   ],

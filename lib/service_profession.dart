@@ -278,7 +278,11 @@ const otherServiceLabels = <String, String>{
 ServiceDefinition serviceDefinition(String category) {
   final text = category.trim().toLowerCase();
   for (final p in serviceDefinitions) {
-    if ([p.id, p.category.toLowerCase(), p.label.toLowerCase()].contains(text)) {
+    if ([
+      p.id,
+      p.category.toLowerCase(),
+      p.label.toLowerCase(),
+    ].contains(text)) {
       return p;
     }
   }

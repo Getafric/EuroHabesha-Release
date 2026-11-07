@@ -9,7 +9,10 @@ class ProfessionalProfileSyncService {
     required String sourceId,
   }) async {
     if (sourceCollection != 'jobSubmissions') return;
-    final sourceSnapshot = await _firestore.collection(sourceCollection).doc(sourceId).get();
+    final sourceSnapshot = await _firestore
+        .collection(sourceCollection)
+        .doc(sourceId)
+        .get();
     if (!sourceSnapshot.exists) return;
     final data = sourceSnapshot.data() ?? <String, dynamic>{};
     final status = data['status']?.toString() ?? '';
@@ -17,7 +20,9 @@ class ProfessionalProfileSyncService {
     final publicRef = _firestore.collection('jobs').doc(sourceId);
     final publicSnapshot = await publicRef.get();
     if (!publicSnapshot.exists) return; // Seul l'admin publie.
-    final fields = Map<String, dynamic>.from(data['fields'] ?? <String, dynamic>{});
+    final fields = Map<String, dynamic>.from(
+      data['fields'] ?? <String, dynamic>{},
+    );
     String field(String key) => fields[key]?.toString().trim() ?? '';
     final phone = field('phoneNumber');
     final city = field('cityAddress');
@@ -27,10 +32,20 @@ class ProfessionalProfileSyncService {
     await publicRef.update({
       'name': field('title'), 'title': field('title'),
       'description': field('description'),
-      'location': city.isNotEmpty ? city : country.isNotEmpty ? country : 'Europe',
-      'phone': phone.isEmpty ? '' : phone.startsWith('tel:') ? phone : 'tel:$phone',
+      'location': city.isNotEmpty
+          ? city
+          : country.isNotEmpty
+          ? country
+          : 'Europe',
+      'phone': phone.isEmpty
+          ? ''
+          : phone.startsWith('tel:')
+          ? phone
+          : 'tel:$phone',
       'website': field('websiteUrl'),
-      'whatsapp': phone.isEmpty ? '' : 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}',
+      'whatsapp': phone.isEmpty
+          ? ''
+          : 'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9]'), '')}',
       'jobCategory': jobCategory, 'category': jobCategory,
       'businessCategory': jobCategory,
       'logoUrl': data['logoUrl']?.toString() ?? '',
@@ -41,7 +56,8 @@ class ProfessionalProfileSyncService {
       'submittedBy': data['submittedBy'], 'ownerId': data['ownerId'],
       'creatorId': data['creatorId'],
       // Préserve un lien existant si l'admin en a défini un.
-      'roomLayoutSourceCollection': publicData['roomLayoutSourceCollection'] ?? sourceCollection,
+      'roomLayoutSourceCollection':
+          publicData['roomLayoutSourceCollection'] ?? sourceCollection,
       'roomLayoutBusinessId': publicData['roomLayoutBusinessId'] ?? sourceId,
       'profileUpdatedAt': FieldValue.serverTimestamp(),
     });

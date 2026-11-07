@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -67,14 +69,11 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
 
     final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-    final reference = FirebaseStorage.instance
-        .ref()
-        .child('sponsored_banners/$uid/$fileName');
-
-    await reference.putData(
-      bytes,
-      SettableMetadata(contentType: 'image/jpeg'),
+    final reference = FirebaseStorage.instance.ref().child(
+      'sponsored_banners/$uid/$fileName',
     );
+
+    await reference.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
 
     return reference.getDownloadURL();
   }
@@ -94,18 +93,12 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
     final usageLimit = int.tryParse(_usageLimitController.text.trim());
 
     if (durationDays == null || durationDays <= 0) {
-      _showMessage(
-        'Please enter a valid duration.',
-        isError: true,
-      );
+      _showMessage('Please enter a valid duration.', isError: true);
       return;
     }
 
     if (usageLimit == null || usageLimit < 0) {
-      _showMessage(
-        'Please enter a valid usage limit.',
-        isError: true,
-      );
+      _showMessage('Please enter a valid usage limit.', isError: true);
       return;
     }
 
@@ -119,13 +112,12 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
       final now = Timestamp.now();
 
       final endDate = Timestamp.fromDate(
-        DateTime.now().add(
-          Duration(days: durationDays),
-        ),
+        DateTime.now().add(Duration(days: durationDays)),
       );
 
-      final bannerReference =
-          FirebaseFirestore.instance.collection('sponsoredBanners').doc();
+      final bannerReference = FirebaseFirestore.instance
+          .collection('sponsoredBanners')
+          .doc();
 
       await bannerReference.set({
         'businessName': _businessController.text.trim(),
@@ -154,10 +146,7 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
     } catch (error) {
       if (!mounted) return;
 
-      _showMessage(
-        'Error creating banner: $error',
-        isError: true,
-      );
+      _showMessage('Error creating banner: $error', isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -167,10 +156,7 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
     }
   }
 
-  void _showMessage(
-    String message, {
-    bool isError = false,
-  }) {
+  void _showMessage(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -179,42 +165,28 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
     );
   }
 
-  InputDecoration _decoration(
-    String label,
-    IconData icon,
-  ) {
+  InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.white70),
-      prefixIcon: Icon(
-        icon,
-        color: primaryGold,
-      ),
+      prefixIcon: Icon(icon, color: primaryGold),
       filled: true,
       fillColor: cardGreen,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Colors.white24,
-        ),
+        borderSide: const BorderSide(color: Colors.white24),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: primaryGold,
-        ),
+        borderSide: const BorderSide(color: primaryGold),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-        ),
+        borderSide: const BorderSide(color: Colors.redAccent),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Colors.redAccent,
-        ),
+        borderSide: const BorderSide(color: Colors.redAccent),
       ),
     );
   }
@@ -224,52 +196,35 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
     return Scaffold(
       backgroundColor: primaryDarkGreen,
       appBar: AppBar(
-        title: const Text(
+        title: const AppText(
           'Create Sponsored Banner',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryDarkGreen,
-        iconTheme: const IconThemeData(
-          color: primaryGold,
-        ),
+        iconTheme: const IconThemeData(color: primaryGold),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
-            const Text(
+            const AppText(
               'Create a sponsored advertisement directly.',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
             const SizedBox(height: 22),
             OutlinedButton.icon(
               onPressed: _pickImage,
-              icon: const Icon(
-                Icons.add_photo_alternate,
-                color: primaryGold,
-              ),
+              icon: const Icon(Icons.add_photo_alternate, color: primaryGold),
               label: Text(
                 _selectedImage == null
                     ? 'Choose banner photo'
                     : 'Change banner photo',
-                style: const TextStyle(
-                  color: primaryGold,
-                ),
+                style: const TextStyle(color: primaryGold),
               ),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                  color: primaryGold,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 14,
-                ),
+                side: const BorderSide(color: primaryGold),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -293,9 +248,7 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
                   }
 
                   return const Center(
-                    child: CircularProgressIndicator(
-                      color: primaryGold,
-                    ),
+                    child: CircularProgressIndicator(color: primaryGold),
                   );
                 },
               ),
@@ -304,10 +257,7 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
             TextFormField(
               controller: _businessController,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration(
-                'Business name',
-                Icons.business,
-              ),
+              decoration: _decoration('Business name', Icons.business),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Enter the business name';
@@ -320,31 +270,19 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
               initialValue: _advertisementType,
               dropdownColor: cardGreen,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration(
-                'Advertisement type',
-                Icons.category,
-              ),
+              decoration: _decoration('Advertisement type', Icons.category),
               items: const [
-                DropdownMenuItem(
-                  value: 'Business',
-                  child: Text('Business'),
-                ),
+                DropdownMenuItem(value: 'Business', child: AppText('Business')),
                 DropdownMenuItem(
                   value: 'Professional',
-                  child: Text('Professional'),
+                  child: AppText('Professional'),
                 ),
                 DropdownMenuItem(
                   value: 'Marketplace',
-                  child: Text('Marketplace'),
+                  child: AppText('Marketplace'),
                 ),
-                DropdownMenuItem(
-                  value: 'Event',
-                  child: Text('Event'),
-                ),
-                DropdownMenuItem(
-                  value: 'Service',
-                  child: Text('Service'),
-                ),
+                DropdownMenuItem(value: 'Event', child: AppText('Event')),
+                DropdownMenuItem(value: 'Service', child: AppText('Service')),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -359,10 +297,7 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
               controller: _descriptionController,
               maxLines: 4,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration(
-                'Description',
-                Icons.description,
-              ),
+              decoration: _decoration('Description', Icons.description),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Enter a description';
@@ -374,10 +309,7 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
             TextFormField(
               controller: _promotionController,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration(
-                'Promotion',
-                Icons.local_offer,
-              ),
+              decoration: _decoration('Promotion', Icons.local_offer),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Enter the promotion';
@@ -399,10 +331,7 @@ class _DirectAdminBannerScreenState extends State<DirectAdminBannerScreen> {
               controller: _durationController,
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
-              decoration: _decoration(
-                'Duration in days',
-                Icons.calendar_month,
-              ),
+              decoration: _decoration('Duration in days', Icons.calendar_month),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Enter duration';

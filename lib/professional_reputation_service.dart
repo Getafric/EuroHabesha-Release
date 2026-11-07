@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfessionalReputationService {
   static double score(Map<String, dynamic> data) {
-    final rating = (data['averageRating'] as num?)?.toDouble() ??
+    final rating =
+        (data['averageRating'] as num?)?.toDouble() ??
         (data['rating'] as num?)?.toDouble() ??
         0;
     final reviews = (data['reviewCount'] as num?)?.toDouble() ?? 0;
@@ -30,14 +31,15 @@ class ProfessionalReputationService {
   }
 
   static Future<void> recalculate(
-      DocumentReference<Map<String, dynamic>> ref) async {
+    DocumentReference<Map<String, dynamic>> ref,
+  ) async {
     final snapshot = await ref.get();
     final data = snapshot.data();
     if (data == null) return;
     await ref.update({
       'reputationScore': score(data),
       'badge': badge(data),
-      'reputationUpdatedAt': FieldValue.serverTimestamp()
+      'reputationUpdatedAt': FieldValue.serverTimestamp(),
     });
   }
 }

@@ -1,3 +1,5 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -57,10 +59,7 @@ class _EventTicketingManagementScreenState
       return value.toDouble();
     }
 
-    return double.tryParse(
-          value?.toString().replaceAll(',', '.') ?? '',
-        ) ??
-        0;
+    return double.tryParse(value?.toString().replaceAll(',', '.') ?? '') ?? 0;
   }
 
   int _toInt(dynamic value) {
@@ -99,11 +98,7 @@ class _EventTicketingManagementScreenState
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Événement publié introuvable.',
-            ),
-          ),
+          const SnackBar(content: AppText('Événement publié introuvable.')),
         );
         return;
       }
@@ -174,9 +169,7 @@ class _EventTicketingManagementScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Impossible de charger la billetterie : $error',
-          ),
+          content: AppText('Impossible de charger la billetterie : $error'),
         ),
       );
     }
@@ -203,7 +196,7 @@ class _EventTicketingManagementScreenState
     if (ticket.sold > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Impossible de supprimer un type de billet '
             'qui possède déjà des ventes.',
           ),
@@ -219,10 +212,7 @@ class _EventTicketingManagementScreenState
     ticket.dispose();
   }
 
-  String _createTicketId(
-    String name,
-    int index,
-  ) {
+  String _createTicketId(String name, int index) {
     final normalized = name
         .toLowerCase()
         .trim()
@@ -236,9 +226,7 @@ class _EventTicketingManagementScreenState
     return 'ticket_${index + 1}';
   }
 
-  Future<void> _pickSalesDate({
-    required bool isStart,
-  }) async {
+  Future<void> _pickSalesDate({required bool isStart}) async {
     final currentValue = isStart ? _salesStart : _salesEnd;
 
     final now = DateTime.now();
@@ -256,9 +244,7 @@ class _EventTicketingManagementScreenState
 
     final selectedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(
-        currentValue ?? now,
-      ),
+      initialTime: TimeOfDay.fromDateTime(currentValue ?? now),
     );
 
     if (selectedTime == null || !mounted) return;
@@ -303,22 +289,14 @@ class _EventTicketingManagementScreenState
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Vous devez être connecté.',
-          ),
-        ),
+        const SnackBar(content: AppText('Vous devez être connecté.')),
       );
       return;
     }
 
     if (_ticketTypes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Ajoutez au moins un type de billet.',
-          ),
-        ),
+        const SnackBar(content: AppText('Ajoutez au moins un type de billet.')),
       );
       return;
     }
@@ -328,7 +306,7 @@ class _EventTicketingManagementScreenState
         !_salesEnd!.isAfter(_salesStart!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'La fin des ventes doit être après '
             'le début des ventes.',
           ),
@@ -349,16 +327,12 @@ class _EventTicketingManagementScreenState
         ticket.priceController.text.trim().replaceAll(',', '.'),
       );
 
-      final capacity = int.tryParse(
-        ticket.capacityController.text.trim(),
-      );
+      final capacity = int.tryParse(ticket.capacityController.text.trim());
 
       if (name.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Le billet ${index + 1} doit avoir un nom.',
-            ),
+            content: AppText('Le billet ${index + 1} doit avoir un nom.'),
           ),
         );
         return;
@@ -366,22 +340,14 @@ class _EventTicketingManagementScreenState
 
       if (price == null || price < 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Prix incorrect pour "$name".',
-            ),
-          ),
+          SnackBar(content: AppText('Prix incorrect pour "$name".')),
         );
         return;
       }
 
       if (capacity == null || capacity <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Quantité incorrecte pour "$name".',
-            ),
-          ),
+          SnackBar(content: AppText('Quantité incorrecte pour "$name".')),
         );
         return;
       }
@@ -389,7 +355,7 @@ class _EventTicketingManagementScreenState
       if (capacity < ticket.sold) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: AppText(
               'La capacité de "$name" ne peut pas être '
               'inférieure aux ${ticket.sold} billets '
               'déjà vendus.',
@@ -402,10 +368,7 @@ class _EventTicketingManagementScreenState
       var id = ticket.id.trim();
 
       if (id.isEmpty) {
-        id = _createTicketId(
-          name,
-          index,
-        );
+        id = _createTicketId(name, index);
       }
 
       var uniqueId = id;
@@ -438,10 +401,12 @@ class _EventTicketingManagementScreenState
         'nonRefundable': _nonRefundable,
         'nonTransferable': _nonTransferable,
         'ticketTypes': ticketData,
-        'ticketSalesStart':
-            _salesStart == null ? null : Timestamp.fromDate(_salesStart!),
-        'ticketSalesEnd':
-            _salesEnd == null ? null : Timestamp.fromDate(_salesEnd!),
+        'ticketSalesStart': _salesStart == null
+            ? null
+            : Timestamp.fromDate(_salesStart!),
+        'ticketSalesEnd': _salesEnd == null
+            ? null
+            : Timestamp.fromDate(_salesEnd!),
         'ticketingUpdatedAt': FieldValue.serverTimestamp(),
         'ticketingUpdatedBy': user.uid,
       });
@@ -453,11 +418,7 @@ class _EventTicketingManagementScreenState
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Billetterie enregistrée.',
-          ),
-        ),
+        const SnackBar(content: AppText('Billetterie enregistrée.')),
       );
     } catch (error) {
       if (!mounted) return;
@@ -467,11 +428,7 @@ class _EventTicketingManagementScreenState
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible d’enregistrer : $error',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible d’enregistrer : $error')),
       );
     }
   }
@@ -483,19 +440,13 @@ class _EventTicketingManagementScreenState
       appBar: AppBar(
         backgroundColor: darkGreen,
         foregroundColor: Colors.white,
-        title: const Text(
+        title: const AppText(
           'Billetterie',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: gold,
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(color: gold))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -508,12 +459,9 @@ class _EventTicketingManagementScreenState
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                AppText(
                   'ID événement : ${widget.eventId}',
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(height: 18),
                 Container(
@@ -524,19 +472,17 @@ class _EventTicketingManagementScreenState
                   child: SwitchListTile(
                     value: _ticketingEnabled,
                     activeThumbColor: gold,
-                    title: const Text(
+                    title: const AppText(
                       'Billetterie active',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    subtitle: const Text(
+                    subtitle: const AppText(
                       'Autoriser la vente des billets '
                       'pour cet événement.',
-                      style: TextStyle(
-                        color: Colors.white70,
-                      ),
+                      style: TextStyle(color: Colors.white70),
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -556,18 +502,16 @@ class _EventTicketingManagementScreenState
                       SwitchListTile(
                         value: _nonRefundable,
                         activeThumbColor: gold,
-                        title: const Text(
+                        title: const AppText(
                           'Billets non remboursables',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        subtitle: const Text(
+                        subtitle: const AppText(
                           'Les billets achetés ne peuvent pas être remboursés.',
-                          style: TextStyle(
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(color: Colors.white70),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -575,25 +519,20 @@ class _EventTicketingManagementScreenState
                           });
                         },
                       ),
-                      const Divider(
-                        color: Colors.white24,
-                        height: 1,
-                      ),
+                      const Divider(color: Colors.white24, height: 1),
                       SwitchListTile(
                         value: _nonTransferable,
                         activeThumbColor: gold,
-                        title: const Text(
+                        title: const AppText(
                           'Billets non transférables',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        subtitle: const Text(
+                        subtitle: const AppText(
                           'Le billet reste associé à son acheteur.',
-                          style: TextStyle(
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(color: Colors.white70),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -619,9 +558,7 @@ class _EventTicketingManagementScreenState
                   title: 'Début des ventes',
                   value: _formatDate(_salesStart),
                   onTap: () {
-                    _pickSalesDate(
-                      isStart: true,
-                    );
+                    _pickSalesDate(isStart: true);
                   },
                   onClear: _salesStart == null
                       ? null
@@ -636,9 +573,7 @@ class _EventTicketingManagementScreenState
                   title: 'Fin des ventes',
                   value: _formatDate(_salesEnd),
                   onTap: () {
-                    _pickSalesDate(
-                      isStart: false,
-                    );
+                    _pickSalesDate(isStart: false);
                   },
                   onClear: _salesEnd == null
                       ? null
@@ -659,11 +594,8 @@ class _EventTicketingManagementScreenState
                     ),
                     TextButton.icon(
                       onPressed: _addTicketType,
-                      icon: const Icon(
-                        Icons.add,
-                        color: gold,
-                      ),
-                      label: const Text(
+                      icon: const Icon(Icons.add, color: gold),
+                      label: const AppText(
                         'Ajouter',
                         style: TextStyle(
                           color: gold,
@@ -702,22 +634,16 @@ class _EventTicketingManagementScreenState
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.security_outlined,
-                        color: gold,
-                      ),
+                      Icon(Icons.security_outlined, color: gold),
                       SizedBox(width: 12),
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Le nombre de billets vendus '
                           'n’est pas modifiable ici. '
                           'Il sera mis à jour uniquement '
                           'après confirmation sécurisée '
                           'du paiement.',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            height: 1.4,
-                          ),
+                          style: TextStyle(color: Colors.white70, height: 1.4),
                         ),
                       ),
                     ],
@@ -738,18 +664,14 @@ class _EventTicketingManagementScreenState
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.save_outlined),
                   label: Text(
                     _saving
                         ? 'Enregistrement...'
                         : 'Enregistrer la billetterie',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -767,15 +689,13 @@ class _TicketTypeEditor {
     required int capacity,
     required this.sold,
     required this.active,
-  })  : nameController = TextEditingController(text: name),
-        priceController = TextEditingController(
-          text: price == price.roundToDouble()
-              ? price.toInt().toString()
-              : price.toStringAsFixed(2),
-        ),
-        capacityController = TextEditingController(
-          text: capacity.toString(),
-        );
+  }) : nameController = TextEditingController(text: name),
+       priceController = TextEditingController(
+         text: price == price.roundToDouble()
+             ? price.toInt().toString()
+             : price.toStringAsFixed(2),
+       ),
+       capacityController = TextEditingController(text: capacity.toString());
 
   final String id;
   final TextEditingController nameController;
@@ -808,28 +728,20 @@ class _TicketTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = int.tryParse(
-          ticket.capacityController.text.trim(),
-        ) ??
-        0;
+    final remaining = int.tryParse(ticket.capacityController.text.trim()) ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardGreen,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.local_activity_outlined,
-                color: gold,
-              ),
+              const Icon(Icons.local_activity_outlined, color: gold),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -849,23 +761,15 @@ class _TicketTypeCard extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onDelete,
-                icon: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.redAccent,
-                ),
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
               ),
             ],
           ),
           const SizedBox(height: 10),
           TextField(
             controller: ticket.nameController,
-            style: const TextStyle(
-              color: Colors.white,
-            ),
-            decoration: _inputDecoration(
-              'Nom du billet',
-              'Ex. Standard, VIP',
-            ),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration('Nom du billet', 'Ex. Standard, VIP'),
           ),
           const SizedBox(height: 12),
           Row(
@@ -876,13 +780,8 @@ class _TicketTypeCard extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
-                  decoration: _inputDecoration(
-                    'Prix (€)',
-                    '25.00',
-                  ),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDecoration('Prix (€)', '25.00'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -890,13 +789,8 @@ class _TicketTypeCard extends StatelessWidget {
                 child: TextField(
                   controller: ticket.capacityController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
-                  decoration: _inputDecoration(
-                    'Quantité',
-                    '100',
-                  ),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDecoration('Quantité', '100'),
                 ),
               ),
             ],
@@ -905,10 +799,7 @@ class _TicketTypeCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _StatBox(
-                  label: 'Vendus',
-                  value: '${ticket.sold}',
-                ),
+                child: _StatBox(label: 'Vendus', value: '${ticket.sold}'),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -924,10 +815,7 @@ class _TicketTypeCard extends StatelessWidget {
     );
   }
 
-  InputDecoration _inputDecoration(
-    String label,
-    String hint,
-  ) {
+  InputDecoration _inputDecoration(String label, String hint) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -948,10 +836,7 @@ class _TicketTypeCard extends StatelessWidget {
 }
 
 class _StatBox extends StatelessWidget {
-  const _StatBox({
-    required this.label,
-    required this.value,
-  });
+  const _StatBox({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -959,10 +844,7 @@ class _StatBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(12),
@@ -980,10 +862,7 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white60,
-              fontSize: 11,
-            ),
+            style: const TextStyle(color: Colors.white60, fontSize: 11),
           ),
         ],
       ),
@@ -992,10 +871,7 @@ class _StatBox extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-  });
+  const _SectionTitle({required this.icon, required this.title});
 
   final IconData icon;
   final String title;
@@ -1004,11 +880,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: const Color(0xFFFFB800),
-          size: 21,
-        ),
+        Icon(icon, color: const Color(0xFFFFB800), size: 21),
         const SizedBox(width: 8),
         Text(
           title,
@@ -1048,10 +920,7 @@ class _DateCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              const Icon(
-                Icons.schedule,
-                color: Color(0xFFFFB800),
-              ),
+              const Icon(Icons.schedule, color: Color(0xFFFFB800)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1078,10 +947,7 @@ class _DateCard extends StatelessWidget {
               if (onClear != null)
                 IconButton(
                   onPressed: onClear,
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white60,
-                  ),
+                  icon: const Icon(Icons.close, color: Colors.white60),
                 ),
             ],
           ),

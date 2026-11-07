@@ -1,8 +1,13 @@
+import 'l10n/app_ui.dart';
+import 'professional_registration.dart';
+
 import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+
 import 'business_countries.dart';
 import 'business_country_picker.dart';
 
@@ -173,12 +178,18 @@ class _ProfessionalVerificationScreenState
           : 'Choisissez le pays de votre établissement.';
       _legalName.text = (v['legalName'] ?? fields['title'] ?? '').toString();
 
-      _registration.text = (v['registrationNumber'] ?? fields['siret'] ?? '')
-          .toString();
+      _registration.text =
+          (v['registrationNumber'] ??
+                  fields['registrationDeclaredNumber'] ??
+                  fields['siret'] ??
+                  '')
+              .toString();
 
       _phone.text = (v['phone'] ?? fields['phoneNumber'] ?? '').toString();
 
-      _address.text = (v['address'] ?? fields['cityAddress'] ?? '').toString();
+      _address.text =
+          (v['address'] ?? fields['address'] ?? fields['cityAddress'] ?? '')
+              .toString();
 
       // Display-only state: a client-written boolean is NOT proof of SMS OTP.
       // The server must validate an OTP before enabling submission.
@@ -280,8 +291,7 @@ class _ProfessionalVerificationScreenState
     String? hint;
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        hint =
-            'La localisation est désactivée. Vous pouvez choisir le pays dans la liste.';
+        hint = 'La localisation est désactivée. Vous pouvez choisir le pays dans la liste.';
         return;
       }
       if (!mounted || generation != _countryGeneration) {
@@ -293,8 +303,7 @@ class _ProfessionalVerificationScreenState
       }
       if (permission != LocationPermission.always &&
           permission != LocationPermission.whileInUse) {
-        hint =
-            'Choisissez un pays dans la liste ou autorisez la localisation pour le détecter.';
+        hint = 'Choisissez un pays dans la liste ou autorisez la localisation pour le détecter.';
         return;
       }
       if (!mounted ||
@@ -340,12 +349,10 @@ class _ProfessionalVerificationScreenState
       setState(() {
         _country = detected;
         _unknownSavedCountry = '';
-        _countryHint =
-            'Pays proposé depuis votre position. Vérifiez qu’il correspond à votre établissement.';
+        _countryHint = 'Pays proposé depuis votre position. Vérifiez qu’il correspond à votre établissement.';
       });
     } catch (_) {
-      hint =
-          'Détection momentanément indisponible. Le choix manuel reste disponible.';
+      hint = 'Détection momentanément indisponible. Le choix manuel reste disponible.';
     } finally {
       if (mounted) {
         final message = hint;
@@ -457,7 +464,7 @@ class _ProfessionalVerificationScreenState
           ),
         ),
       const SizedBox(height: 8),
-      const Text(
+      const AppText(
         'Le pays doit correspondre à l’adresse et aux documents de l’établissement.',
         style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
       ),
@@ -643,6 +650,19 @@ class _ProfessionalVerificationScreenState
       return;
     }
 
+    final registrationError = registrationInputError(
+      countryCode: _country?.code ?? '',
+      kind: _registration.text.replaceAll(RegExp(r'\s+'), '').length == 9
+          ? 'SIREN'
+          : 'SIRET',
+      value: _registration.text,
+    );
+    if (registrationError != null) {
+      _message(registrationError);
+      setState(() => _step = 0);
+      return;
+    }
+
     if (!_isPhoneLinkedToCurrentUser()) {
       _message('Le numéro de téléphone doit être vérifié avant l’envoi.');
 
@@ -749,7 +769,7 @@ class _ProfessionalVerificationScreenState
                     _loadDraft();
                   },
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Réessayer'),
+                  label: const AppText('Réessayer'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: gold,
                     foregroundColor: darkGreen,
@@ -770,8 +790,7 @@ class _ProfessionalVerificationScreenState
           child: _StatusCard(
             icon: Icons.verified,
             title: 'Professionnel vérifié',
-            subtitle:
-                'Cet établissement a déjà été validé. Le badge Verified est actif.',
+            subtitle: 'Cet établissement a déjà été validé. Le badge Verified est actif.',
           ),
         ),
       );
@@ -797,8 +816,7 @@ class _ProfessionalVerificationScreenState
                       ? const _StatusCard(
                           icon: Icons.hourglass_top,
                           title: 'Vérification en cours',
-                          subtitle:
-                              'Votre dossier est en attente de validation administrative.',
+                          subtitle: 'Votre dossier est en attente de validation administrative.',
                         )
                       : _stepBody(),
                 ),
@@ -815,7 +833,7 @@ class _ProfessionalVerificationScreenState
     backgroundColor: darkGreen,
     foregroundColor: gold,
     elevation: 0,
-    title: const Text(
+    title: const AppText(
       'Vérification professionnelle',
       style: TextStyle(color: gold, fontWeight: FontWeight.bold),
     ),
@@ -843,7 +861,7 @@ class _ProfessionalVerificationScreenState
                     color: active ? gold : darkGreen,
                     border: Border.all(color: gold.withValues(alpha: .55)),
                   ),
-                  child: Text(
+                  child: AppText(
                     '${i + 1}',
                     style: TextStyle(
                       color: active ? darkGreen : gold,
@@ -893,6 +911,10 @@ class _ProfessionalVerificationScreenState
     title: 'Informations de l’établissement',
     subtitle: 'Les informations doivent correspondre aux documents officiels.',
     children: [
+      const AppText(
+        'Vérifiez que le numéro officiel, le nom et le pays correspondent aux justificatifs. Un numéro correct ne suffit pas à obtenir le badge vérifié.',
+        style: TextStyle(color: Colors.white70),
+      ),
       _countryField(),
       const SizedBox(height: 12),
       _field(
@@ -1071,9 +1093,7 @@ class _ProfessionalVerificationScreenState
       ),
       const SizedBox(height: 10),
       _infoBox(
-        _phoneVerified
-            ? 'Numéro vérifié.'
-            : 'Saisissez un numéro international (+33…), demandez le code puis confirmez-le. La vérification sera liée à votre compte connecté.',
+        _phoneVerified ? 'Numéro vérifié.' : 'Saisissez un numéro international (+33…), demandez le code puis confirmez-le. La vérification sera liée à votre compte connecté.',
         _phoneVerified ? Icons.check_circle : Icons.sms_outlined,
       ),
       if (!_phoneVerified)
@@ -1082,7 +1102,7 @@ class _ProfessionalVerificationScreenState
           child: OutlinedButton.icon(
             onPressed: _otpBusy ? null : _sendOtp,
             icon: const Icon(Icons.sms_outlined),
-            label: const Text('Envoyer le code SMS'),
+            label: const AppText('Envoyer le code SMS'),
             style: OutlinedButton.styleFrom(
               foregroundColor: gold,
               side: const BorderSide(color: gold),
@@ -1104,7 +1124,7 @@ class _ProfessionalVerificationScreenState
         OutlinedButton.icon(
           onPressed: _otpBusy ? null : _confirmOtp,
           icon: const Icon(Icons.verified_user_outlined),
-          label: const Text('Vérifier le code'),
+          label: const AppText('Vérifier le code'),
           style: OutlinedButton.styleFrom(
             foregroundColor: gold,
             side: const BorderSide(color: gold),
@@ -1117,8 +1137,7 @@ class _ProfessionalVerificationScreenState
   Widget _documentsStep() => _section(
     icon: Icons.folder_copy_outlined,
     title: 'Documents professionnels',
-    subtitle:
-        'Ajoutez des documents lisibles. Ils seront examinés par l’administrateur.',
+    subtitle: 'Ajoutez des documents lisibles. Ils seront examinés par l’administrateur.',
     children: [
       _uploadTile(
         'Pièce d’identité du responsable',
@@ -1160,8 +1179,7 @@ class _ProfessionalVerificationScreenState
   Widget _reviewStep() => _section(
     icon: Icons.fact_check_outlined,
     title: 'Vérifier et envoyer',
-    subtitle:
-        'Après l’envoi, l’administrateur pourra accepter ou refuser le dossier.',
+    subtitle: 'Après l’envoi, l’administrateur pourra accepter ou refuser le dossier.',
     children: [
       _review('Pays', _country?.name ?? ''),
       _review('Entreprise', _legalName.text),
@@ -1378,7 +1396,7 @@ class _ProfessionalVerificationScreenState
                   side: const BorderSide(color: gold),
                   minimumSize: const Size.fromHeight(48),
                 ),
-                child: const Text('Retour'),
+                child: const AppText('Retour'),
               ),
             ),
           if (_step > 0) const SizedBox(width: 10),

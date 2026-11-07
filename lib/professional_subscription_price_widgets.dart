@@ -1,6 +1,9 @@
+import 'l10n/app_ui.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'app_session.dart';
 import 'professional_subscription_prices.dart';
 
@@ -23,13 +26,13 @@ class ProfessionalSubscriptionPricePreview extends StatelessWidget {
     stream: _pricesReference().snapshots(),
     builder: (context, snapshot) {
       if (snapshot.hasError) {
-        return const Text(
+        return const AppText(
           'Tarif de préparation indisponible.',
           style: TextStyle(color: Colors.white70),
         );
       }
       if (!snapshot.hasData) {
-        return const Text(
+        return const AppText(
           'Chargement du tarif…',
           style: TextStyle(color: Colors.white70),
         );
@@ -38,7 +41,7 @@ class ProfessionalSubscriptionPricePreview extends StatelessWidget {
         snapshot.data!.data(),
       );
       if (!prices.compatible) {
-        return const Text(
+        return const AppText(
           'Offre à vérifier par l’administrateur.',
           style: TextStyle(color: Colors.white70),
         );
@@ -46,7 +49,7 @@ class ProfessionalSubscriptionPricePreview extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText(
             '${subscriptionPriceText(prices.centsFor(tier))} € / ${prices.periodLabel}',
             style: const TextStyle(
               color: _gold,
@@ -55,7 +58,7 @@ class ProfessionalSubscriptionPricePreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          AppText(
             '${prices.discountFor(tier)} % de réduction prévue sur la commission professionnelle Euro Habesha.',
             style: const TextStyle(
               color: Colors.white,
@@ -63,7 +66,7 @@ class ProfessionalSubscriptionPricePreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          const AppText(
             'Hors frais Stripe, Google Play et Apple. Offres en préparation : achats fermés. '
             'Le prix final sera confirmé par la boutique.',
             style: TextStyle(color: Colors.white70, fontSize: 12),
@@ -145,8 +148,7 @@ class _ProfessionalSubscriptionPricesEditorState
     } catch (_) {
       if (mounted) {
         setState(
-          () => _error =
-              'Chargement impossible. Vérifiez la connexion et les règles des tarifs.',
+          () => _error = 'Chargement impossible. Vérifiez la connexion et les règles des tarifs.',
         );
       }
     } finally {
@@ -166,7 +168,7 @@ class _ProfessionalSubscriptionPricesEditorState
     if (user == null || !user.emailVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Reconnectez-vous avec votre compte Super Admin vérifié.',
           ),
         ),
@@ -186,7 +188,7 @@ class _ProfessionalSubscriptionPricesEditorState
     if (!prices.progressive || !prices.progressiveDiscounts) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Conservez des prix et réductions progressifs : Silver ≤ Gold ≤ VIP.',
           ),
         ),
@@ -220,7 +222,7 @@ class _ProfessionalSubscriptionPricesEditorState
       setState(() => _revision = prices.revision + 1);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: AppText(
             'Tarifs et avantages enregistrés. Les achats restent fermés.',
           ),
         ),
@@ -230,9 +232,7 @@ class _ProfessionalSubscriptionPricesEditorState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              error is StateError
-                  ? error.message.toString()
-                  : 'Enregistrement impossible. Vérifiez les règles Firestore et la connexion.',
+              error is StateError ? error.message.toString() : 'Enregistrement impossible. Vérifiez les règles Firestore et la connexion.',
             ),
           ),
         );
@@ -304,7 +304,7 @@ class _ProfessionalSubscriptionPricesEditorState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              const AppText(
                 'Tarifs et avantages des formules',
                 style: TextStyle(
                   color: _gold,
@@ -313,7 +313,7 @@ class _ProfessionalSubscriptionPricesEditorState
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              const AppText(
                 'Montants en euros pour toute la période choisie · offres en préparation.',
                 style: TextStyle(color: Colors.white70),
               ),
@@ -329,7 +329,7 @@ class _ProfessionalSubscriptionPricesEditorState
                 ),
                 TextButton(
                   onPressed: _loading || _busy ? null : _load,
-                  child: const Text('Recharger les tarifs'),
+                  child: const AppText('Recharger les tarifs'),
                 ),
               ],
               DropdownButton<String>(
@@ -342,7 +342,7 @@ class _ProfessionalSubscriptionPricesEditorState
                       in ProfessionalSubscriptionPrices.periods.entries)
                     DropdownMenuItem(
                       value: entry.key,
-                      child: Text('Facturation prévue : ${entry.value}'),
+                      child: AppText('Facturation prévue : ${entry.value}'),
                     ),
                 ],
                 onChanged: _busy || _loading || _error != null
@@ -358,7 +358,7 @@ class _ProfessionalSubscriptionPricesEditorState
               _price('VIP', _vip),
               _discount('Réduction commission VIP', _vipDiscount),
               const SizedBox(height: 12),
-              const Text(
+              const AppText(
                 'Les réductions concernent uniquement la commission professionnelle Euro Habesha, hors frais Stripe, Google et Apple. '
                 'Ces tarifs et avantages ne modifient pas automatiquement les boutiques ni les commandes. Aucun achat ni badge n’est activé ici.',
                 style: TextStyle(color: Colors.white70, height: 1.4),

@@ -1,4 +1,7 @@
+import 'l10n/app_ui.dart';
+
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -24,8 +27,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   // ── ፎቶ ከጋለሪ ለመምረጥ ──
   Future<void> _pickImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile != null) {
       setState(() {
         _selectedImage = File(pickedFile.path);
@@ -35,8 +39,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   // ── ፎቶ ከካሜራ ለማንሳት ──
   Future<void> _takePhoto() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.camera);
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.camera,
+    );
     if (pickedFile != null) {
       setState(() {
         _selectedImage = File(pickedFile.path);
@@ -49,7 +54,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
     if (_postController.text.trim().isEmpty && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please add text or an image to post.'),
+          content: AppText('Please add text or an image to post.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -86,14 +91,20 @@ class _AddPostScreenState extends State<AddPostScreen> {
       });
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Post published successfully.'),
-          backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: AppText('Post published successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (error) {
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Post failed: $error'),
-            backgroundColor: Colors.redAccent));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: AppText('Post failed: $error'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
     } finally {
       if (mounted) setState(() => _isPosting = false);
     }
@@ -112,8 +123,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         iconTheme: IconThemeData(color: primaryGold),
-        title: const Text('Create Post',
-            style: TextStyle(color: Colors.white, fontSize: 18)),
+        title: const AppText(
+          'Create Post',
+          style: TextStyle(color: Colors.white, fontSize: 18),
+        ),
         elevation: 0,
         actions: [
           Padding(
@@ -123,7 +136,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 backgroundColor: primaryGold,
                 foregroundColor: primaryDarkGreen,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 elevation: 0,
               ),
@@ -133,10 +147,17 @@ class _AddPostScreenState extends State<AddPostScreen> {
                       width: 15,
                       height: 15,
                       child: CircularProgressIndicator(
-                          color: Color(0xFF061E12), strokeWidth: 2))
-                  : const Text('Post',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        color: Color(0xFF061E12),
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const AppText(
+                      'Post',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -146,7 +167,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
-                  16, 16, 16, MediaQuery.of(context).padding.bottom + 32),
+                16,
+                16,
+                16,
+                MediaQuery.of(context).padding.bottom + 32,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -157,24 +182,28 @@ class _AddPostScreenState extends State<AddPostScreen> {
                         radius: 22,
                         backgroundColor: cardGreen,
                         backgroundImage: const NetworkImage(
-                            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80'),
+                          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            const AppText(
                               'Getu A.', // 💡 የተጠቃሚው ስም
                               style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: cardGreen,
                                 borderRadius: BorderRadius.circular(5),
@@ -183,12 +212,19 @@ class _AddPostScreenState extends State<AddPostScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.public,
-                                      color: primaryGold, size: 12),
+                                  Icon(
+                                    Icons.public,
+                                    color: primaryGold,
+                                    size: 12,
+                                  ),
                                   const SizedBox(width: 4),
-                                  const Text('Public',
-                                      style: TextStyle(
-                                          color: Colors.white70, fontSize: 10)),
+                                  const AppText(
+                                    'Public',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -240,8 +276,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
                                 color: Colors.black54,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.close,
-                                  color: Colors.white, size: 20),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
@@ -258,35 +297,50 @@ class _AddPostScreenState extends State<AddPostScreen> {
             decoration: BoxDecoration(
               color: cardGreen,
               border: Border(
-                  top: BorderSide(color: primaryGold.withValues(alpha: 0.2))),
+                top: BorderSide(color: primaryGold.withValues(alpha: 0.2)),
+              ),
             ),
             child: SafeArea(
               child: Row(
                 children: [
-                  const Text('Add to your post',
-                      style: TextStyle(
-                          color: Colors.white70, fontWeight: FontWeight.w500)),
+                  const AppText(
+                    'Add to your post',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.image,
-                        color: Colors.greenAccent, size: 28),
+                    icon: const Icon(
+                      Icons.image,
+                      color: Colors.greenAccent,
+                      size: 28,
+                    ),
                     tooltip: 'Gallery',
                     onPressed: _pickImage,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.camera_alt,
-                        color: Colors.blueAccent, size: 28),
+                    icon: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.blueAccent,
+                      size: 28,
+                    ),
                     tooltip: 'Camera',
                     onPressed: _takePhoto,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.location_on,
-                        color: Colors.redAccent, size: 28),
+                    icon: const Icon(
+                      Icons.location_on,
+                      color: Colors.redAccent,
+                      size: 28,
+                    ),
                     tooltip: 'Check in',
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Location feature coming soon!')),
+                          content: AppText('Location feature coming soon!'),
+                        ),
                       );
                     },
                   ),

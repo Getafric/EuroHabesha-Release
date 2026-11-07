@@ -1,4 +1,4 @@
-
+import 'l10n/app_ui.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -52,9 +52,9 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
 
       final gallery = rawGallery is List
           ? rawGallery
-              .map((item) => item.toString())
-              .where((url) => url.trim().isNotEmpty)
-              .toList()
+                .map((item) => item.toString())
+                .where((url) => url.trim().isNotEmpty)
+                .toList()
           : <String>[];
 
       if (!mounted) return;
@@ -71,11 +71,7 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Impossible de charger la galerie : $e',
-          ),
-        ),
+        SnackBar(content: AppText('Impossible de charger la galerie : $e')),
       );
     }
   }
@@ -86,7 +82,7 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vous devez être connecté.')),
+        const SnackBar(content: AppText('Vous devez être connecté.')),
       );
       return;
     }
@@ -96,8 +92,10 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
     var savedToFirestore = false;
 
     try {
-      if (!['businessSubmissions', 'jobSubmissions']
-          .contains(widget.sourceCollection)) {
+      if (![
+        'businessSubmissions',
+        'jobSubmissions',
+      ].contains(widget.sourceCollection)) {
         throw Exception('Type de profil non autorisé.');
       }
 
@@ -124,7 +122,9 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
         };
         final contentType = contentTypes[extension];
         if (contentType == null) {
-          throw Exception('Format non accepté : ${file.name}. Utilisez JPG, PNG ou WebP.');
+          throw Exception(
+            'Format non accepté : ${file.name}. Utilisez JPG, PNG ou WebP.',
+          );
         }
 
         final bytes = await file.readAsBytes();
@@ -160,9 +160,11 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(newUrls.length == 1
-              ? 'Photo ajoutée.'
-              : '${newUrls.length} photos ajoutées.'),
+          content: Text(
+            newUrls.length == 1
+                ? 'Photo ajoutée.'
+                : '${newUrls.length} photos ajoutées.',
+          ),
         ),
       );
     } catch (e) {
@@ -178,7 +180,7 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible d’ajouter les photos : $e')),
+        SnackBar(content: AppText('Impossible d’ajouter les photos : $e')),
       );
     } finally {
       if (mounted) setState(() => _uploading = false);
@@ -191,29 +193,22 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: cardGreen,
-          title: const Text(
+          title: const AppText(
             'Supprimer la photo ?',
-            style: TextStyle(
-              color: primaryGold,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
           ),
-          content: const Text(
+          content: const AppText(
             'Cette photo sera retirée de votre galerie professionnelle.',
-            style: TextStyle(
-              color: Colors.white70,
-            ),
+            style: TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text(
+              child: const AppText(
                 'Annuler',
-                style: TextStyle(
-                  color: Colors.white70,
-                ),
+                style: TextStyle(color: Colors.white70),
               ),
             ),
             ElevatedButton(
@@ -224,7 +219,7 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Supprimer'),
+              child: const AppText('Supprimer'),
             ),
           ],
         );
@@ -237,15 +232,17 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vous devez être connecté.')),
+        const SnackBar(content: AppText('Vous devez être connecté.')),
       );
       return;
     }
 
     try {
       final business = await _documentReference.get();
-      if (!['businessSubmissions', 'jobSubmissions']
-              .contains(widget.sourceCollection) ||
+      if (![
+            'businessSubmissions',
+            'jobSubmissions',
+          ].contains(widget.sourceCollection) ||
           !business.exists ||
           business.data()?['ownerId'] != user.uid) {
         throw Exception('Vous n’êtes pas propriétaire de ce profil.');
@@ -276,15 +273,15 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(storageDeleted
-              ? 'Photo retirée de la galerie.'
-              : 'Photo retirée, mais son fichier Storage n’a pas pu être supprimé.'),
+          content: Text(
+            storageDeleted ? 'Photo retirée de la galerie.' : 'Photo retirée, mais son fichier Storage n’a pas pu être supprimé.',
+          ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible de supprimer la photo : $e')),
+        SnackBar(content: AppText('Impossible de supprimer la photo : $e')),
       );
     }
   }
@@ -296,12 +293,9 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
       appBar: AppBar(
         backgroundColor: primaryDarkGreen,
         foregroundColor: primaryGold,
-        title: const Text(
+        title: const AppText(
           'Photos & Galerie',
-          style: TextStyle(
-            color: primaryGold,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryGold, fontWeight: FontWeight.bold),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -317,116 +311,100 @@ class _BusinessGalleryScreenState extends State<BusinessGalleryScreen> {
                   color: primaryDarkGreen,
                 ),
               )
-            : const Icon(
-                Icons.add_photo_alternate_outlined,
-              ),
+            : const Icon(Icons.add_photo_alternate_outlined),
         label: Text(
           _uploading ? 'Envoi...' : 'Ajouter des photos',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: _loading
+          ? const Center(child: CircularProgressIndicator(color: primaryGold))
+          : _gallery.isEmpty
           ? const Center(
-              child: CircularProgressIndicator(
-                color: primaryGold,
+              child: Padding(
+                padding: EdgeInsets.all(30),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.photo_library_outlined,
+                      color: primaryGold,
+                      size: 70,
+                    ),
+                    SizedBox(height: 18),
+                    AppText(
+                      'Votre galerie est vide',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    AppText(
+                      'Ajoutez des photos de votre activité, '
+                      'de vos produits ou de vos réalisations.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, height: 1.4),
+                    ),
+                  ],
+                ),
               ),
             )
-          : _gallery.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(30),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.photo_library_outlined,
-                          color: primaryGold,
-                          size: 70,
-                        ),
-                        SizedBox(height: 18),
-                        Text(
-                          'Votre galerie est vide',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Ajoutez des photos de votre activité, '
-                          'de vos produits ou de vos réalisations.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    16,
-                    16,
-                    100,
-                  ),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1,
-                  ),
-                  itemCount: _gallery.length,
-                  itemBuilder: (context, index) {
-                    final imageUrl = _gallery[index];
+          : GridView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1,
+              ),
+              itemCount: _gallery.length,
+              itemBuilder: (context, index) {
+                final imageUrl = _gallery[index];
 
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Container(
-                            color: cardGreen,
-                            child: Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    color: Colors.white54,
-                                    size: 42,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          Positioned(
-                            top: 7,
-                            right: 7,
-                            child: Material(
-                              color: Colors.black54,
-                              shape: const CircleBorder(),
-                              child: IconButton(
-                                tooltip: 'Supprimer',
-                                onPressed: () => _deletePhoto(imageUrl),
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.white,
-                                ),
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        color: cardGreen,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: Colors.white54,
+                                size: 42,
                               ),
+                            );
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        top: 7,
+                        right: 7,
+                        child: Material(
+                          color: Colors.black54,
+                          shape: const CircleBorder(),
+                          child: IconButton(
+                            tooltip: 'Supprimer',
+                            onPressed: () => _deletePhoto(imageUrl),
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.white,
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ],
+                  ),
+                );
+              },
+            ),
     );
   }
 }

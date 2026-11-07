@@ -65,8 +65,11 @@ workflows:
 
       - name: Install CocoaPods dependencies
         script: |
-          cd ios
-          pod install
+          if [ -f ios/Podfile ]; then
+            (cd ios && pod install)
+          else
+            echo "Swift Package Manager: no Podfile to install."
+          fi
 
       - name: Apply signing profiles
         script: |

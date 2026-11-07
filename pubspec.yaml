@@ -21,7 +21,9 @@ dependencies:
   firebase_auth: 7.0.1
   cloud_firestore: 7.1.0
   firebase_storage: 14.0.1
-  google_sign_in: ^6.3.0
+  google_sign_in: 7.2.0
+  # Required to permit native GoogleSignIn 10.1 (Firebase 13 / App Check 12).
+  google_sign_in_ios: 6.4.0
 
   # Notifications & Messaging
   firebase_messaging: 17.0.1

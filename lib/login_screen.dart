@@ -32,6 +32,23 @@ class _LoginScreenState extends State<LoginScreen> {
   static const String _googleWebClientId =
       '218564066910-ufqipbmm208mrm6sirk54d0ft8d9rabi.apps.googleusercontent.com';
 
+  // One initialization per process; do not repeat it when this screen reopens.
+  static Future<void>? _googleInitialization;
+
+  static Future<void> _ensureGoogleInitialized() async {
+    final initialization = _googleInitialization ??=
+        GoogleSignIn.instance.initialize(serverClientId: _googleWebClientId);
+    try {
+      await initialization;
+    } catch (_) {
+      // A failed initialization can be retried by the next button press.
+      if (identical(_googleInitialization, initialization)) {
+        _googleInitialization = null;
+      }
+      rethrow;
+    }
+  }
+
   static const Color primaryDarkGreen = Color(0xFF061E12);
 
   static const Color primaryGold = Color(0xFFFFD700);
@@ -653,17 +670,18 @@ class _LoginScreenState extends State<LoginScreen> {
         provider.setCustomParameters({'prompt': 'select_account'});
         result = await FirebaseAuth.instance.signInWithPopup(provider);
       } else {
-        final googleSignIn = GoogleSignIn(serverClientId: _googleWebClientId);
-        // Effacer le compte Google mémorisé localement pour permettre
-        // de sélectionner une autre adresse à la prochaine connexion.
+        await _ensureGoogleInitialized();
+        if (!mounted) return;
+        final googleSignIn = GoogleSignIn.instance;
+        // Allow choosing a different account without revoking its permissions.
         await googleSignIn.signOut();
-        final account = await googleSignIn.signIn();
-        if (account == null) return;
-        final googleAuth = await account.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
+        if (!mounted) return;
+        final account = await googleSignIn.authenticate();
+        final idToken = account.authentication.idToken;
+        if (idToken == null || idToken.isEmpty) {
+          throw FirebaseAuthException(code: 'missing-google-id-token');
+        }
+        final credential = GoogleAuthProvider.credential(idToken: idToken);
         result = await FirebaseAuth.instance.signInWithCredential(credential);
         fallbackName = account.displayName;
         fallbackEmail = account.email;
@@ -685,6 +703,11 @@ class _LoginScreenState extends State<LoginScreen> {
         fallbackName: fallbackName,
         fallbackEmail: fallbackEmail,
       );
+    } on GoogleSignInException catch (e) {
+      // Closing the account chooser is not an application error.
+      if (e.code != GoogleSignInExceptionCode.canceled) {
+        _showMessage('Connexion Google impossible : ${e.code.name}');
+      }
     } on FirebaseAuthException catch (e) {
       _showMessage(
         'Connexion Google impossible (${e.code}) : ${e.message ?? "Erreur Firebase"}',
